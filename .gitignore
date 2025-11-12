@@ -1,0 +1,30 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Turbo
+.turbo
+
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Local Environment Variables
+.env*.local.next
+node_modules
+node_modules/
+.next/
+package-lock.json

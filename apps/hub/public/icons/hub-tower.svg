@@ -1,0 +1,17 @@
+
+    <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" fill="white" rx="4"/>
+      <path d="M16 4v12" stroke="#2563eb" stroke-width="2" fill="none"/>
+      <path d="M16 4l-3 3" stroke="#2563eb" stroke-width="2" fill="none"/>
+      <path d="M16 4l3 3" stroke="#2563eb" stroke-width="2" fill="none"/>
+      <path d="M12 10l4 4l4-4" stroke="#2563eb" stroke-width="2" fill="none"/>
+      <path d="M10 16h12" stroke="#2563eb" stroke-width="2" fill="none"/>
+      <path d="M14 20v6" stroke="#2563eb" stroke-width="2" fill="none"/>
+      <path d="M18 20v6" stroke="#2563eb" stroke-width="2" fill="none"/>
+      <path d="M12 26h8" stroke="#2563eb" stroke-width="2" fill="none"/>
+      <!-- Waves -->
+      <path d="M8 8c2-3 6-3 8 0" stroke="#2563eb" stroke-width="2" fill="none"/>
+      <path d="M4 12c3-4 9-4 12 0" stroke="#2563eb" stroke-width="2" fill="none"/>
+      <path d="M0 16c4-6 16-6 20 0" stroke="#2563eb" stroke-width="2" fill="none"/>
+    </svg>
+  

@@ -1,0 +1,257 @@
+import { NextRequest, NextResponse } from 'next/server';
+import PocketBase from 'pocketbase';
+
+// Endpoint para verificar y guiar la migración de campos de perfil
+export async function GET(request: NextRequest) {
+  try {
+    // Obtener configuración del parámetro query
+    const { searchParams } = new URL(request.url);
+    const adminPassword = searchParams.get('adminPassword');
+    
+    // Verificar autenticación simple
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({
+        status: 'NEEDS_AUTH',
+        message: 'Se requiere contraseña de administrador para verificar la migración',
+        instructions: {
+          step1: `GET /api/admin/migrate-profile?adminPassword=TU_PASSWORD`,
+          step2: 'El endpoint analizará automáticamente el estado actual',
+          step3: 'Te dirá exactamente qué campos agregar'
+        }
+      });
+    }
+
+    // Si no hay password, pedirlo
+    if (!adminPassword) {
+      return NextResponse.json({
+        status: 'PASSWORD_REQUIRED',
+        message: 'Se requiere la contraseña de administrador',
+        usage: `/api/admin/migrate-profile?adminPassword=TU_PASSWORD_ADMIN`
+      });
+    }
+
+    // Configuración de campos requeridos
+    const requiredFields = [
+      {
+        name: 'dni',
+        type: 'text',
+        required: true,
+        validation: 'regex("^[0-9]{7,8}$")',
+        helpText: 'DNI de 7-8 dígitos numéricos',
+        options: { min: 0, max: 255 }
+      },
+      {
+        name: 'phone', 
+        type: 'text',
+        required: false,
+        validation: 'regex("^[+]?[0-9\\s\\-\\(\\)]{10,}$")',
+        helpText: 'Formato de teléfono argentino',
+        options: { min: 0, max: 255 }
+      },
+      {
+        name: 'professional_id',
+        type: 'text',
+        required: false,
+        validation: 'regex("^[A-Z0-9\\-]{5,20}$")',
+        helpText: 'Matrícula profesional (MP, MNO, etc.)',
+        options: { min: 0, max: 50 }
+      },
+      {
+        name: 'specialty',
+        type: 'select',
+        required: false,
+        options: {
+          values: [
+            'Medicina General',
+            'Cardiología', 
+            'Neurología',
+            'Pediatría',
+            'Ginecología',
+            'Traumatología',
+            'Medicina Interna',
+            'Medicina de Urgencias',
+            'Anestesiología',
+            'Radiología',
+            'Laboratorio',
+            'Farmacia',
+            'Enfermería',
+            'Técnico en Radiología',
+            'Técnico en Laboratorio',
+            'Administración Hospitalaria',
+            'Servicios Generales',
+            'Otro'
+          ]
+        },
+        helpText: 'Especialidad médica o profesional'
+      },
+      {
+        name: 'department',
+        type: 'text',
+        required: false,
+        validation: 'regex("^[A-Za-záéíóúñÑ\\s]{2,50}$")',
+        helpText: 'Departamento del hospital',
+        options: { min: 0, max: 100 }
+      },
+      {
+        name: 'position',
+        type: 'select',
+        required: false,
+        options: {
+          values: [
+            'Jefe de Servicio',
+            'Médico Senior',
+            'Médico Residente',
+            'Enfermero/a',
+            'Técnico',
+            'Administrativo',
+            'Servicios Generales',
+            'Otro'
+          ]
+        },
+        helpText: 'Cargo o posición en el hospital'
+      }
+    ];
+
+    // Crear cliente PocketBase
+    const pb = new PocketBase('https://pocketbase.manta.com.ar');
+    
+    // Autenticar como admin
+    await pb.admins.authWithPassword('admin@cisb.com', adminPassword);
+    
+    // Verificar esquema actual
+    const currentSchema = await pb.collection('auth_users').getSchema();
+    const existingFields = currentSchema.map(field => field.name);
+    
+    console.log('📋 Campos existentes en auth_users:', existingFields);
+    
+    // Analizar qué falta
+    const missingFields = requiredFields.filter(
+      field => !existingFields.includes(field.name)
+    );
+    
+    const presentFields = requiredFields.filter(
+      field => existingFields.includes(field.name)
+    );
+    
+    if (missingFields.length === 0) {
+      return NextResponse.json({
+        status: 'MIGRATION_COMPLETE',
+        message: '¡Perfecto! Todos los campos requeridos ya están presentes',
+        summary: {
+          total: requiredFields.length,
+          present: presentFields.length,
+          missing: 0
+        },
+        presentFields: presentFields.map(f => f.name),
+        nextAction: 'La migración está completa. Puedes usar la página de perfil.'
+      });
+    }
+    
+    // Generar instrucciones paso a paso
+    const manualInstructions = missingFields.map((field, index) => ({
+      step: index + 1,
+      field: field.name,
+      type: field.type,
+      required: field.required,
+      config: {
+        name: field.name,
+        type: field.type,
+        required: field.required,
+        validation: field.validation,
+        helpText: field.helpText,
+        ...(field.type === 'select' && { options: field.options })
+      },
+      adminUISteps: [
+        '1. Ir a https://pocketbase.manta.com.ar/_/',
+        '2. Collections → auth_users',
+        '3. Hacer clic en "+ Add field"',
+        `4. Configurar como: ${field.type}`,
+        `5. Nombre: ${field.name}`,
+        field.required ? '6. Marcar "Required"' : '6. Dejar opcional',
+        field.validation ? `7. Custom validation: ${field.validation}` : '7. Sin validación',
+        field.helpText ? `8. Help text: ${field.helpText}` : '8. Sin texto de ayuda',
+        field.type === 'select' ? `9. Opciones: ${field.options.values.join(', ')}` : '9. Continuar'
+      ]
+    }));
+    
+    return NextResponse.json({
+      status: 'MIGRATION_NEEDED',
+      message: `Se necesitan ${missingFields.length} campos adicionales`,
+      summary: {
+        total: requiredFields.length,
+        present: presentFields.length,
+        missing: missingFields.length,
+        progress: `${Math.round((presentFields.length / requiredFields.length) * 100)}%`
+      },
+      existingFields,
+      presentFields: presentFields.map(f => f.name),
+      missingFields: missingFields.map(f => f.name),
+      manualInstructions,
+      quickStart: {
+        url: 'https://pocketbase.manta.com.ar/_/',
+        targetCollection: 'auth_users',
+        estimatedTime: `${missingFields.length * 1} minutos`,
+        difficulty: 'Muy Fácil'
+      },
+      afterMigration: {
+        description: 'Una vez completada la migración, la página /profile tendrá campos completos para médicos y personal hospitalario.',
+        features: [
+          'DNI obligatorio con validación',
+          'Teléfono opcional con formato argentino',
+          'Matrícula profesional para médicos',
+          'Especialidades médicas predefinidas',
+          'Departamento del hospital',
+          'Cargos hospitalarios específicos'
+        ]
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Error en verificación de migración:', error);
+    
+    // Manejar errores específicos
+    if (error.message?.includes('Invalid login credentials')) {
+      return NextResponse.json({
+        status: 'AUTH_ERROR',
+        message: 'Credenciales de administrador incorrectas',
+        solution: 'Verifica que la contraseña sea correcta'
+      }, { status: 401 });
+    }
+    
+    return NextResponse.json({
+      status: 'ERROR',
+      message: 'Error verificando migración',
+      details: error.message,
+      solution: 'Verificar conectividad y permisos de administrador'
+    }, { status: 500 });
+  }
+}
+
+// POST para ejecutar la migración automáticamente (si es posible)
+export async function POST(request: NextRequest) {
+  try {
+    const { adminPassword } = await request.json();
+    
+    if (!adminPassword) {
+      return NextResponse.json({
+        error: 'adminPassword es requerido'
+      }, { status: 400 });
+    }
+    
+    // Por limitaciones de PocketBase, esto documentará lo que necesita hacerse
+    return NextResponse.json({
+      status: 'MANUAL_STEPS_REQUIRED',
+      message: 'PocketBase requiere configuración manual para campos de colecciones existentes',
+      solution: 'Usar el endpoint GET para obtener instrucciones detalladas',
+      endpoint: `/api/admin/migrate-profile?adminPassword=${adminPassword}`,
+      reason: 'La API de PocketBase no permite modificar esquemas de colecciones existentes programáticamente'
+    });
+    
+  } catch (error: any) {
+    return NextResponse.json({
+      error: 'Error en migración',
+      details: error.message
+    }, { status: 500 });
+  }
+}

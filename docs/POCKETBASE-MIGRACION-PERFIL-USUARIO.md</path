@@ -1,0 +1,301 @@
+# HUB HOSPITALARIO - GUÍA COMPLETA DE MIGRACIÓN BACKEND
+## Actualización de Perfil de Usuario con Nuevos Campos
+
+---
+
+## 🎯 **RESUMEN DE LA MIGRACIÓN**
+
+Se han agregado los siguientes campos al formulario de perfil y backend:
+- **DNI** (obligatorio) - 7-8 dígitos numéricos
+- **Teléfono** (opcional) - formato argentino
+- **Matrícula Profesional** (opcional) - para médicos
+- **Especialidad Médica** (opcional) - lista predefinida
+- **Departamento** (opcional)
+- **Cargo** (opcional) - lista predefinida
+
+---
+
+## 📋 **PASOS PARA APLICAR LA MIGRACIÓN EN POCKETBASE**
+
+### **Paso 1: Acceder a PocketBase Admin UI**
+1. Ir a: https://pocketbase.manta.com.ar/_/
+2. Iniciar sesión como administrador
+3. Navegar a **Collections** → **auth_users**
+
+### **Paso 2: Agregar Nuevos Campos**
+
+#### **2.1 Campo DNI (Obligatorio)**
+- **Tipo**: Text
+- **Nombre**: DNI
+- **Requerido**: Sí ✅
+- **Validación personalizada**: `regex("^[0-9]{7,8}$")`
+- **Mensaje de error**: "El DNI debe contener entre 7 y 8 dígitos numéricos"
+- **Valor por defecto**: `""` (cadena vacía)
+
+#### **2.2 Campo Teléfono (Opcional)**
+- **Tipo**: Text
+- **Nombre**: Teléfono
+- **Requerido**: No
+- **Validación personalizada**: `regex("^[+]?[0-9\\s\\-\\(\\)]{10,}$")`
+- **Mensaje de error**: "Formato de teléfono inválido"
+- **Valor por defecto**: `""` (cadena vacía)
+
+#### **2.3 Campo Matrícula Profesional (Opcional)**
+- **Tipo**: Text
+- **Nombre**: Matrícula Profesional
+- **Requerido**: No
+- **Validación personalizada**: `regex("^[A-Z0-9\\-]{5,20}$")`
+- **Mensaje de error**: "Formato de matrícula inválido"
+- **Valor por defecto**: `""` (cadena vacía)
+
+#### **2.4 Campo Especialidad Médica (Opcional)**
+- **Tipo**: Select
+- **Nombre**: Especialidad Médica
+- **Requerido**: No
+- **Opciones**:
+  ```
+  Medicina General
+  Cardiología
+  Neurología
+  Pediatría
+  Ginecología
+  Traumatología
+  Medicina Interna
+  Medicina de Urgencias
+  Anestesiología
+  Radiología
+  Laboratorio
+  Farmacia
+  Enfermería
+  Técnico en Radiología
+  Técnico en Laboratorio
+  Administración Hospitalaria
+  Servicios Generales
+  Otro
+  ```
+
+#### **2.5 Campo Departamento (Opcional)**
+- **Tipo**: Text
+- **Nombre**: Departamento
+- **Requerido**: No
+- **Validación personalizada**: `regex("^[A-Za-záéíóúñÑ\\s]{2,50}$")`
+- **Mensaje de error**: "El departamento debe tener entre 2 y 50 caracteres"
+- **Valor por defecto**: `""` (cadena vacía)
+
+#### **2.6 Campo Cargo (Opcional)**
+- **Tipo**: Select
+- **Nombre**: Cargo
+- **Requerido**: No
+- **Opciones**:
+  ```
+  Jefe de Servicio
+  Médico Senior
+  Médico Residente
+  Enfermero/a
+  Técnico
+  Administrativo
+  Servicios Generales
+  Otro
+  ```
+
+### **Paso 3: Configurar API Rules**
+
+En la colección `auth_users`, configurar las siguientes reglas de API:
+
+#### **List/Search Rule:**
+```
+@request.auth.id != ""
+```
+
+#### **View Rule:**
+```
+@request.auth.id = @collection.id
+```
+
+#### **Create Rule:**
+```
+@request.auth.id != ""
+```
+
+#### **Update Rule:**
+```
+@request.auth.id = @collection.id || @request.auth.role.name = "superadmin" || @request.auth.role.name = "admin"
+```
+
+#### **Delete Rule:**
+```
+@request.auth.role.name = "superadmin" || @request.auth.role.name = "admin"
+```
+
+### **Paso 4: Verificar Configuración**
+
+1. **Probar creación de usuario** con todos los campos
+2. **Verificar validaciones** funcionan correctamente
+3. **Confirmar permisos** de usuario y admin
+4. **Testear API endpoints** con Postman o similar
+
+---
+
+## 🔧 **ENDPOINTS DE API CREADOS**
+
+### **GET /api/auth/profile**
+Obtiene el perfil completo del usuario autenticado.
+
+**Respuesta:**
+```json
+{
+  "success": true,
+  "user": {
+    "id": "user_id",
+    "email": "user@hospital.com",
+    "firstName": "Juan",
+    "lastName": "Pérez",
+    "dni": "12345678",
+    "phone": "+54 351 123 4567",
+    "professional_id": "MP-12345",
+    "specialty": "Cardiología",
+    "department": "Cardiología",
+    "position": "Médico Senior",
+    "verified": true,
+    "created": "2025-11-11T10:00:00Z",
+    "updated": "2025-11-11T21:30:00Z"
+  }
+}
+```
+
+### **POST /api/auth/update-profile**
+Actualiza el perfil del usuario con validaciones completas.
+
+**Parámetros del body:**
+```json
+{
+  "firstName": "Juan",
+  "lastName": "Pérez",
+  "email": "user@hospital.com",
+  "dni": "12345678",
+  "phone": "+54 351 123 4567",
+  "professional_id": "MP-12345",
+  "specialty": "Cardiología",
+  "department": "Cardiología",
+  "position": "Médico Senior",
+  "currentPassword": "password123", // Opcional
+  "newPassword": "newpassword123",  // Opcional
+  "confirmPassword": "newpassword123" // Opcional
+}
+```
+
+**Validaciones implementadas:**
+- DNI obligatorio (7-8 dígitos)
+- Email obligatorio y válido
+- Contraseña actual requerida para cambio
+- Confirma contraseña debe coincidir
+- Teléfono opcional pero validado si se proporciona
+
+---
+
+## 🧪 **TESTING DE LA MIGRACIÓN**
+
+### **Test 1: Crear Usuario Nuevo**
+```bash
+curl -X POST https://pocketbase.manta.com.ar/api/collections/auth_users/records \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@hospital.com",
+    "password": "test123",
+    "passwordConfirm": "test123",
+    "firstName": "Test",
+    "lastName": "User",
+    "dni": "12345678",
+    "phone": "+54 351 123 4567"
+  }'
+```
+
+### **Test 2: Actualizar Usuario Existente**
+```bash
+curl -X PATCH https://pocketbase.manta.com.ar/api/collections/auth_users/records/{user_id} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+54 351 987 6543",
+    "specialty": "Cardiología",
+    "department": "Cardiología"
+  }'
+```
+
+### **Test 3: Frontend Profile Page**
+1. Ir a `/profile`
+2. Hacer clic en "Editar Perfil"
+3. Completar todos los campos
+4. Verificar que se guardan correctamente
+5. Probar cambio de contraseña
+
+---
+
+## ⚠️ **PROBLEMAS COMUNES Y SOLUCIONES**
+
+### **Error 400: Field 'dni' is required**
+- **Causa**: Campo DNI no agregado a la colección
+- **Solución**: Agregar campo DNI como se describe en Paso 2.1
+
+### **Error 403: Cannot access user profile**
+- **Causa**: API Rules no configuradas correctamente
+- **Solución**: Verificar que las reglas del Paso 3 estén aplicadas
+
+### **Error de validación de formato**
+- **Causa**: Regex patterns no configurados en los campos
+- **Solución**: Agregar las validaciones personalizadas correspondientes
+
+### **Usuario no puede ver sus datos**
+- **Causa**: View Rule restrictiva
+- **Solución**: Configurar `@request.auth.id = @collection.id` en View Rule
+
+---
+
+## 🔄 **ROLLBACK (Si es necesario)**
+
+Si algo sale mal, seguir estos pasos:
+
+1. **Backup de datos**:
+```bash
+curl -X GET "https://pocketbase.manta.com.ar/api/collections/auth_users/records" > backup_auth_users.json
+```
+
+2. **Eliminar campos problemáticos**:
+   - Ir a PocketBase Admin UI
+   - Collections → auth_users
+   - Eliminar cada campo agregado manualmente
+
+3. **Restaurar backup** si es necesario:
+```bash
+curl -X POST "https://pocketbase.manta.com.ar/api/collections/auth_users/records" \
+  -H "Content-Type: application/json" \
+  -d @backup_auth_users.json
+```
+
+---
+
+## ✅ **CHECKLIST DE MIGRACIÓN**
+
+- [ ] Acceso a PocketBase Admin UI confirmado
+- [ ] Campo DNI agregado con validación
+- [ ] Campo Teléfono agregado con validación
+- [ ] Campos profesionales agregados (matrícula, especialidad, etc.)
+- [ ] API Rules configuradas correctamente
+- [ ] Test de creación de usuario exitoso
+- [ ] Test de actualización de perfil exitoso
+- [ ] Test de frontend (página /profile) exitoso
+- [ ] Documentación de endpoints actualizada
+- [ ] Training del equipo completado
+
+---
+
+## 📞 **SOPORTE**
+
+Para dudas sobre la migración:
+1. Verificar logs de PocketBase en Admin UI
+2. Revisar consola del navegador en el frontend
+3. Validar que todos los campos estén correctamente configurados
+4. Confirmar que los permisos de API sean los correctos
+
+**Estado**: ✅ Migración lista para aplicar
+**Fecha**: 2025-11-11 21:30:00
+**Versión**: 1.0

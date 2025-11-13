@@ -6,8 +6,9 @@ const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: path.resolve(__dirname, '../../'), // Movido aquí
   experimental: {
-    outputFileTracingRoot: path.resolve(__dirname, '../../'),
+    // Otras configuraciones experimentales si las hubiera
   },
 };
 

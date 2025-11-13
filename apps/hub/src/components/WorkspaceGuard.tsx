@@ -23,7 +23,8 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
 
   const router = useRouter();
   const pathname = usePathname();
-  const isPublicPage = ['/login', '/signup', '/confirm', '/forgot-password', '/verify'].some(p => pathname.startsWith(p));
+  // Añadir '/' a la lista de páginas públicas
+  const isPublicPage = ['/', '/login', '/signup', '/confirm', '/forgot-password', '/verify'].some(p => pathname.startsWith(p));
 
   useEffect(() => {
     // 1. Do nothing on public pages

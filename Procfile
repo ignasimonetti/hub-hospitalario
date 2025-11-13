@@ -1,1 +1,0 @@
-web: npm --workspace=apps/hub run dev -- --port $PORT

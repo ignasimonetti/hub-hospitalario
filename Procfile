@@ -1,1 +1,1 @@
-web: turbo run dev -- --port $PORT
+web: npm --workspace=apps/hub run dev -- --port $PORT

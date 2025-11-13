@@ -3,146 +3,122 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useSession } from "@/components/SessionProvider";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { PendingUserDialog } from "@/components/PendingUserDialog";
 import { getCurrentUserRoles } from "@/lib/auth";
 
-interface UserRole {
-  id: string;
-  user: string;
-  role: {
-    id: string;
-    name: string;
-    description?: string;
-  };
-  tenant: {
-    id: string;
-    name: string;
-    code?: string;
-    address?: string;
-    phone?: string;
-    active: boolean;
-    created: string;
-  };
-  assigned_by: string;
-  assigned_at: string;
-}
+// Using any for PocketBase records to avoid type conflicts
 
 interface WorkspaceGuardProps {
   children: React.ReactNode;
 }
 
 export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
-  const { currentTenant, currentRole, setWorkspace, isWorkspaceSelected } = useWorkspace();
-  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showWorkspaceSelector, setShowWorkspaceSelector] = useState(false);
-  const [showPendingDialog, setShowPendingDialog] = useState(false);
+  const { status: sessionStatus } = useSession();
+  const { status: workspaceStatus, isWorkspaceSelected, setWorkspace, loadAvailableTenants, availableTenants } = useWorkspace();
+  
+  const [uiState, setUiState] = useState<"loading" | "selecting" | "pending" | "ready">("loading");
+  const [userRoles, setUserRoles] = useState<any[]>([]);
+
   const router = useRouter();
   const pathname = usePathname();
-
-  // Pages that don't require workspace selection
-  const publicPages = ['/', '/login', '/signup', '/confirm', '/forgot-password', '/verify'];
+  const isPublicPage = ['/login', '/signup', '/confirm', '/forgot-password', '/verify'].some(p => pathname.startsWith(p));
 
   useEffect(() => {
-    const checkUserAccess = async () => {
+    // 1. Do nothing on public pages
+    if (isPublicPage) {
+      setUiState("ready");
+      return;
+    }
+
+    // 2. Wait for both providers to finish their initialization
+    if (sessionStatus === "loading" || workspaceStatus !== "ready") {
+      setUiState("loading");
+      return;
+    }
+
+    // 3. Handle unauthenticated users
+    if (sessionStatus === "unauthenticated") {
+      router.push("/login");
+      return;
+    }
+
+    // 4. From here, we know sessionStatus is "authenticated" and workspaceStatus is "ready"
+    // TEMPORARILY COMMENTED OUT FOR DIAGNOSIS:
+    // if (isWorkspaceSelected) {
+    //   setUiState("ready");
+    //   return;
+    // }
+
+    // 5. User is authenticated, workspace is ready, but no workspace is selected in context.
+    // This is the ONLY place we should fetch roles.
+    const fetchRolesAndDecide = async () => {
       try {
-        console.log('🔐 WorkspaceGuard: Checking user access for path:', pathname);
-
-        // Skip workspace check for public pages
-        if (publicPages.some(page => pathname.startsWith(page))) {
-          console.log('🔓 WorkspaceGuard: Public page, skipping workspace check');
-          setLoading(false);
-          return;
-        }
-
-        console.log('🔍 WorkspaceGuard: Checking user authentication and roles...');
         const roles = await getCurrentUserRoles();
-
         if (!roles || roles.length === 0) {
-          // User has no roles - show pending dialog
-          setShowPendingDialog(true);
-          setLoading(false);
+          setUiState("pending");
           return;
         }
 
-        setUserRoles(roles as unknown as UserRole[]);
+        const typedRoles = (roles as any[]).map(role => ({
+          role: role.role,
+          tenant: role.tenant
+        }));
+        setUserRoles(typedRoles);
+        loadAvailableTenants(typedRoles); // Update context with all available tenants
 
-        // Check if user has a saved workspace
-        if (isWorkspaceSelected) {
-          // User has a selected workspace, allow access
-          setLoading(false);
-          return;
-        }
-
-        // Count unique tenants
-        const uniqueTenants = [...new Set(roles.map(role => role.tenant.id))];
+        const uniqueTenants = [...new Map(typedRoles.map(r => [r.tenant.id, r.tenant])).values()];
 
         if (uniqueTenants.length === 1) {
-          // User has only one tenant - auto-select it
-          const tenant = roles[0].tenant;
-          const primaryRole = roles.find(r => r.tenant.id === tenant.id)?.role;
-
-          if (primaryRole) {
-            setWorkspace(tenant, primaryRole);
-            setLoading(false);
-            return;
-          }
+          // Auto-select if there's only one option
+          const tenant = uniqueTenants[0];
+          const role = typedRoles.find(r => r.tenant.id === tenant.id)!.role;
+          setWorkspace(tenant, role);
+          setUiState("ready");
+        } else {
+          // Show selector for multiple options
+          setUiState("selecting");
         }
-
-        // User has multiple tenants or no auto-selection - show selector
-        setShowWorkspaceSelector(true);
-        setLoading(false);
-
       } catch (error) {
-        console.error('Error checking user access:', error);
-        setShowPendingDialog(true);
-        setLoading(false);
+        console.error("Error fetching user roles in WorkspaceGuard:", error);
+        setUiState("pending"); // Show pending dialog on error
       }
     };
 
-    checkUserAccess();
-  }, [pathname, isWorkspaceSelected, setWorkspace]);
+    fetchRolesAndDecide();
 
-  const handleWorkspaceSelect = (tenant: any, role: any) => {
-    setWorkspace(tenant, role);
-    setShowWorkspaceSelector(false);
-  };
+  }, [sessionStatus, workspaceStatus, isWorkspaceSelected, pathname, router, setWorkspace, loadAvailableTenants, isPublicPage]);
 
-  const handlePendingDialogClose = () => {
-    setShowPendingDialog(false);
-    // Redirect to landing page
-    router.push('/');
-  };
+  // --- RENDER LOGIC ---
+  // This part is now a clean reflection of the `uiState`
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
+  if (uiState === "loading" || isPublicPage) {
+    // Show children for public pages immediately, or a loader for protected ones.
+    return isPublicPage ? <>{children}</> : <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
   }
 
-  // Show workspace selector if user has multiple tenants and hasn't selected one
-  if (showWorkspaceSelector && userRoles.length > 0) {
+  if (uiState === "selecting") {
     return (
       <WorkspaceSelector
         userRoles={userRoles}
-        onWorkspaceSelect={handleWorkspaceSelect}
+        onWorkspaceSelect={(tenant, role) => {
+          setWorkspace(tenant, role);
+          setUiState("ready");
+        }}
       />
     );
   }
 
-  // Show pending dialog if user has no roles
-  if (showPendingDialog) {
+  if (uiState === "pending") {
     return (
       <PendingUserDialog
         open={true}
-        onOpenChange={() => {}}
+        onOpenChange={() => router.push('/')} // Redirect on close
       />
     );
   }
 
-  // User has access - render children
+  // uiState is "ready" and it's not a public page
   return <>{children}</>;
 }

@@ -39,7 +39,7 @@ import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { currentTenant, currentRole } = useWorkspace();
+  const { currentTenant, currentRole, setWorkspace } = useWorkspace();
   const [user, setUser] = useState<any>(null);
   const [userRoles, setUserRoles] = useState<any[]>([]);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
@@ -63,6 +63,7 @@ export default function DashboardPage() {
     }
   }, []);
 
+
   const toggleSidebar = () => {
     const newState = !sidebarCollapsed;
     setSidebarCollapsed(newState);
@@ -71,11 +72,17 @@ export default function DashboardPage() {
 
   const checkUserRoles = async (userId: string) => {
     try {
-      const roles = await getCurrentUserRoles();
-      setUserRoles(roles);
+      // El dashboard ya tiene acceso al contexto de workspace
+      // No es necesario volver a obtener los roles, solo usar los del contexto
+      // Si se necesita actualizar los roles, debería hacerse a través del contexto
       
-      // Si el usuario no tiene roles, mostrar dialog de pendiente
-      if (roles.length === 0) {
+      // Si el contexto de workspace no tiene roles pero sí tiene tenant y rol,
+      // podemos confiar en esos valores
+      if (currentTenant && currentRole) {
+        // Ya tenemos la información del entorno hospitalario
+        setShowPendingDialog(false);
+      } else {
+        // Si no tenemos información del workspace, mostrar diálogo de pendiente
         setShowPendingDialog(true);
       }
     } catch (error) {
@@ -178,7 +185,7 @@ export default function DashboardPage() {
             {!sidebarCollapsed && (
               <div className="min-w-0">
                 <h1 className="text-lg font-semibold text-gray-900 dark:text-slate-100 truncate">{currentTenant?.name}</h1>
-                <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{currentRole?.name || "Cargando rol..."}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{currentTenant?.code || 'Hub Hospitalario'}</p>
               </div>
             )}
           </div>

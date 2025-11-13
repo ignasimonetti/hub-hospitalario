@@ -32,8 +32,8 @@ interface UserRole {
 }
 
 interface WorkspaceSelectorProps {
-  userRoles: UserRole[];
-  onWorkspaceSelect: (tenant: Tenant, role: UserRole['role']) => void;
+  userRoles: any[];
+  onWorkspaceSelect: (tenant: Tenant, role: any) => void;
 }
 
 export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSelectorProps) {
@@ -51,13 +51,13 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
     }
     acc[tenantId].roles.push(userRole.role);
     return acc;
-  }, {} as Record<string, { tenant: Tenant; roles: UserRole['role'][] }>);
+  }, {} as Record<string, { tenant: any; roles: any[] }>);
 
   const handleWorkspaceSelect = (tenantId: string) => {
     const workspace = tenantRoles[tenantId];
     if (workspace) {
       // For now, select the highest role if multiple roles exist
-      const selectedRole = workspace.roles.reduce((prev, current) => {
+      const selectedRole = workspace.roles.reduce((prev: any, current: any) => {
         // Simple role hierarchy - you might want to implement a proper hierarchy system
         const roleOrder = ['superadmin', 'admin', 'doctor', 'nurse', 'staff'];
         const prevIndex = roleOrder.indexOf(prev.name);
@@ -111,100 +111,103 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
 
         {/* Workspace Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Object.entries(tenantRoles).map(([tenantId, { tenant, roles }], index) => (
-            <motion.div
-              key={tenantId}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * index, duration: 0.3 }}
-            >
-              <Card
-                className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-2 ${
-                  selectedWorkspace === tenantId
-                    ? 'border-blue-500 shadow-lg'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
-                }`}
-                onClick={() => handleWorkspaceSelect(tenantId)}
+          {Object.entries(tenantRoles).map(([tenantId, workspaceData]: [string, any], index) => {
+            const { tenant, roles } = workspaceData;
+            return (
+              <motion.div
+                key={tenantId}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 * index, duration: 0.3 }}
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg text-gray-900 dark:text-white mb-1">
-                        {tenant.name}
-                      </CardTitle>
-                      {tenant.code && (
-                        <CardDescription className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                          {tenant.code}
-                        </CardDescription>
+                <Card
+                  className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-2 ${
+                    selectedWorkspace === tenantId
+                      ? 'border-blue-500 shadow-lg'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                  }`}
+                  onClick={() => handleWorkspaceSelect(tenantId)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg text-gray-900 dark:text-white mb-1">
+                          {tenant.name}
+                        </CardTitle>
+                        {tenant.code && (
+                          <CardDescription className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                            {tenant.code}
+                          </CardDescription>
+                        )}
+                      </div>
+                      {selectedWorkspace === tenantId && (
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        </div>
                       )}
                     </div>
-                    {selectedWorkspace === tenantId && (
-                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
+                  </CardHeader>
 
-                <CardContent className="space-y-4">
-                  {/* Roles */}
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Tus roles en este hospital:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {roles.map((role, roleIndex) => (
-                        <Badge
-                          key={roleIndex}
-                          variant={getRoleBadgeVariant(role.name)}
-                          className="text-xs"
-                        >
-                          {role.name}
-                        </Badge>
-                      ))}
+                  <CardContent className="space-y-4">
+                    {/* Roles */}
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Tus roles en este hospital:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {roles.map((role: any, roleIndex: number) => (
+                          <Badge
+                            key={roleIndex}
+                            variant={getRoleBadgeVariant(role.name)}
+                            className="text-xs"
+                          >
+                            {role.name}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Hospital Info */}
-                  <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    {tenant.address && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        <span className="truncate">{tenant.address}</span>
-                      </div>
-                    )}
-                    {tenant.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
-                        <span>{tenant.phone}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Status */}
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${tenant.active ? 'bg-green-500' : 'bg-red-500'}`} />
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {tenant.active ? 'Activo' : 'Inactivo'}
-                      </span>
+                    {/* Hospital Info */}
+                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                      {tenant.address && (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          <span className="truncate">{tenant.address}</span>
+                        </div>
+                      )}
+                      {tenant.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4" />
+                          <span>{tenant.phone}</span>
+                        </div>
+                      )}
                     </div>
-                    <Button
-                      size="sm"
-                      variant={selectedWorkspace === tenantId ? "default" : "outline"}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleWorkspaceSelect(tenantId);
-                      }}
-                      className="text-xs"
-                    >
-                      {selectedWorkspace === tenantId ? 'Seleccionado' : 'Seleccionar'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+
+                    {/* Status */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${tenant.active ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {tenant.active ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={selectedWorkspace === tenantId ? "default" : "outline"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleWorkspaceSelect(tenantId);
+                        }}
+                        className="text-xs"
+                      >
+                        {selectedWorkspace === tenantId ? 'Seleccionado' : 'Seleccionar'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Footer */}

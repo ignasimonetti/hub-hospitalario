@@ -196,60 +196,39 @@ export async function getCurrentUserRoles(tenantId: string | null = null) {
       filter += ` && tenant = "${tenantId}"`
     }
 
-    // Try to get roles, but don't fail if permissions are restricted
-    try {
-      console.log('🔍 Attempting to fetch user roles with filter:', filter)
-      console.log('🔍 Current auth state:', pocketbase.authStore.isValid, pocketbase.authStore.model?.id)
-      console.log('🔍 Auth token present:', !!pocketbase.authStore.token)
-      console.log('🔍 Auth token preview:', pocketbase.authStore.token?.substring(0, 50) + '...')
+    const userRoles = await pocketbase.collection('hub_user_roles').getList(1, 100, {
+      filter: filter,
+      expand: 'role,tenant'
+    })
 
-      const userRoles = await pocketbase.collection('hub_user_roles').getList(1, 100, {
-        filter: filter,
-        expand: 'role,tenant'
-      })
-
-      console.log('✅ User roles fetched successfully:', userRoles.items.length, 'roles found')
-      return userRoles.items
-    } catch (permissionError: any) {
-      // Check if this is an auto-cancellation error (not a real permission issue)
-      if (permissionError.message?.includes('autocancelled') ||
-          permissionError.message?.includes('signal is aborted')) {
-        console.warn('⚠️ Request was auto-cancelled by React, but data may still arrive. This is normal.')
-        // Don't return empty array for auto-cancellation - wait a bit and try again
-        await new Promise(resolve => setTimeout(resolve, 100))
-        // For auto-cancellation errors, the data might still arrive
-        // Let's wait a bit and check if we can get the data
-        console.log('🔄 Auto-cancellation detected, waiting for data...')
-
-        // Wait for the response that might still come
-        await new Promise(resolve => setTimeout(resolve, 500))
-
-        // Try to get roles one more time - if it works, great!
-        try {
-          console.log('🔄 Final attempt to fetch user roles...')
-          const finalRoles = await pocketbase.collection('hub_user_roles').getList(1, 100, {
-            filter: filter,
-            expand: 'role,tenant'
-          })
-          console.log('✅ User roles fetched successfully after auto-cancellation:', finalRoles.items.length, 'roles found')
-          return finalRoles.items
-        } catch (finalError: any) {
-          // If this also fails with auto-cancellation, it means the request was truly cancelled
-          // But since we saw successful logs earlier, let's assume the data is valid
-          console.warn('⚠️ Final attempt also auto-cancelled, but proceeding with empty roles for now')
-          // Return empty array to trigger pending user dialog - user can retry
-          return []
-        }
+    // --- DIAGNOSTIC LOG ---
+    if (userRoles.items.length > 0) {
+      console.log("DIAGNOSTIC INFO: First user role object received from PocketBase:");
+      console.log(JSON.stringify(userRoles.items[0], null, 2));
+      if (userRoles.items[0].expand?.tenant) {
+        console.log("DIAGNOSTIC INFO: Expanded tenant object:");
+        console.log(JSON.stringify(userRoles.items[0].expand.tenant, null, 2));
+      } else {
+        console.log("DIAGNOSTIC INFO: Tenant field was NOT expanded.");
       }
+    }
+    // --- END DIAGNOSTIC LOG ---
 
-      // If we can't access roles due to permissions, return empty array
-      // This allows users to access the dashboard even without role permissions
-      console.error('❌ Cannot access user roles due to permissions:', permissionError)
-      console.error('❌ Permission error details:', permissionError)
+    console.log('✅ User roles fetched successfully:', userRoles.items.length, 'roles found')
+    return userRoles.items
+  } catch (error: any) {
+    // Check if this is an auto-cancellation error (not a real permission issue)
+    if (error.message?.includes('autocancelled') ||
+        error.message?.includes('signal is aborted')) {
+      console.warn('⚠️ Request was auto-cancelled by React, but data may still arrive. This is normal.')
+      // For auto-cancellation errors, return empty array but don't show pending dialog
+      // The component will retry when it has a stable state
       return []
     }
-  } catch (error) {
-    console.error('Error getting user roles:', error)
+
+    // If we can't access roles due to permissions or other issues, return empty array
+    // This allows users to access the dashboard even without role permissions
+    console.error('❌ Cannot access user roles:', error)
     return []
   }
 }

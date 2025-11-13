@@ -1,22 +1,22 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useSession } from '@/components/SessionProvider';
+
+type WorkspaceStatus = "waiting" | "initializing" | "ready";
 
 interface Tenant {
   id: string;
   name: string;
   code?: string;
-  address?: string;
-  phone?: string;
-  logo?: string;
-  active: boolean;
-  created: string;
+  logo?: string | string[];
+  // Add other tenant properties as needed
 }
 
 interface UserRole {
   id: string;
   name: string;
-  description?: string;
+  // Add other role properties as needed
 }
 
 interface WorkspaceContextType {
@@ -26,49 +26,74 @@ interface WorkspaceContextType {
   setWorkspace: (tenant: Tenant, role: UserRole) => void;
   clearWorkspace: () => void;
   isWorkspaceSelected: boolean;
+  loadAvailableTenants: (userRoles: any[]) => void;
+  status: WorkspaceStatus;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 const WORKSPACE_STORAGE_KEY = 'hub-selected-workspace';
 
-interface WorkspaceProviderProps {
-  children: ReactNode;
-}
-
-export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
+export function WorkspaceProvider({ children }: { children: ReactNode }) {
+  const [status, setStatus] = useState<WorkspaceStatus>("waiting");
   const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
   const [currentRole, setCurrentRole] = useState<UserRole | null>(null);
   const [availableTenants, setAvailableTenants] = useState<Tenant[]>([]);
+  const { status: sessionStatus } = useSession();
 
-  // Load workspace from localStorage on mount
   useEffect(() => {
-    const savedWorkspace = localStorage.getItem(WORKSPACE_STORAGE_KEY);
-    if (savedWorkspace) {
-      try {
-        const { tenant, role } = JSON.parse(savedWorkspace);
-        setCurrentTenant(tenant);
-        setCurrentRole(role);
-      } catch (error) {
-        console.error('Error loading saved workspace:', error);
-        localStorage.removeItem(WORKSPACE_STORAGE_KEY);
-      }
+    console.log(`🔄 WorkspaceProvider: sessionStatus changed to ${sessionStatus}. Current Workspace Status: ${status}`);
+
+    if (sessionStatus === 'loading') {
+      setStatus('waiting');
+      return;
     }
-  }, []);
+
+    if (sessionStatus === 'unauthenticated') {
+      console.log('❌ WorkspaceProvider: Session is unauthenticated. Clearing workspace.');
+      clearWorkspace();
+      setStatus('ready'); // Ready, but with no data
+      return;
+    }
+
+    if (sessionStatus === 'authenticated') {
+      console.log('✅ WorkspaceProvider: Session is authenticated. Initializing workspace.');
+      setStatus('initializing');
+      const savedWorkspace = localStorage.getItem(WORKSPACE_STORAGE_KEY);
+      if (savedWorkspace) {
+        try {
+          const { tenant, role } = JSON.parse(savedWorkspace);
+          setCurrentTenant(tenant);
+          setCurrentRole(role);
+          console.log('✅ WorkspaceProvider: Loaded workspace from localStorage.');
+        } catch (error) {
+          console.error('❌ WorkspaceProvider: Error loading saved workspace:', error);
+          localStorage.removeItem(WORKSPACE_STORAGE_KEY);
+        }
+      }
+      setStatus('ready');
+      console.log('✅ WorkspaceProvider: Workspace initialization complete. Status set to READY.');
+    }
+  }, [sessionStatus]); // Depend on sessionStatus
+
+  const loadAvailableTenants = (userRoles: any[]) => {
+    const tenants = userRoles.map((role: any) => role.tenant).filter((tenant): tenant is Tenant => tenant !== undefined);
+    const uniqueTenants = [...new Map(tenants.map(t => [t.id, t])).values()];
+    setAvailableTenants(uniqueTenants);
+  };
 
   const setWorkspace = (tenant: Tenant, role: UserRole) => {
     setCurrentTenant(tenant);
     setCurrentRole(role);
-
-    // Save to localStorage
-    const workspaceData = { tenant, role };
-    localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(workspaceData));
+    localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify({ tenant, role }));
+    console.log('✅ WorkspaceProvider: Workspace set and saved to localStorage.');
   };
 
   const clearWorkspace = () => {
     setCurrentTenant(null);
     setCurrentRole(null);
     localStorage.removeItem(WORKSPACE_STORAGE_KEY);
+    console.log('🗑️ WorkspaceProvider: Workspace cleared.');
   };
 
   const value: WorkspaceContextType = {
@@ -78,6 +103,8 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     setWorkspace,
     clearWorkspace,
     isWorkspaceSelected: currentTenant !== null && currentRole !== null,
+    loadAvailableTenants,
+    status,
   };
 
   return (

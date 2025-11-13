@@ -1,79 +1,64 @@
-// POCKETBASE SESSION PROVIDER - Hub Hospitalario
-// Migrated from Supabase to PocketBase
-
 "use client";
 
 import { pocketbase } from "../lib/auth";
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-// Session context type for PocketBase
-const SessionContext = createContext<{
+type SessionStatus = "loading" | "authenticated" | "unauthenticated";
+
+interface SessionContextType {
   user: any | null;
-  isAuthenticated: boolean;
-  userStatus: string | null;
-}>({ user: null, isAuthenticated: false, userStatus: null });
+  status: SessionStatus;
+}
 
-export function SessionProvider({ children }: { children: React.ReactNode }) {
+const SessionContext = createContext<SessionContextType>({
+  user: null,
+  status: "loading",
+});
+
+export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userStatus, setUserStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<SessionStatus>("loading");
 
   useEffect(() => {
     console.log('🔄 SessionProvider: Initializing session check...');
+    
+    const updateUserState = () => {
+      const currentUser = pocketbase.authStore.model;
+      const isValid = pocketbase.authStore.isValid;
 
-    // Initialize with current user if any
-    const currentUser = pocketbase.authStore.model
-    console.log('🔍 SessionProvider: Current user from authStore:', currentUser);
-    console.log('🔍 SessionProvider: Auth store is valid:', pocketbase.authStore.isValid);
+      if (isValid && currentUser) {
+        setUser(currentUser);
+        setStatus("authenticated");
+        console.log('✅ SessionProvider: Status set to AUTHENTICATED. User:', currentUser?.id);
+      } else {
+        setUser(null);
+        setStatus("unauthenticated");
+        console.log('❌ SessionProvider: Status set to UNAUTHENTICATED.');
+      }
+    };
 
-    if (currentUser) {
-      console.log('✅ SessionProvider: User found, setting authenticated state');
-      setUser(currentUser);
-      setIsAuthenticated(!!pocketbase.authStore.isValid);
-    } else {
-      console.log('❌ SessionProvider: No user found in authStore');
-    }
+    // Initial check
+    updateUserState();
 
     // Listen for auth changes
-    const unsubscribe = pocketbase.authStore.onChange(() => {
-      const userModel = pocketbase.authStore.model;
-      setUser(userModel);
-      setIsAuthenticated(!!pocketbase.authStore.isValid);
-    });
+    const unsubscribe = pocketbase.authStore.onChange((token, model) => {
+      console.log('🔄 SessionProvider: Auth store changed. Token:', token ? 'present' : 'absent', 'Model:', model ? 'present' : 'absent');
+      updateUserState();
+    }, true); // true to trigger immediately on mount if authStore already has data
 
     return () => {
-      if (typeof unsubscribe === 'function') {
+      // Cleanup listener on unmount
+      if (typeof unsubscribe === "function") {
         unsubscribe();
       }
     };
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      // Check user status based on email verification
-      const status = user.emailVerified ? "confirmed" : "pending";
-      setUserStatus(status);
-    } else {
-      setUserStatus(null);
-    }
-  }, [user]);
-
   return (
-    <SessionContext.Provider value={{ user, isAuthenticated, userStatus }}>
+    <SessionContext.Provider value={{ user, status }}>
       {children}
     </SessionContext.Provider>
   );
 }
 
 export const useSession = () => useContext(SessionContext);
-
-// Helper function to check if user is authenticated
-export function useAuth() {
-  const { user, isAuthenticated } = useSession();
-  return { user, isAuthenticated };
-}

@@ -15,18 +15,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   User,
-  Settings,
   LogOut,
-  ChevronUp,
   ChevronDown,
   Hospital,
   HelpCircle,
-  Bell,
-  Palette
 } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { ProfileSettingsDialog } from "@/components/ProfileSettingsDialog";
 
 interface UserProfileDropdownProps {
   user: any;
@@ -37,7 +32,6 @@ export function UserProfileDropdown({ user, collapsed = false }: UserProfileDrop
   const router = useRouter();
   const { currentTenant, currentRole } = useWorkspace();
   const [isOpen, setIsOpen] = useState(false);
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
 
   // Force re-render when workspace data changes
   const [workspaceData, setWorkspaceData] = useState({ tenant: currentTenant, role: currentRole });
@@ -82,11 +76,6 @@ export function UserProfileDropdown({ user, collapsed = false }: UserProfileDrop
 
   const handleProfile = () => {
     router.push('/profile');
-  };
-
-  const handleSettings = () => {
-    setIsOpen(false); // Close dropdown
-    setShowSettingsDialog(true);
   };
 
   const handleHelp = () => {
@@ -191,11 +180,6 @@ export function UserProfileDropdown({ user, collapsed = false }: UserProfileDrop
                   <span>Mi Perfil</span>
                 </DropdownMenuItem>
 
-                <DropdownMenuItem onClick={handleSettings} className="cursor-pointer">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Configuración</span>
-                </DropdownMenuItem>
-
                 <DropdownMenuItem onClick={handleHelp} className="cursor-pointer">
                   <HelpCircle className="mr-2 h-4 w-4" />
                   <span>Centro de Ayuda</span>
@@ -215,13 +199,6 @@ export function UserProfileDropdown({ user, collapsed = false }: UserProfileDrop
           )}
         </AnimatePresence>
       </DropdownMenu>
-
-      {/* Profile Settings Dialog */}
-      <ProfileSettingsDialog
-        open={showSettingsDialog}
-        onOpenChange={setShowSettingsDialog}
-        user={user}
-      />
     </div>
   );
 }

@@ -23,8 +23,8 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
 
   const router = useRouter();
   const pathname = usePathname();
-  // Añadir '/' a la lista de páginas públicas
-  const isPublicPage = ['/', '/login', '/signup', '/confirm', '/forgot-password', '/verify'].some(p => pathname.startsWith(p));
+  // Corregir la lógica de isPublicPage: '/' debe ser una coincidencia exacta
+  const isPublicPage = pathname === '/' || ['/login', '/signup', '/confirm', '/forgot-password', '/verify'].some(p => pathname.startsWith(p));
 
   useEffect(() => {
     console.log(`[WorkspaceGuard] useEffect triggered. sessionStatus: ${sessionStatus}, workspaceStatus: ${workspaceStatus}, isWorkspaceSelected: ${isWorkspaceSelected}, pathname: ${pathname}`);

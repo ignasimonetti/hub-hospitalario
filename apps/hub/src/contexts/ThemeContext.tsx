@@ -22,22 +22,24 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
 
-  // Load theme from localStorage on mount
+  // Load theme from localStorage on mount and set mounted to true
   useEffect(() => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as Theme;
     if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
       setThemeState(savedTheme);
     } else {
-      // Check system preference
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      setThemeState(systemTheme);
+      // Check system preference only if no saved theme
+      if (window.matchMedia) {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        setThemeState(systemTheme);
+      }
     }
     setMounted(true);
   }, []);
 
-  // Apply theme to document
+  // Apply theme to document and save to localStorage when theme changes
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted) return; // Only run on client after initial mount
 
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -46,7 +48,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       root.classList.remove('dark');
     }
 
-    // Save to localStorage
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme, mounted]);
 
@@ -57,11 +58,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const toggleTheme = () => {
     setThemeState(prev => prev === 'light' ? 'dark' : 'light');
   };
-
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return <div style={{ visibility: 'hidden' }}>{children}</div>;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>

@@ -8,6 +8,9 @@ import { pocketbase } from '@hospital/core/lib/auth'
 // Esta colección se crea automáticamente por PocketBase
 const USERS_COLLECTION = 'auth_users'
 
+// Re-exportar la instancia de pocketbase para que otros módulos en 'apps/hub' puedan usarla
+export { pocketbase }
+
 /**
  * Iniciar sesión de usuario con email y contraseña
  */
@@ -260,7 +263,7 @@ export async function hasPermission(permissionSlug: string, tenantId: string | n
   try {
     const permissions = await getCurrentUserPermissions(tenantId)
     return permissions.some((p: any) => p.slug === permissionSlug)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error verificando permiso:', error)
     return false
   }
@@ -273,7 +276,7 @@ export async function hasRole(roleSlug: string, tenantId: string | null = null) 
   try {
     const userRoles = await getCurrentUserRoles(tenantId)
     return userRoles.some((ur: any) => ur.role?.slug === roleSlug)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error verificando rol:', error)
     return false
   }

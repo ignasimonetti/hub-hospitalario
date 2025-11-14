@@ -184,7 +184,12 @@ export default function DashboardPage() {
             </Avatar>
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0"> {/* Added flex-1 min-w-0 here */}
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-slate-100 truncate">{currentTenant?.name || 'Hub Hospitalario'}</h1>
+                <h1 
+                  className="text-base font-semibold text-gray-900 dark:text-slate-100 truncate"
+                  title={currentTenant?.name || 'Hub Hospitalario'}
+                >
+                  {currentTenant?.name || 'Hub Hospitalario'}
+                </h1>
                 <p className="text-xs text-gray-500 dark:text-slate-400 truncate">Hub Hospitalario</p> {/* Changed to static text */}
               </div>
             )}

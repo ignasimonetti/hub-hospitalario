@@ -175,7 +175,7 @@ export default function DashboardPage() {
         </div>
         {/* Logo */}
         <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-center">
-          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
+          <div className={`flex items-center w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start gap-3'}`}>
             <Avatar className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
               <AvatarImage src={tenantLogoUrl} alt={currentTenant?.name} />
               <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white">
@@ -183,14 +183,14 @@ export default function DashboardPage() {
               </AvatarFallback>
             </Avatar>
             {!sidebarCollapsed && (
-              <div className="flex-1 min-w-0"> {/* Added flex-1 min-w-0 here */}
+              <div className="flex-1 min-w-0">
                 <h1 
-                  className="text-base font-semibold text-gray-900 dark:text-slate-100 truncate"
+                  className="text-base font-semibold text-gray-900 dark:text-slate-100" // Removed truncate
                   title={currentTenant?.name || 'Hub Hospitalario'}
                 >
                   {currentTenant?.name || 'Hub Hospitalario'}
                 </h1>
-                <p className="text-xs text-gray-500 dark:text-slate-400 truncate">Hub Hospitalario</p> {/* Changed to static text */}
+                <p className="text-xs text-gray-500 dark:text-slate-400 truncate">Hub Hospitalario</p>
               </div>
             )}
           </div>

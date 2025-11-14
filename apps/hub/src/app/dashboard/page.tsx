@@ -49,6 +49,9 @@ export default function DashboardPage() {
   const { showWarning, timeRemaining, extendSession, logout } = useSessionTimeout(currentRole?.name);
 
   useEffect(() => {
+    console.log('[DashboardPage] currentTenant from useWorkspace:', currentTenant);
+    console.log('[DashboardPage] currentRole from useWorkspace:', currentRole);
+
     const currentUser = getCurrentUser();
     setUser(currentUser);
 
@@ -61,7 +64,7 @@ export default function DashboardPage() {
     if (savedSidebarState !== null) {
       setSidebarCollapsed(JSON.parse(savedSidebarState));
     }
-  }, []);
+  }, [currentTenant, currentRole]);
 
 
   const toggleSidebar = () => {
@@ -184,8 +187,8 @@ export default function DashboardPage() {
             </Avatar>
             {!sidebarCollapsed && (
               <div className="min-w-0">
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-slate-100 truncate">{currentTenant?.name}</h1>
-                <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{currentTenant?.code || 'Hub Hospitalario'}</p>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-slate-100 truncate">{currentTenant?.name || 'Hub Hospitalario'}</h1>
+                <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{currentTenant?.code || 'Selecciona un hospital'}</p>
               </div>
             )}
           </div>

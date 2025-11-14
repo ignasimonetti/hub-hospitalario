@@ -212,7 +212,7 @@ export default function DashboardPage() {
               {!sidebarCollapsed && <span>Dashboard</span>}
             </button>
 
-            {currentRole?.name === 'Super Admin' && (
+            {currentRole?.name?.toLowerCase() === 'super admin' && (
               <>
                 {!sidebarCollapsed && (
                   <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">

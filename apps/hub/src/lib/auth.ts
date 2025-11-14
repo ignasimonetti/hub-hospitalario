@@ -189,9 +189,7 @@ export function isAuthenticated() {
  */
 export async function getCurrentUserRoles(tenantId: string | null = null) {
   try {
-    console.log('DIAGNOSTIC: getCurrentUserRoles called.');
     if (!pocketbase.authStore.model) {
-      console.log('DIAGNOSTIC: pocketbase.authStore.model is null or undefined. Returning empty array.');
       return [];
     }
 
@@ -201,33 +199,12 @@ export async function getCurrentUserRoles(tenantId: string | null = null) {
     if (tenantId) {
       filter += ` && tenant = "${tenantId}"`;
     }
-    console.log(`DIAGNOSTIC: Fetching roles for userId: ${userId} with filter: ${filter}`);
 
     const userRoles = await pocketbase.collection('hub_user_roles').getList(1, 100, {
       filter: filter,
       expand: 'role,tenant'
     });
 
-    if (userRoles.items.length > 0) {
-      console.log("DIAGNOSTIC INFO: First user role object received from PocketBase:");
-      console.log(JSON.stringify(userRoles.items[0], null, 2));
-      if (userRoles.items[0].expand?.tenant) {
-        console.log("DIAGNOSTIC INFO: Expanded tenant object:");
-        console.log(JSON.stringify(userRoles.items[0].expand.tenant, null, 2));
-      } else {
-        console.log("DIAGNOSTIC INFO: Tenant field was NOT expanded.");
-      }
-      if (userRoles.items[0].expand?.role) {
-        console.log("DIAGNOSTIC INFO: Expanded role object:");
-        console.log(JSON.stringify(userRoles.items[0].expand.role, null, 2));
-      } else {
-        console.log("DIAGNOSTIC INFO: Role field was NOT expanded.");
-      }
-    } else {
-      console.log("DIAGNOSTIC INFO: No user roles found for this user with the given filter.");
-    }
-
-    console.log('✅ User roles fetched successfully:', userRoles.items.length, 'roles found');
     return userRoles.items;
   } catch (error: any) {
     if (error.message?.includes('autocancelled') ||

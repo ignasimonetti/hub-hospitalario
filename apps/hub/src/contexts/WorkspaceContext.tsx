@@ -44,12 +44,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // Función para obtener detalles completos de tenant y role desde PocketBase
   const fetchTenantAndRoleDetails = async (tenantId: string, roleId: string) => {
-    console.log(`DIAGNOSTIC: fetchTenantAndRoleDetails called with tenantId: ${tenantId}, roleId: ${roleId}`); // Log 5
     try {
       const tenantDetails = await pocketbase.collection('hub_tenants').getOne(tenantId);
       const roleDetails = await pocketbase.collection('hub_roles').getOne(roleId);
-      console.log('DIAGNOSTIC: Fetched tenant details:', JSON.stringify(tenantDetails, null, 2)); // Log 6
-      console.log('DIAGNOSTIC: Fetched role details:', JSON.stringify(roleDetails, null, 2));     // Log 7
       return { tenant: tenantDetails as Tenant, role: roleDetails as UserRole };
     } catch (error) {
       console.error('❌ Error fetching tenant or role details:', error);
@@ -58,35 +55,27 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    console.log(`🔄 WorkspaceProvider: sessionStatus changed to ${sessionStatus}. Current Workspace Status: ${status}`);
-
     if (sessionStatus === 'loading') {
       setStatus('waiting');
       return;
     }
 
     if (sessionStatus === 'unauthenticated') {
-      console.log('❌ WorkspaceProvider: Session is unauthenticated. Clearing workspace.');
       clearWorkspace();
       setStatus('ready'); // Ready, but with no data
       return;
     }
 
     if (sessionStatus === 'authenticated') {
-      console.log('✅ WorkspaceProvider: Session is authenticated. Initializing workspace.');
       setStatus('initializing');
       const savedWorkspace = localStorage.getItem(WORKSPACE_STORAGE_KEY);
-      console.log('DIAGNOSTIC: Retrieved from localStorage:', savedWorkspace); // Log A
       if (savedWorkspace) {
         try {
           const { tenant: savedTenant, role: savedRole } = JSON.parse(savedWorkspace);
-          console.log('DIAGNOSTIC: Parsed tenant from localStorage (initial load):', savedTenant); // Log B
-          console.log('DIAGNOSTIC: Parsed role from localStorage (initial load):', savedRole);     // Log C
 
           // Si solo se guardaron los IDs, buscar los detalles completos
           // O si el objeto guardado no tiene la propiedad 'name' (indicando que no es el objeto completo)
           if (typeof savedTenant === 'string' || !savedTenant.name || typeof savedRole === 'string' || !savedRole.name) {
-            console.log('DIAGNOSTIC: Saved tenant or role is an ID or incomplete. Fetching full details...');
             // Asegurarse de pasar los IDs correctos, incluso si el objeto guardado es incompleto
             const tenantIdToFetch = typeof savedTenant === 'string' ? savedTenant : savedTenant.id;
             const roleIdToFetch = typeof savedRole === 'string' ? savedRole : savedRole.id;
@@ -96,7 +85,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 if (tenant && role) {
                   setCurrentTenant(tenant);
                   setCurrentRole(role);
-                  console.log('✅ WorkspaceProvider: Loaded full workspace details from PocketBase.');
                 } else {
                   console.warn('⚠️ WorkspaceProvider: Could not fetch full tenant/role details. Clearing workspace.');
                   clearWorkspace();
@@ -106,7 +94,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             // Si ya se guardaron los objetos completos
             setCurrentTenant(savedTenant);
             setCurrentRole(savedRole);
-            console.log('✅ WorkspaceProvider: Loaded workspace from localStorage (full objects).');
           }
         } catch (error) {
           console.error('❌ WorkspaceProvider: Error loading saved workspace:', error);
@@ -114,7 +101,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         }
       }
       setStatus('ready');
-      console.log('✅ WorkspaceProvider: Workspace initialization complete. Status set to READY.');
     }
   }, [sessionStatus]); // Depend on sessionStatus
 
@@ -126,14 +112,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   };
 
   const setWorkspace = async (tenant: Tenant, role: UserRole) => {
-    console.log('DIAGNOSTIC: setWorkspace called with tenant:', JSON.stringify(tenant, null, 2), 'and role:', JSON.stringify(role, null, 2)); // Log D
     // Asegurarse de que tenemos los objetos completos antes de guardar
     let fullTenant = tenant;
     let fullRole = role;
 
     // La condición para re-buscar ahora es más estricta: si el objeto no tiene 'name'
     if (!tenant.name || !role.name) { 
-      console.log('DIAGNOSTIC: Tenant or role object is incomplete. Fetching full details before saving...');
       const fetchedDetails = await fetchTenantAndRoleDetails(tenant.id, role.id);
       if (fetchedDetails.tenant && fetchedDetails.role) {
         fullTenant = fetchedDetails.tenant;
@@ -147,16 +131,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setCurrentTenant(fullTenant);
     setCurrentRole(fullRole);
     const workspaceToSave = { tenant: fullTenant, role: fullRole };
-    console.log('DIAGNOSTIC: Saving to localStorage:', workspaceToSave); // Log E
     localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(workspaceToSave));
-    console.log('✅ WorkspaceProvider: Workspace set and saved to localStorage.');
   };
 
   const clearWorkspace = () => {
     setCurrentTenant(null);
     setCurrentRole(null);
     localStorage.removeItem(WORKSPACE_STORAGE_KEY);
-    console.log('🗑️ WorkspaceProvider: Workspace cleared.');
   };
 
   const value: WorkspaceContextType = {

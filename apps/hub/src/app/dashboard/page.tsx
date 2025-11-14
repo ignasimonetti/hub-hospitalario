@@ -266,16 +266,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold md:text-2xl text-gray-900 dark:text-slate-100">Dashboard</h1>
-            {currentTenant && (
-              <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
-                {currentTenant.name} {currentTenant.code && `(${currentTenant.code})`}
-                {currentRole && (
-                  <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full border border-blue-200 dark:border-blue-700">
-                    {currentRole.name}
-                  </span>
-                )}
-              </p>
-            )}
+            {/* Se eliminó el bloque de texto del hospital y rol */}
           </div>
         </div>
 

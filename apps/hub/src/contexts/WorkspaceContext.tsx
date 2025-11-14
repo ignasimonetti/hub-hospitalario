@@ -84,9 +84,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           console.log('DIAGNOSTIC: Parsed role from localStorage (initial load):', savedRole);     // Log C
 
           // Si solo se guardaron los IDs, buscar los detalles completos
-          if (typeof savedTenant === 'string' || !savedTenant.name) {
-            console.log('DIAGNOSTIC: Saved tenant is an ID or incomplete. Fetching full details...');
-            fetchTenantAndRoleDetails(savedTenant, savedRole)
+          // O si el objeto guardado no tiene la propiedad 'name' (indicando que no es el objeto completo)
+          if (typeof savedTenant === 'string' || !savedTenant.name || typeof savedRole === 'string' || !savedRole.name) {
+            console.log('DIAGNOSTIC: Saved tenant or role is an ID or incomplete. Fetching full details...');
+            // Asegurarse de pasar los IDs correctos, incluso si el objeto guardado es incompleto
+            const tenantIdToFetch = typeof savedTenant === 'string' ? savedTenant : savedTenant.id;
+            const roleIdToFetch = typeof savedRole === 'string' ? savedRole : savedRole.id;
+
+            fetchTenantAndRoleDetails(tenantIdToFetch, roleIdToFetch)
               .then(({ tenant, role }) => {
                 if (tenant && role) {
                   setCurrentTenant(tenant);
@@ -126,7 +131,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     let fullTenant = tenant;
     let fullRole = role;
 
-    if (!tenant.name || !role.name) { // Si falta el nombre, asumimos que no es el objeto completo
+    // La condición para re-buscar ahora es más estricta: si el objeto no tiene 'name'
+    if (!tenant.name || !role.name) { 
       console.log('DIAGNOSTIC: Tenant or role object is incomplete. Fetching full details before saving...');
       const fetchedDetails = await fetchTenantAndRoleDetails(tenant.id, role.id);
       if (fetchedDetails.tenant && fetchedDetails.role) {

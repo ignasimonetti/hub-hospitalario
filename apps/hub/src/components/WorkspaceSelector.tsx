@@ -20,20 +20,19 @@ interface Tenant {
 
 interface UserRole {
   id: string;
-  user: string;
-  role: {
-    id: string;
-    name: string;
-    description?: string;
-  };
+  name: string;
+  description?: string;
+  level?: number;
+}
+
+interface UserRoleAssignment {
+  role: UserRole;
   tenant: Tenant;
-  assigned_by: string;
-  assigned_at: string;
 }
 
 interface WorkspaceSelectorProps {
-  userRoles: any[];
-  onWorkspaceSelect: (tenant: Tenant, role: any) => void;
+  userRoles: UserRoleAssignment[];
+  onWorkspaceSelect: (tenant: Tenant, role: UserRole) => void;
 }
 
 export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSelectorProps) {
@@ -51,19 +50,17 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
     }
     acc[tenantId].roles.push(userRole.role);
     return acc;
-  }, {} as Record<string, { tenant: any; roles: any[] }>);
+  }, {} as Record<string, { tenant: Tenant; roles: UserRole[] }>);
 
   const handleWorkspaceSelect = (tenantId: string) => {
     const workspace = tenantRoles[tenantId];
     if (workspace) {
       // For now, select the highest role if multiple roles exist
-      const selectedRole = workspace.roles.reduce((prev: any, current: any) => {
+      const selectedRole = workspace.roles.reduce((prev: UserRole, current: UserRole) => {
         // Simple role hierarchy - you might want to implement a proper hierarchy system
-        const roleOrder = ['superadmin', 'admin', 'doctor', 'nurse', 'staff'];
-        const prevIndex = roleOrder.indexOf(prev.name);
-        const currentIndex = roleOrder.indexOf(current.name);
-        return currentIndex > prevIndex ? current : prev;
-      });
+        // Assuming 'level' property exists in UserRole for hierarchy
+        return (current.level || 0) < (prev.level || 0) ? current : prev;
+      }, workspace.roles[0]); // Default to first role if no level defined
 
       onWorkspaceSelect(workspace.tenant, selectedRole);
       setSelectedWorkspace(tenantId);
@@ -72,11 +69,12 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
 
   const getRoleBadgeVariant = (roleName: string) => {
     switch (roleName.toLowerCase()) {
-      case 'superadmin':
+      case 'super admin':
         return 'destructive';
-      case 'admin':
+      case 'hospital admin':
         return 'default';
-      case 'doctor':
+      case 'medical senior':
+      case 'medical doctor':
         return 'secondary';
       default:
         return 'outline';

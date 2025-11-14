@@ -70,19 +70,27 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
           return;
         }
 
-        const typedRoles = (roles as any[]).map(role => ({
-          role: role.role,
-          tenant: role.tenant
-        }));
-        setUserRoles(typedRoles);
-        loadAvailableTenants(typedRoles); // Actualizar el contexto con todos los tenants disponibles
+        // Extraer los objetos expandidos de role y tenant
+        const expandedUserRoles = (roles as any[]).map(roleAssignment => ({
+          role: roleAssignment.expand?.role,
+          tenant: roleAssignment.expand?.tenant
+        })).filter(item => item.role && item.tenant); // Filtrar cualquier asignación incompleta
 
-        const uniqueTenants = [...new Map(typedRoles.map(r => [r.tenant.id, r.tenant])).values()];
+        if (expandedUserRoles.length === 0) {
+          console.log('[WorkspaceGuard] No valid expanded roles/tenants found for user, setting UI state to pending.');
+          setUiState("pending");
+          return;
+        }
+
+        setUserRoles(expandedUserRoles);
+        loadAvailableTenants(expandedUserRoles); // Actualizar el contexto con todos los tenants disponibles
+
+        const uniqueTenants = [...new Map(expandedUserRoles.map(r => [r.tenant.id, r.tenant])).values()];
 
         if (uniqueTenants.length === 1) {
           // Auto-seleccionar si solo hay una opción
           const tenant = uniqueTenants[0];
-          const role = typedRoles.find(r => r.tenant.id === tenant.id)!.role;
+          const role = expandedUserRoles.find(r => r.tenant.id === tenant.id)!.role;
           setWorkspace(tenant, role);
           console.log('[WorkspaceGuard] Auto-selected single workspace, setting UI state to ready.');
           setUiState("ready");

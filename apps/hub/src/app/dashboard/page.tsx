@@ -49,9 +49,6 @@ export default function DashboardPage() {
   const { showWarning, timeRemaining, extendSession, logout } = useSessionTimeout(currentRole?.name);
 
   useEffect(() => {
-    console.log('[DashboardPage] currentTenant from useWorkspace:', currentTenant);
-    console.log('[DashboardPage] currentRole from useWorkspace:', currentRole);
-
     const currentUser = getCurrentUser();
     setUser(currentUser);
 
@@ -182,7 +179,7 @@ export default function DashboardPage() {
             <Avatar className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
               <AvatarImage src={tenantLogoUrl} alt={currentTenant?.name} />
               <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white">
-                {currentTenant?.name?.charAt(0).toUpperCase()}
+                {currentTenant?.name?.charAt(0).toUpperCase() || 'H'}
               </AvatarFallback>
             </Avatar>
             {!sidebarCollapsed && (

@@ -73,16 +73,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       console.log('✅ WorkspaceProvider: Session is authenticated. Initializing workspace.');
       setStatus('initializing');
       const savedWorkspace = localStorage.getItem(WORKSPACE_STORAGE_KEY);
-      console.log('DIAGNOSTIC: Retrieved from localStorage:', savedWorkspace); // Log 1
       if (savedWorkspace) {
         try {
           const { tenant: savedTenant, role: savedRole } = JSON.parse(savedWorkspace);
-          console.log('DIAGNOSTIC: Parsed tenant from localStorage:', savedTenant); // Log 2
-          console.log('DIAGNOSTIC: Parsed role from localStorage:', savedRole);     // Log 3
 
           // Si solo se guardaron los IDs, buscar los detalles completos
           if (typeof savedTenant === 'string' || !savedTenant.name) {
-            console.log('DIAGNOSTIC: Saved tenant is an ID or incomplete. Fetching full details...');
             fetchTenantAndRoleDetails(savedTenant, savedRole)
               .then(({ tenant, role }) => {
                 if (tenant && role) {
@@ -137,7 +133,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setCurrentTenant(fullTenant);
     setCurrentRole(fullRole);
     const workspaceToSave = { tenant: fullTenant, role: fullRole };
-    console.log('DIAGNOSTIC: Saving to localStorage:', workspaceToSave); // Log 4
     localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(workspaceToSave));
     console.log('✅ WorkspaceProvider: Workspace set and saved to localStorage.');
   };

@@ -188,21 +188,25 @@ export function isAuthenticated() {
  */
 export async function getCurrentUserRoles(tenantId: string | null = null) {
   try {
-    if (!pocketbase.authStore.model) return []
+    console.log('DIAGNOSTIC: getCurrentUserRoles called.');
+    if (!pocketbase.authStore.model) {
+      console.log('DIAGNOSTIC: pocketbase.authStore.model is null or undefined. Returning empty array.');
+      return [];
+    }
 
-    const userId = pocketbase.authStore.model.id
-    let filter = `user = "${userId}"`
+    const userId = pocketbase.authStore.model.id;
+    let filter = `user = "${userId}"`;
 
     if (tenantId) {
-      filter += ` && tenant = "${tenantId}"`
+      filter += ` && tenant = "${tenantId}"`;
     }
+    console.log(`DIAGNOSTIC: Fetching roles for userId: ${userId} with filter: ${filter}`);
 
     const userRoles = await pocketbase.collection('hub_user_roles').getList(1, 100, {
       filter: filter,
       expand: 'role,tenant'
-    })
+    });
 
-    // --- DIAGNOSTIC LOG ---
     if (userRoles.items.length > 0) {
       console.log("DIAGNOSTIC INFO: First user role object received from PocketBase:");
       console.log(JSON.stringify(userRoles.items[0], null, 2));
@@ -212,25 +216,24 @@ export async function getCurrentUserRoles(tenantId: string | null = null) {
       } else {
         console.log("DIAGNOSTIC INFO: Tenant field was NOT expanded.");
       }
+    } else {
+      console.log("DIAGNOSTIC INFO: No user roles found for this user with the given filter.");
     }
-    // --- END DIAGNOSTIC LOG ---
 
-    console.log('✅ User roles fetched successfully:', userRoles.items.length, 'roles found')
-    return userRoles.items
+    console.log('✅ User roles fetched successfully:', userRoles.items.length, 'roles found');
+    return userRoles.items;
   } catch (error: any) {
-    // Verificar si es un error de autocancelación (no es un problema de permisos real)
     if (error.message?.includes('autocancelled') ||
         error.message?.includes('signal is aborted')) {
-      console.warn('⚠️ La solicitud fue autocancelada por React, pero los datos aún pueden llegar. Esto es normal.')
-      // Para errores de autocancelación, devolver un array vacío pero no mostrar el diálogo pendiente
-      // El componente reintentará cuando tenga un estado estable
-      return []
+      console.warn('⚠️ La solicitud fue autocancelada por React, pero los datos aún pueden llegar. Esto es normal.');
+      return [];
     }
-
-    // Si no podemos acceder a los roles debido a permisos u otros problemas, devolver un array vacío
-    // Esto permite a los usuarios acceder al dashboard incluso sin permisos de rol
-    console.error('❌ No se pueden acceder a los roles de usuario:', error)
-    return []
+    console.error('❌ Error al acceder a los roles de usuario:', error);
+    // Log the full error response if available from PocketBase
+    if (error.response) {
+      console.error('PocketBase Error Response:', JSON.stringify(error.response, null, 2));
+    }
+    return [];
   }
 }
 

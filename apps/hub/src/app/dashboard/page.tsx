@@ -211,40 +211,23 @@ export default function DashboardPage() {
               <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
               {!sidebarCollapsed && <span>Dashboard</span>}
             </button>
-            <button
-              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors`}
-              title={sidebarCollapsed ? 'Pacientes' : undefined}
-            >
-              <Users className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
-              {!sidebarCollapsed && <span>Pacientes</span>}
-            </button>
-            <button
-              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors`}
-              title={sidebarCollapsed ? 'Agenda' : undefined}
-            >
-              <Calendar className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
-              {!sidebarCollapsed && <span>Agenda</span>}
-            </button>
-            <button
-              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors`}
-              title={sidebarCollapsed ? 'Reportes' : undefined}
-            >
-              <FileText className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
-              {!sidebarCollapsed && <span>Reportes</span>}
-            </button>
 
-            {!sidebarCollapsed && (
-              <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">
-                Administración
-              </div>
+            {currentRole?.name === 'Super Admin' && (
+              <>
+                {!sidebarCollapsed && (
+                  <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">
+                    Administración
+                  </div>
+                )}
+                <button
+                  className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors`}
+                  title={sidebarCollapsed ? 'Configuración' : undefined}
+                >
+                  <Settings className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>Configuración</span>}
+                </button>
+              </>
             )}
-            <button
-              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors`}
-              title={sidebarCollapsed ? 'Configuración' : undefined}
-            >
-              <Settings className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
-              {!sidebarCollapsed && <span>Configuración</span>}
-            </button>
           </div>
         </nav>
 

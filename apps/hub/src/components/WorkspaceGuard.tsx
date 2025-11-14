@@ -64,6 +64,7 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
     const fetchRolesAndDecide = async () => {
       try {
         const roles = await getCurrentUserRoles();
+        console.log('DIAGNOSTIC: Raw roles from getCurrentUserRoles:', JSON.stringify(roles, null, 2)); // Log 1
         if (!roles || roles.length === 0) {
           console.log('[WorkspaceGuard] No roles found for user, setting UI state to pending.');
           setUiState("pending");
@@ -75,6 +76,8 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
           role: roleAssignment.expand?.role,
           tenant: roleAssignment.expand?.tenant
         })).filter(item => item.role && item.tenant); // Filtrar cualquier asignación incompleta
+
+        console.log('DIAGNOSTIC: Expanded user roles after mapping:', JSON.stringify(expandedUserRoles, null, 2)); // Log 2
 
         if (expandedUserRoles.length === 0) {
           console.log('[WorkspaceGuard] No valid expanded roles/tenants found for user, setting UI state to pending.');
@@ -91,6 +94,8 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
           // Auto-seleccionar si solo hay una opción
           const tenant = uniqueTenants[0];
           const role = expandedUserRoles.find(r => r.tenant.id === tenant.id)!.role;
+          console.log('DIAGNOSTIC: Auto-selecting single tenant:', JSON.stringify(tenant, null, 2)); // Log 3
+          console.log('DIAGNOSTIC: Auto-selecting single role:', JSON.stringify(role, null, 2));     // Log 4
           setWorkspace(tenant, role);
           console.log('[WorkspaceGuard] Auto-selected single workspace, setting UI state to ready.');
           setUiState("ready");

@@ -49,6 +49,7 @@ export async function signUp(email: string, password: string, options: any = {})
     return {
       data: { user: userData },
       error: null,
+      // Mantener compatibilidad con el código existente
       generateConfirmationToken: () => 'handled_by_pocketbase'
     }
 
@@ -215,6 +216,12 @@ export async function getCurrentUserRoles(tenantId: string | null = null) {
         console.log(JSON.stringify(userRoles.items[0].expand.tenant, null, 2));
       } else {
         console.log("DIAGNOSTIC INFO: Tenant field was NOT expanded.");
+      }
+      if (userRoles.items[0].expand?.role) {
+        console.log("DIAGNOSTIC INFO: Expanded role object:");
+        console.log(JSON.stringify(userRoles.items[0].expand.role, null, 2));
+      } else {
+        console.log("DIAGNOSTIC INFO: Role field was NOT expanded.");
       }
     } else {
       console.log("DIAGNOSTIC INFO: No user roles found for this user with the given filter.");

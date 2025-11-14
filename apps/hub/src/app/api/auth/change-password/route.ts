@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pocketbase } from '@/lib/auth';
+import { getServerPocketBase } from '@/lib/pocketbase-server'; // Importar la nueva utilidad
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { currentPassword, newPassword, confirmPassword } = body;
 
+    // Obtener la instancia de PocketBase configurada para el servidor
+    const pb = getServerPocketBase();
+
     // Get current user from PocketBase auth store
-    const currentUser = pocketbase.authStore.model;
+    const currentUser = pb.authStore.model;
     if (!currentUser) {
       return NextResponse.json(
         { error: 'Usuario no autenticado' },
@@ -41,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Verify current password by attempting to authenticate
     try {
-      await pocketbase.collection('auth_users').authWithPassword(
+      await pb.collection('auth_users').authWithPassword(
         currentUser.email,
         currentPassword
       );
@@ -53,13 +56,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Update password in PocketBase
-    const updatedUser = await pocketbase.collection('auth_users').update(currentUser.id, {
+    const updatedUser = await pb.collection('auth_users').update(currentUser.id, {
       password: newPassword,
       passwordConfirm: newPassword
     });
 
     // Clear any cached auth data
-    pocketbase.authStore.clear();
+    pb.authStore.clear();
 
     return NextResponse.json({
       success: true,

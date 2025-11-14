@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pocketbase } from '@/lib/auth';
+import { getServerPocketBase } from '@/lib/pocketbase-server'; // Importar la nueva utilidad
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,8 +15,11 @@ export async function POST(request: NextRequest) {
       confirmPassword 
     } = body;
 
+    // Obtener la instancia de PocketBase configurada para el servidor
+    const pb = getServerPocketBase();
+
     // Get current user from PocketBase auth store
-    const currentUser = pocketbase.authStore.model;
+    const currentUser = pb.authStore.model;
     if (!currentUser) {
       return NextResponse.json(
         { error: 'Usuario no autenticado' },
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest) {
 
       if (newPassword !== confirmPassword) {
         return NextResponse.json(
-          { error: 'Las contraseñas no coinciden' },
+          { error: 'Las contraseñas nuevas no coinciden' },
           { status: 400 }
         );
       }
@@ -49,7 +52,7 @@ export async function POST(request: NextRequest) {
 
       // Verificar contraseña actual
       try {
-        await pocketbase.collection('auth_users').authWithPassword(
+        await pb.collection('auth_users').authWithPassword(
           currentUser.email,
           currentPassword
         );
@@ -126,16 +129,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user profile in PocketBase
-    const updatedUser = await pocketbase.collection('auth_users').update(
+    const updatedUser = await pb.collection('auth_users').update(
       currentUser.id, 
       updateData
     );
 
     // Si se cambió la contraseña, cerrar sesión y reautenticar
     if (newPassword) {
-      pocketbase.authStore.clear();
+      pb.authStore.clear();
       try {
-        await pocketbase.collection('auth_users').authWithPassword(
+        await pb.collection('auth_users').authWithPassword(
           email.trim().toLowerCase(),
           newPassword
         );
@@ -146,7 +149,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Obtener información completa del usuario actualizado
-    const userProfile = await pocketbase.collection('auth_users').getOne(currentUser.id);
+    const userProfile = await pb.collection('auth_users').getOne(currentUser.id);
     
     return NextResponse.json({
       success: true,

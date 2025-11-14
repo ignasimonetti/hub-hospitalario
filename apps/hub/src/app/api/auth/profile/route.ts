@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pocketbase } from '@/lib/auth';
+import { getServerPocketBase } from '@/lib/pocketbase-server'; // Importar la nueva utilidad
 
 export async function GET(request: NextRequest) {
   try {
+    // Obtener la instancia de PocketBase configurada para el servidor
+    const pb = getServerPocketBase();
+
     // Get current user from PocketBase auth store
-    const currentUser = pocketbase.authStore.model;
+    const currentUser = pb.authStore.model;
     if (!currentUser) {
       return NextResponse.json(
         { error: 'Usuario no autenticado' },
@@ -13,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get complete user profile from PocketBase
-    const userProfile = await pocketbase.collection('auth_users').getOne(currentUser.id);
+    const userProfile = await pb.collection('auth_users').getOne(currentUser.id);
 
     return NextResponse.json({
       success: true,

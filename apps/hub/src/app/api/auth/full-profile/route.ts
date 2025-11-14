@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pocketbase } from '@/lib/auth';
+import { getServerPocketBase } from '@/lib/pocketbase-server'; // Importar la nueva utilidad
 
 export async function GET(request: NextRequest) {
   try {
+    // Obtener la instancia de PocketBase configurada para el servidor
+    const pb = getServerPocketBase();
+
     // Get current user from PocketBase auth store
-    const currentUser = pocketbase.authStore.model;
+    const currentUser = pb.authStore.model;
     if (!currentUser) {
       return NextResponse.json(
         { error: 'Usuario no autenticado' },
@@ -13,10 +16,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get complete user profile from PocketBase
-    const userProfile = await pocketbase.collection('auth_users').getOne(currentUser.id);
+    const userProfile = await pb.collection('auth_users').getOne(currentUser.id);
 
     // Get user roles with expanded tenant and role information
-    const userRoles = await pocketbase.collection('hub_user_roles').getList(1, 100, {
+    const userRoles = await pb.collection('hub_user_roles').getList(1, 100, {
       filter: `user = "${currentUser.id}"`,
       expand: 'role,tenant'
     });

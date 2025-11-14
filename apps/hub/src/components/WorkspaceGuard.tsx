@@ -50,6 +50,8 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
     if (isWorkspaceSelected) {
       setUiState("ready");
       return;
+      // Nota: En producción, si solo hay un hospital, se auto-seleccionaría aquí.
+      // Para desarrollo, forzamos la selección manual.
     }
 
     // 5. El usuario está autenticado, el workspace está listo, pero no hay un workspace seleccionado en el contexto.
@@ -76,18 +78,9 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
         setUserRoles(expandedUserRoles);
         loadAvailableTenants(expandedUserRoles); // Actualizar el contexto con todos los tenants disponibles
 
-        const uniqueTenants = [...new Map(expandedUserRoles.map(r => [r.tenant.id, r.tenant])).values()];
-
-        if (uniqueTenants.length === 1) {
-          // Auto-seleccionar si solo hay una opción
-          const tenant = uniqueTenants[0];
-          const role = expandedUserRoles.find(r => r.tenant.id === tenant.id)!.role;
-          setWorkspace(tenant, role);
-          setUiState("ready");
-        } else {
-          // Mostrar selector para múltiples opciones
-          setUiState("selecting");
-        }
+        // Siempre mostrar el selector para fines de desarrollo, incluso si solo hay uno
+        setUiState("selecting");
+        
       } catch (error) {
         console.error("Error obteniendo roles de usuario en WorkspaceGuard:", error);
         setUiState("pending"); // Mostrar diálogo pendiente en caso de error

@@ -27,33 +27,33 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
   const isPublicPage = ['/', '/login', '/signup', '/confirm', '/forgot-password', '/verify'].some(p => pathname.startsWith(p));
 
   useEffect(() => {
-    // 1. Do nothing on public pages
+    // 1. No hacer nada en páginas públicas
     if (isPublicPage) {
       setUiState("ready");
       return;
     }
 
-    // 2. Wait for both providers to finish their initialization
+    // 2. Esperar a que ambos providers terminen su inicialización
     if (sessionStatus === "loading" || workspaceStatus !== "ready") {
       setUiState("loading");
       return;
     }
 
-    // 3. Handle unauthenticated users
+    // 3. Manejar usuarios no autenticados
     if (sessionStatus === "unauthenticated") {
       router.push("/login");
       return;
     }
 
-    // 4. From here, we know sessionStatus is "authenticated" and workspaceStatus is "ready"
-    // TEMPORARILY COMMENTED OUT FOR DIAGNOSIS:
-    // if (isWorkspaceSelected) {
-    //   setUiState("ready");
-    //   return;
-    // }
+    // 4. A partir de aquí, sabemos que sessionStatus es "authenticated" y workspaceStatus es "ready"
+    // Si ya hay un workspace seleccionado, podemos continuar
+    if (isWorkspaceSelected) {
+      setUiState("ready");
+      return;
+    }
 
-    // 5. User is authenticated, workspace is ready, but no workspace is selected in context.
-    // This is the ONLY place we should fetch roles.
+    // 5. El usuario está autenticado, el workspace está listo, pero no hay un workspace seleccionado en el contexto.
+    // Este es el ÚNICO lugar donde debemos obtener los roles.
     const fetchRolesAndDecide = async () => {
       try {
         const roles = await getCurrentUserRoles();
@@ -67,23 +67,23 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
           tenant: role.tenant
         }));
         setUserRoles(typedRoles);
-        loadAvailableTenants(typedRoles); // Update context with all available tenants
+        loadAvailableTenants(typedRoles); // Actualizar el contexto con todos los tenants disponibles
 
         const uniqueTenants = [...new Map(typedRoles.map(r => [r.tenant.id, r.tenant])).values()];
 
         if (uniqueTenants.length === 1) {
-          // Auto-select if there's only one option
+          // Auto-seleccionar si solo hay una opción
           const tenant = uniqueTenants[0];
           const role = typedRoles.find(r => r.tenant.id === tenant.id)!.role;
           setWorkspace(tenant, role);
           setUiState("ready");
         } else {
-          // Show selector for multiple options
+          // Mostrar selector para múltiples opciones
           setUiState("selecting");
         }
       } catch (error) {
-        console.error("Error fetching user roles in WorkspaceGuard:", error);
-        setUiState("pending"); // Show pending dialog on error
+        console.error("Error obteniendo roles de usuario en WorkspaceGuard:", error);
+        setUiState("pending"); // Mostrar diálogo pendiente en caso de error
       }
     };
 
@@ -91,11 +91,11 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
 
   }, [sessionStatus, workspaceStatus, isWorkspaceSelected, pathname, router, setWorkspace, loadAvailableTenants, isPublicPage]);
 
-  // --- RENDER LOGIC ---
-  // This part is now a clean reflection of the `uiState`
+  // --- LÓGICA DE RENDERIZADO ---
+  // Esta parte ahora es un reflejo limpio del `uiState`
 
   if (uiState === "loading" || isPublicPage) {
-    // Show children for public pages immediately, or a loader for protected ones.
+    // Mostrar children para páginas públicas inmediatamente, o un loader para las protegidas.
     return isPublicPage ? <>{children}</> : <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
   }
 
@@ -115,11 +115,11 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
     return (
       <PendingUserDialog
         open={true}
-        onOpenChange={() => router.push('/')} // Redirect on close
+        onOpenChange={() => router.push('/')} // Redirigir al cerrar
       />
     );
   }
 
-  // uiState is "ready" and it's not a public page
+  // uiState es "ready" y no es una página pública
   return <>{children}</>;
 }

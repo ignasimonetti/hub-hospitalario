@@ -1,24 +1,21 @@
-// POCKETBASE AUTHENTICATION MIGRATION
-// Migrated from Supabase to PocketBase for Hub Hospitalario
-
 import PocketBase from 'pocketbase'
-import { sendEmailConfirmation } from './resend'
+// sendEmailConfirmation no se usa aquí, se mantiene en apps/hub/src/lib/resend.ts
 
-// Initialize PocketBase client
-const pocketbase = new PocketBase('https://pocketbase.manta.com.ar')
+// Inicializar el cliente de PocketBase - ESTA ES LA ÚNICA INSTANCIA
+export const pocketbase = new PocketBase('https://pocketbase.manta.com.ar')
 
-// Export PocketBase instance for use in other parts of the app
-export { pocketbase }
+// Exportar instancia de PocketBase para usar en otras partes de la app
+// export { pocketbase } // Ya se exporta arriba
 
-// JWT functions for backward compatibility
+// Funciones JWT para compatibilidad con versiones anteriores
 export { generateEmailConfirmationToken, verifyEmailConfirmationToken, isTokenExpired } from './jwt'
 
 /**
- * Sign in user with email and password
+ * Iniciar sesión de usuario con email y contraseña
  */
 export async function signInWithEmail(email: string, password: string) {
   try {
-    const authData = await pocketbase.collection('users').authWithPassword(email, password)
+    const authData = await pocketbase.collection('auth_users').authWithPassword(email, password)
     return {
       data: { user: authData },
       error: null
@@ -32,13 +29,13 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 /**
- * Sign up new user
- * Note: PocketBase handles email confirmation automatically
+ * Registrar nuevo usuario
+ * Nota: PocketBase maneja la confirmación de email automáticamente
  */
 export async function signUp(email: string, password: string, options = {}) {
   try {
-    // Create user in PocketBase - email confirmation is automatic
-    const userData = await pocketbase.collection('users').create({
+    // Crear usuario en PocketBase - la confirmación de email es automática
+    const userData = await pocketbase.collection('auth_users').create({
       email,
       password,
       ...options
@@ -47,20 +44,20 @@ export async function signUp(email: string, password: string, options = {}) {
     return {
       data: { user: userData },
       error: null,
-      // Keep compatibility with existing code
+      // Mantener compatibilidad con el código existente
       generateConfirmationToken: () => {
-        // PocketBase handles this automatically
+        // PocketBase lo maneja automáticamente
         return 'handled_by_pocketbase'
       }
     }
   } catch (err: any) {
-    console.error('Error in PocketBase signUp:', err)
+    console.error('Error en PocketBase signUp:', err)
     return { data: null, error: { message: err?.message || 'Error desconocido' } }
   }
 }
 
 /**
- * Sign out user
+ * Cerrar sesión de usuario
  */
 export async function signOut() {
   try {
@@ -72,29 +69,29 @@ export async function signOut() {
 }
 
 /**
- * Confirm email
- * Note: PocketBase handles this automatically during signup
+ * Confirmar email
+ * Nota: PocketBase lo maneja automáticamente durante el registro
  */
 export async function confirmEmail(token: string) {
   try {
-    // For PocketBase, this is usually handled automatically
-    // If you have custom email confirmation, verify the token here
+    // Para PocketBase, esto se maneja automáticamente
+    // Si tienes una confirmación de email personalizada, verifica el token aquí
     return {
       data: { user: null },
       error: null
     }
   } catch (err: any) {
-    console.error('Error confirming email:', err)
+    console.error('Error confirmando email:', err)
     return { data: null, error: { message: err?.message || 'Error desconocido' } }
   }
 }
 
 /**
- * Reset password
+ * Restablecer contraseña
  */
 export async function resetPassword(email: string) {
   try {
-    await pocketbase.collection('users').requestPasswordReset(email)
+    await pocketbase.collection('auth_users').requestPasswordReset(email)
     return { data: null, error: null }
   } catch (error: any) {
     return {
@@ -105,7 +102,7 @@ export async function resetPassword(email: string) {
 }
 
 /**
- * Update user password
+ * Actualizar contraseña de usuario
  */
 export async function updatePassword(newPassword: string) {
   try {
@@ -116,7 +113,7 @@ export async function updatePassword(newPassword: string) {
       }
     }
     
-    const user = await pocketbase.collection('users').update(
+    const user = await pocketbase.collection('auth_users').update(
       pocketbase.authStore.model.id,
       { password: newPassword }
     )
@@ -131,21 +128,21 @@ export async function updatePassword(newPassword: string) {
 }
 
 /**
- * Get current user
+ * Obtener usuario actual
  */
 export function getCurrentUser() {
   return pocketbase.authStore.model
 }
 
 /**
- * Check if user is authenticated
+ * Verificar si el usuario está autenticado
  */
 export function isAuthenticated() {
   return pocketbase.authStore.isValid
 }
 
 /**
- * Get current user's roles and permissions
+ * Obtener roles y permisos del usuario actual
  */
 export async function getCurrentUserRoles(tenantId: string | null = null) {
   try {
@@ -165,13 +162,13 @@ export async function getCurrentUserRoles(tenantId: string | null = null) {
     
     return userRoles.items
   } catch (error: any) {
-    console.error('Error getting user roles:', error)
+    console.error('Error obteniendo roles de usuario:', error)
     return []
   }
 }
 
 /**
- * Get user's permissions based on roles
+ * Obtener permisos del usuario basados en roles
  */
 export async function getCurrentUserPermissions(tenantId: string | null = null) {
   try {
@@ -187,33 +184,33 @@ export async function getCurrentUserPermissions(tenantId: string | null = null) 
     
     return rolePermissions.items.map(rp => rp.permission)
   } catch (error: any) {
-    console.error('Error getting user permissions:', error)
+    console.error('Error obteniendo permisos de usuario:', error)
     return []
   }
 }
 
 /**
- * Check if user has specific permission
+ * Verificar si el usuario tiene un permiso específico
  */
 export async function hasPermission(permissionSlug: string, tenantId: string | null = null) {
   try {
     const permissions = await getCurrentUserPermissions(tenantId)
     return permissions.some(p => p.slug === permissionSlug)
   } catch (error: any) {
-    console.error('Error checking permission:', error)
+    console.error('Error verificando permiso:', error)
     return false
   }
 }
 
 /**
- * Check if user has specific role
+ * Verificar si el usuario tiene un rol específico
  */
 export async function hasRole(roleSlug: string, tenantId: string | null = null) {
   try {
     const userRoles = await getCurrentUserRoles(tenantId)
     return userRoles.some(ur => ur.role?.slug === roleSlug)
   } catch (error: any) {
-    console.error('Error checking role:', error)
+    console.error('Error verificando rol:', error)
     return false
   }
 }

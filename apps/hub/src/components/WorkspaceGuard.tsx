@@ -27,20 +27,25 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
   const isPublicPage = ['/', '/login', '/signup', '/confirm', '/forgot-password', '/verify'].some(p => pathname.startsWith(p));
 
   useEffect(() => {
+    console.log(`[WorkspaceGuard] useEffect triggered. sessionStatus: ${sessionStatus}, workspaceStatus: ${workspaceStatus}, isWorkspaceSelected: ${isWorkspaceSelected}, pathname: ${pathname}`);
+
     // 1. No hacer nada en páginas públicas
     if (isPublicPage) {
+      console.log('[WorkspaceGuard] Public page, setting UI state to ready.');
       setUiState("ready");
       return;
     }
 
     // 2. Esperar a que ambos providers terminen su inicialización
     if (sessionStatus === "loading" || workspaceStatus !== "ready") {
+      console.log(`[WorkspaceGuard] Waiting for providers. sessionStatus: ${sessionStatus}, workspaceStatus: ${workspaceStatus}. Setting UI state to loading.`);
       setUiState("loading");
       return;
     }
 
     // 3. Manejar usuarios no autenticados
     if (sessionStatus === "unauthenticated") {
+      console.log('[WorkspaceGuard] Session unauthenticated, redirecting to login.');
       router.push("/login");
       return;
     }
@@ -48,16 +53,19 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
     // 4. A partir de aquí, sabemos que sessionStatus es "authenticated" y workspaceStatus es "ready"
     // Si ya hay un workspace seleccionado, podemos continuar
     if (isWorkspaceSelected) {
+      console.log('[WorkspaceGuard] Workspace already selected, setting UI state to ready.');
       setUiState("ready");
       return;
     }
 
     // 5. El usuario está autenticado, el workspace está listo, pero no hay un workspace seleccionado en el contexto.
     // Este es el ÚNICO lugar donde debemos obtener los roles.
+    console.log('[WorkspaceGuard] Authenticated, workspace ready, but no workspace selected. Fetching roles...');
     const fetchRolesAndDecide = async () => {
       try {
         const roles = await getCurrentUserRoles();
         if (!roles || roles.length === 0) {
+          console.log('[WorkspaceGuard] No roles found for user, setting UI state to pending.');
           setUiState("pending");
           return;
         }
@@ -76,9 +84,11 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
           const tenant = uniqueTenants[0];
           const role = typedRoles.find(r => r.tenant.id === tenant.id)!.role;
           setWorkspace(tenant, role);
+          console.log('[WorkspaceGuard] Auto-selected single workspace, setting UI state to ready.');
           setUiState("ready");
         } else {
           // Mostrar selector para múltiples opciones
+          console.log('[WorkspaceGuard] Multiple workspaces found, setting UI state to selecting.');
           setUiState("selecting");
         }
       } catch (error) {

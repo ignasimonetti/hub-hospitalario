@@ -60,9 +60,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       console.log('✅ WorkspaceProvider: Session is authenticated. Initializing workspace.');
       setStatus('initializing');
       const savedWorkspace = localStorage.getItem(WORKSPACE_STORAGE_KEY);
+      console.log('DIAGNOSTIC: Retrieved from localStorage:', savedWorkspace); // Log 1
       if (savedWorkspace) {
         try {
           const { tenant, role } = JSON.parse(savedWorkspace);
+          console.log('DIAGNOSTIC: Parsed tenant from localStorage:', tenant); // Log 2
+          console.log('DIAGNOSTIC: Parsed role from localStorage:', role);     // Log 3
           setCurrentTenant(tenant);
           setCurrentRole(role);
           console.log('✅ WorkspaceProvider: Loaded workspace from localStorage.');
@@ -85,7 +88,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const setWorkspace = (tenant: Tenant, role: UserRole) => {
     setCurrentTenant(tenant);
     setCurrentRole(role);
-    localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify({ tenant, role }));
+    const workspaceToSave = { tenant, role };
+    console.log('DIAGNOSTIC: Saving to localStorage:', workspaceToSave); // Log 4
+    localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(workspaceToSave));
     console.log('✅ WorkspaceProvider: Workspace set and saved to localStorage.');
   };
 

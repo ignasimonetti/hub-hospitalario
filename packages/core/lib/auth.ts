@@ -1,11 +1,22 @@
 import PocketBase from 'pocketbase'
 // sendEmailConfirmation no se usa aquí, se mantiene en apps/hub/src/lib/resend.ts
 
-// Inicializar el cliente de PocketBase - ESTA ES LA ÚNICA INSTANCIA
-export const pocketbase = new PocketBase('https://pocketbase.manta.com.ar')
+// Usar una variable global para almacenar la instancia de PocketBase
+// Esto asegura que sea un singleton en toda la aplicación del lado del cliente
+let pbInstance: PocketBase | null = null;
 
-// Exportar instancia de PocketBase para usar en otras partes de la app
-// export { pocketbase } // Ya se exporta arriba
+// Función para obtener o crear la instancia de PocketBase
+export function getPocketbaseInstance(): PocketBase {
+  if (!pbInstance) {
+    // Usar la variable de entorno para la URL de PocketBase
+    pbInstance = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL || 'https://pocketbase.manta.com.ar');
+    // Opcional: Añadir cualquier listener o configuración global aquí
+  }
+  return pbInstance;
+}
+
+// Exportar la instancia singleton
+export const pocketbase = getPocketbaseInstance();
 
 // Funciones JWT para compatibilidad con versiones anteriores
 export { generateEmailConfirmationToken, verifyEmailConfirmationToken, isTokenExpired } from './jwt'

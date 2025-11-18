@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Importar los estilos de novel para el editor */
+@import "novel/styles.css";
+
 @layer base {
   :root {
     --background: 0 0% 100%;

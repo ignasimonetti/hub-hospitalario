@@ -36,6 +36,7 @@ import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 import { ThemeToggleButton } from "@/components/ThemeToggle";
 import { SessionWarningDialog } from "@/components/SessionWarningDialog";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+import { NotionEditor } from '@hospital/core'; // Importar NotionEditor
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -106,6 +107,8 @@ export default function DashboardPage() {
   };
 
   const isUserPending = userRoles.length === 0 && user;
+
+  const tenantLogoUrl = getTenantLogoUrl();
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
@@ -206,6 +209,11 @@ export default function DashboardPage() {
             <h1 className="text-lg font-semibold md:text-2xl text-gray-900 dark:text-slate-100">Dashboard</h1>
             {/* Se eliminó el bloque de texto del hospital y rol */}
           </div>
+        </div>
+
+        {/* Notion-like Canvas */}
+        <div className="mt-8">
+          <NotionEditor />
         </div>
 
           {/* Dialog para usuario pendiente */}

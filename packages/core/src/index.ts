@@ -12,6 +12,7 @@ export { Badge, badgeVariants } from './components/ui/badge'
 export { MedicalCard, PatientCard } from './components/medical/MedicalCard'
 export { MedicalButton, EmergencyButton, ActionButton } from './components/medical/MedicalButton'
 export { MedicalInput, PatientIdInput, RoomNumberInput, PhoneInput, EmailInput } from './components/medical/MedicalInput'
+export { NotionEditor } from './components/NotionEditor' // Export NotionEditor
 
 // Utilities
 export * from './lib/utils'

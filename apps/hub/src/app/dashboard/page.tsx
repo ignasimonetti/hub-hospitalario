@@ -258,14 +258,14 @@ export default function DashboardPage() {
           {stats.map((stat, index) => (
             <Card key={stat.title} x-chunk="dashboard-01-chunk-0">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+                <CardTitle className="text-sm font-medium text-foreground dark:text-white">
                   {stat.title}
                 </CardTitle>
-                <stat.icon className="h-4 w-4 text-muted-foreground" />
+                <stat.icon className="h-4 w-4 text-muted-foreground dark:text-gray-200" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-foreground dark:text-white">{stat.value}</div>
+                <p className="text-xs text-muted-foreground dark:text-gray-200">
                   {stat.change} from last month
                 </p>
               </CardContent>
@@ -276,8 +276,8 @@ export default function DashboardPage() {
         {/* Recent Sales Table */}
         <Card x-chunk="dashboard-01-chunk-5">
           <CardHeader>
-            <CardTitle>Recent Sales</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-foreground dark:text-white">Recent Sales</CardTitle>
+            <CardDescription className="text-muted-foreground dark:text-gray-200">
               You made 265 sales this month.
             </CardDescription>
           </CardHeader>
@@ -285,52 +285,52 @@ export default function DashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">Invoice</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="w-[100px] text-muted-foreground dark:text-gray-200">Invoice</TableHead>
+                  <TableHead className="text-muted-foreground dark:text-gray-200">Status</TableHead>
+                  <TableHead className="text-muted-foreground dark:text-gray-200">Method</TableHead>
+                  <TableHead className="text-right text-muted-foreground dark:text-gray-200">Amount</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow>
-                  <TableCell className="font-medium">INV001</TableCell>
+                  <TableCell className="font-medium text-foreground dark:text-white">INV001</TableCell>
                   <TableCell>
-                    <Badge variant="outline">Paid</Badge>
+                    <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-100">Paid</Badge>
                   </TableCell>
-                  <TableCell>Credit Card</TableCell>
-                  <TableCell className="text-right">$250.00</TableCell>
+                  <TableCell className="text-foreground dark:text-white">Credit Card</TableCell>
+                  <TableCell className="text-right text-foreground dark:text-white">$250.00</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">INV002</TableCell>
+                  <TableCell className="font-medium text-foreground dark:text-white">INV002</TableCell>
                   <TableCell>
-                    <Badge variant="outline">Pending</Badge>
+                    <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-100">Pending</Badge>
                   </TableCell>
-                  <TableCell>PayPal</TableCell>
-                  <TableCell className="text-right">$150.00</TableCell>
+                  <TableCell className="text-foreground dark:text-white">PayPal</TableCell>
+                  <TableCell className="text-right text-foreground dark:text-white">$150.00</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">INV003</TableCell>
+                  <TableCell className="font-medium text-foreground dark:text-white">INV003</TableCell>
                   <TableCell>
-                    <Badge variant="outline">Unpaid</Badge>
+                    <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-100">Unpaid</Badge>
                   </TableCell>
-                  <TableCell>Bank Transfer</TableCell>
-                  <TableCell className="text-right">$350.00</TableCell>
+                  <TableCell className="text-foreground dark:text-white">Bank Transfer</TableCell>
+                  <TableCell className="text-right text-foreground dark:text-white">$350.00</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">INV004</TableCell>
+                  <TableCell className="font-medium text-foreground dark:text-white">INV004</TableCell>
                   <TableCell>
-                    <Badge variant="outline">Paid</Badge>
+                    <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-100">Paid</Badge>
                   </TableCell>
-                  <TableCell>Credit Card</TableCell>
-                  <TableCell className="text-right">$450.00</TableCell>
+                  <TableCell className="text-foreground dark:text-white">Credit Card</TableCell>
+                  <TableCell className="text-right text-foreground dark:text-white">$450.00</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">INV005</TableCell>
+                  <TableCell className="font-medium text-foreground dark:text-white">INV005</TableCell>
                   <TableCell>
-                    <Badge variant="outline">Paid</Badge>
+                    <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-100">Paid</Badge>
                   </TableCell>
-                  <TableCell>PayPal</TableCell>
-                  <TableCell className="text-right">$550.00</TableCell>
+                  <TableCell className="text-foreground dark:text-white">PayPal</TableCell>
+                  <TableCell className="text-right text-foreground dark:text-white">$550.00</TableCell>
                 </TableRow>
               </TableBody>
             </Table>

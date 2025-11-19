@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Importación de estilos de novel movida aquí para asegurar que se maneje como CSS global */
-@import "novel/dist/styles.css";
+/* Importación de estilos de novel movida a layout.tsx */
 
 @layer base {
   :root {

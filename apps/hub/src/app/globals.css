@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Importación de estilos de novel movida a layout.tsx */
+/* Importación de estilos de novel */
+@import "novel/dist/index.css";
 
 @layer base {
   :root {

@@ -5,7 +5,7 @@ import { SessionProvider } from "@/components/SessionProvider";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { WorkspaceGuard } from "@/components/WorkspaceGuard";
-import "novel/dist/styles.css"; // Importar los estilos de novel aquí
+// import "novel/dist/styles.css"; // Importar los estilos de novel aquí - MOVido a globals.css
 
 const inter = Inter({ subsets: ["latin"] });
 

@@ -2,8 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Importación de estilos de novel */
-@import "novel/styles.css";
+/* Importación de estilos de novel - ELIMINADA */
+/* @import "novel/styles.css"; */
+
+/* Estilos básicos para el editor Novel/Prosemirror (si es necesario) */
+.ProseMirror {
+  min-height: 500px; /* O la altura que prefieras */
+  outline: none;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
 
 @layer base {
   :root {

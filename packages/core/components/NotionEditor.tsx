@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Editor } from "novel";
-import "novel/dist/styles.css"; // Ruta de estilos corregida
+// import "novel/dist/styles.css"; // Estilos movidos a globals.css
 
 export const NotionEditor = () => {
   return (

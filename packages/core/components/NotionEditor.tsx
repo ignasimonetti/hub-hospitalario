@@ -5,9 +5,16 @@ import {
   EditorContent, 
   JSONContent 
 } from "novel";
-// 1. Importa las extensiones por defecto
-import { defaultExtensions } from "novel/extensions"; 
 import { useState } from "react";
+// Importamos la extensión oficial de Tiptap
+import StarterKit from "@tiptap/starter-kit"; 
+
+// Definimos las extensiones fuera del componente para evitar recrearlas en cada render
+const extensions = [
+  StarterKit.configure({
+    // Aquí puedes configurar opciones si lo necesitas
+  }),
+];
 
 export const NotionEditor = () => {
   const [content, setContent] = useState<JSONContent | undefined>(undefined);
@@ -16,8 +23,8 @@ export const NotionEditor = () => {
     <div className="relative w-full max-w-screen-lg">
       <EditorRoot>
         <EditorContent
-          // 2. Agrega esta propiedad obligatoria
-          extensions={defaultExtensions} 
+          // Pasamos las extensiones aquí
+          extensions={extensions} 
           
           initialContent={content}
           onUpdate={({ editor }) => {
@@ -26,12 +33,12 @@ export const NotionEditor = () => {
           }}
           editorProps={{
              attributes: {
+               // Estas clases le dan estilo al texto (h1, h2, p, etc.)
                class: `prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full`,
              }
           }}
           className="relative min-h-[500px] w-full border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 sm:mb-[calc(20vh)] sm:rounded-lg sm:border sm:shadow-lg p-4"
         >
-          {/* Aquí podrías agregar los menús de comandos más adelante */}
         </EditorContent>
       </EditorRoot>
     </div>

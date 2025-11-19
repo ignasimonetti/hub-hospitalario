@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Importación de estilos de novel */
-/* @import "novel/dist/styles.css"; */ /* Se movió la importación al componente NotionEditor.tsx */
+@import "novel/dist/styles.css";
 
 @layer base {
   :root {

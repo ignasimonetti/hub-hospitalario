@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Importar los estilos de novel para el editor */
-@import "novel/styles.css"; 
+/* Eliminado: @import "novel/styles.css"; */ 
 
 @layer base {
   :root {

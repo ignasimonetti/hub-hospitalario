@@ -5,6 +5,8 @@ import { SessionProvider } from "@/components/SessionProvider";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { WorkspaceGuard } from "@/components/WorkspaceGuard";
+import fs from 'fs';
+import path from 'path';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,6 +15,16 @@ export const metadata: Metadata = {
   description: "Plataforma SaaS integral para la gestión hospitalaria",
 };
 
+// Leer el contenido del CSS de novel directamente
+let novelStyles = '';
+try {
+  const novelCssPath = path.join(process.cwd(), 'node_modules', 'novel', 'dist', 'index.css');
+  novelStyles = fs.readFileSync(novelCssPath, 'utf8');
+} catch (error) {
+  console.error('Error al leer novel/dist/index.css:', error);
+  // En producción, esto podría ser un problema, pero en desarrollo podemos continuar
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -20,6 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Inyectar los estilos de novel aquí */}
+        {novelStyles && <style dangerouslySetInnerHTML={{ __html: novelStyles }} />}
+      </head>
       <body
         className={`${inter.className} antialiased`}
         suppressHydrationWarning={true}

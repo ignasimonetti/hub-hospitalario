@@ -11,8 +11,17 @@ const nextConfig = {
     // Otras configuraciones experimentales si las hubiera
   },
   webpack: (config, { isServer }) => {
-    // Añadir un alias para 'novel/styles.css'
-    config.resolve.alias['novel/styles.css'] = path.resolve(__dirname, 'node_modules/novel/dist/index.css');
+    // Usar null-loader para 'novel/styles.css' para evitar que Webpack intente resolverlo
+    config.module.rules.push({
+      test: /novel\/styles\.css$/,
+      use: 'null-loader',
+    });
+
+    // Eliminar el alias anterior, ya no es necesario
+    if (config.resolve.alias['novel/styles.css']) {
+      delete config.resolve.alias['novel/styles.css'];
+    }
+
     return config;
   },
 };

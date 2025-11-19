@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Eliminado: @import "novel/styles.css"; */ 
+/* La importación de estilos de novel se maneja ahora en layout.tsx */
 
 @layer base {
   :root {

@@ -11,11 +11,11 @@ const nextConfig = {
     // Otras configuraciones experimentales si las hubiera
   },
   webpack: (config, { isServer }) => {
-    // Add an alias to directly map the problematic CSS import
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'novel/dist/styles.css': path.resolve(__dirname, 'node_modules/novel/dist/styles.css'),
-    };
+    // Se eliminó el alias de Webpack para 'novel/dist/styles.css' ya que la ruta de importación se corrigió.
+    // config.resolve.alias = {
+    //   ...config.resolve.alias,
+    //   'novel/dist/styles.css': path.resolve(__dirname, 'node_modules/novel/dist/styles.css'),
+    // };
 
     return config;
   },

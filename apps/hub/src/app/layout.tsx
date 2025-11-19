@@ -18,7 +18,8 @@ export const metadata: Metadata = {
 // Leer el contenido del CSS de novel directamente
 let novelStyles = '';
 try {
-  const novelCssPath = path.join(process.cwd(), 'node_modules', 'novel', 'dist', 'index.css');
+  // Ajustar la ruta para el monorepo: subir dos niveles para llegar al node_modules raíz
+  const novelCssPath = path.join(process.cwd(), '..', '..', 'node_modules', 'novel', 'dist', 'index.css');
   novelStyles = fs.readFileSync(novelCssPath, 'utf8');
 } catch (error) {
   console.error('Error al leer novel/dist/index.css:', error);

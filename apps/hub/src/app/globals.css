@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Importar los estilos de novel para el editor */
-@import "../../node_modules/novel/dist/index.css"; /* Ruta de importación ajustada */
+@import "novel/styles.css"; /* Ruta de importación ajustada a la estándar del paquete */
 
 @layer base {
   :root {

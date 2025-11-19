@@ -5,8 +5,8 @@ import { SessionProvider } from "@/components/SessionProvider";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { WorkspaceGuard } from "@/components/WorkspaceGuard";
-import fs from 'fs';
-import path from 'path';
+// Eliminado: import fs from 'fs';
+// Eliminado: import path from 'path';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,16 +15,14 @@ export const metadata: Metadata = {
   description: "Plataforma SaaS integral para la gestión hospitalaria",
 };
 
-// Leer el contenido del CSS de novel directamente
-let novelStyles = '';
-try {
-  // Ajustar la ruta para el monorepo: subir dos niveles para llegar al node_modules raíz
-  const novelCssPath = path.join(process.cwd(), '..', '..', 'node_modules', 'novel', 'dist', 'index.css');
-  novelStyles = fs.readFileSync(novelCssPath, 'utf8');
-} catch (error) {
-  console.error('Error al leer novel/dist/index.css:', error);
-  // En producción, esto podría ser un problema, pero en desarrollo podemos continuar
-}
+// Eliminado: Leer el contenido del CSS de novel directamente
+// Eliminado: let novelStyles = '';
+// Eliminado: try {
+// Eliminado:   const novelCssPath = path.join(process.cwd(), '..', '..', 'node_modules', 'novel', 'dist', 'index.css');
+// Eliminado:   novelStyles = fs.readFileSync(novelCssPath, 'utf8');
+// Eliminado: } catch (error) {
+// Eliminado:   console.error('Error al leer novel/dist/index.css:', error);
+// Eliminado: }
 
 export default function RootLayout({
   children,
@@ -34,8 +32,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Inyectar los estilos de novel aquí */}
-        {novelStyles && <style dangerouslySetInnerHTML={{ __html: novelStyles }} />}
+        {/* Eliminado: Inyectar los estilos de novel aquí */}
+        {/* Eliminado: {novelStyles && <style dangerouslySetInnerHTML={{ __html: novelStyles }} />} */}
       </head>
       <body
         className={`${inter.className} antialiased`}

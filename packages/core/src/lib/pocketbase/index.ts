@@ -6,7 +6,7 @@
  */
 import PocketBase from 'pocketbase';
 
-const POCKETBASE_URL = 'https://pocketbase-dev.arg门tectum.com';
+const POCKETBASE_URL = 'https://pocketbase.manta.com.ar'; // URL corregida
 
 /**
  * Instancia singleton de PocketBase

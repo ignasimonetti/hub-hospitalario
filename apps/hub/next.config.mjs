@@ -12,10 +12,10 @@ const nextConfig = {
   },
   webpack: (config, { isServer }) => {
     // Se eliminó el alias de Webpack para 'novel/dist/styles.css' ya que la ruta de importación se corrigió.
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'novel/dist/styles.css': path.resolve(__dirname, 'node_modules/novel/dist/index.css'), // Actualizado a index.css
-    };
+    // Dejamos que Next.js y la configuración de 'novel' manejen la resolución de los estilos.
+    if (config.resolve.alias) {
+      delete config.resolve.alias['novel/dist/styles.css'];
+    }
 
     return config;
   },

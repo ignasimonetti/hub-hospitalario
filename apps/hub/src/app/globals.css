@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Importación de estilos de novel - Ruta directa a node_modules */
-@import "../../node_modules/novel/dist/styles.css";
+/* Importación de estilos de novel - Ruta directa a node_modules, apuntando a index.css */
+@import "../../node_modules/novel/dist/index.css";
 
 /* Estilos básicos para el editor Novel/Prosemirror (si es necesario) */
 .ProseMirror {

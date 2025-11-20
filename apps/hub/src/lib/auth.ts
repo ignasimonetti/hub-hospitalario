@@ -3,10 +3,30 @@
 
 // Importar la instancia compartida de PocketBase
 import { pocketbase } from '@hospital/core/lib/auth'
+import Cookies from 'js-cookie';
 
 // PocketBase usa la colección 'auth_users' para la autenticación
 // Esta colección se crea automáticamente por PocketBase
 const USERS_COLLECTION = 'auth_users'
+
+// Sincronizar el estado de autenticación con las cookies para el servidor (Next.js)
+const syncCookie = () => {
+  if (typeof document !== 'undefined') {
+    if (pocketbase.authStore.isValid) {
+      document.cookie = pocketbase.authStore.exportToCookie({ httpOnly: false });
+    } else {
+      // Para borrar, necesitamos establecer la fecha de expiración en el pasado
+      document.cookie = 'pb_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+  }
+};
+
+pocketbase.authStore.onChange(() => {
+  syncCookie();
+});
+
+// Sincronizar inmediatamente al cargar (por si el usuario ya estaba logueado)
+syncCookie();
 
 // Re-exportar la instancia de pocketbase para que otros módulos en 'apps/hub' puedan usarla
 export { pocketbase }
@@ -55,7 +75,7 @@ export async function signUp(email: string, password: string, options: any = {})
 
   } catch (err: any) {
     console.error('Error en PocketBase signUp:', err)
-    
+
     // Proporcionar mensajes de error útiles
     if (err.status === 403) {
       return {
@@ -65,7 +85,7 @@ export async function signUp(email: string, password: string, options: any = {})
         }
       }
     }
-    
+
     if (err.status === 404) {
       return {
         data: null,
@@ -74,7 +94,7 @@ export async function signUp(email: string, password: string, options: any = {})
         }
       }
     }
-    
+
     if (err.status === 400 && err.message?.includes('already registered')) {
       return {
         data: null,
@@ -83,7 +103,7 @@ export async function signUp(email: string, password: string, options: any = {})
         }
       }
     }
-    
+
     return { data: null, error: { message: err.message } }
   }
 }
@@ -155,12 +175,12 @@ export async function updatePassword(newPassword: string) {
         error: { message: 'No user authenticated' }
       }
     }
-    
+
     const user = await pocketbase.collection(USERS_COLLECTION).update(
       pocketbase.authStore.model.id,
       { password: newPassword }
     )
-    
+
     return { data: { user }, error: null }
   } catch (error: any) {
     return {
@@ -208,7 +228,7 @@ export async function getCurrentUserRoles(tenantId: string | null = null) {
     return userRoles.items;
   } catch (error: any) {
     if (error.message?.includes('autocancelled') ||
-        error.message?.includes('signal is aborted')) {
+      error.message?.includes('signal is aborted')) {
       console.warn('⚠️ La solicitud fue autocancelada por React, pero los datos aún pueden llegar. Esto es normal.');
       return [];
     }
@@ -228,14 +248,14 @@ export async function getCurrentUserPermissions(tenantId: string | null = null) 
   try {
     const userRoles = await getCurrentUserRoles(tenantId)
     if (!userRoles.length) return []
-    
+
     const roleIds = userRoles.map((ur: any) => ur.role)
-    
+
     const rolePermissions = await pocketbase.collection('hub_role_permissions').getList(1, 100, {
       filter: `role = "${roleIds.join('" || role = "')}"`,
       expand: 'permission'
     })
-    
+
     return rolePermissions.items.map((rp: any) => rp.permission)
   } catch (error) {
     console.error('Error obteniendo permisos de usuario:', error)

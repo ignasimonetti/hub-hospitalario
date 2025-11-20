@@ -1,10 +1,11 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerPocketBase } from '@/lib/pocketbase-server'; // Importar la nueva utilidad
 
 export async function GET(request: NextRequest) {
   try {
     // Obtener la instancia de PocketBase configurada para el servidor
-    const pb = getServerPocketBase();
+    const pb = await getServerPocketBase();
 
     // Get current user from PocketBase auth store
     const currentUser = pb.authStore.model;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,13 @@ import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 import { ThemeToggleButton } from "@/components/ThemeToggle";
 import { SessionWarningDialog } from "@/components/SessionWarningDialog";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
-import { NotionEditor } from '@hospital/core'; // Importar NotionEditor
+import dynamic from 'next/dynamic';
+const NotionEditor = dynamic(() => import('@hospital/core').then(mod => mod.NotionEditor), {
+  ssr: false,
+  loading: () => <div className="h-[500px] w-full animate-pulse bg-gray-100 dark:bg-gray-800 rounded-lg" />
+});
+
+import { getDashboardNote, saveDashboardNote } from "@/app/actions/dashboard-notes";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -45,6 +51,8 @@ export default function DashboardPage() {
   const [userRoles, setUserRoles] = useState<any[]>([]);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [noteContent, setNoteContent] = useState<any>(undefined);
+  const [isLoadingNote, setIsLoadingNote] = useState(true);
 
   // Session timeout management
   const { showWarning, timeRemaining, extendSession, logout } = useSessionTimeout(currentRole?.name);
@@ -55,6 +63,15 @@ export default function DashboardPage() {
 
     if (currentUser) {
       checkUserRoles(currentUser.id);
+      // Fetch dashboard note
+      getDashboardNote()
+        .then((note) => {
+          if (note?.content) {
+            setNoteContent(note.content);
+          }
+        })
+        .catch((err) => console.error("Failed to load note:", err))
+        .finally(() => setIsLoadingNote(false));
     }
 
     // Load sidebar state from localStorage
@@ -64,6 +81,16 @@ export default function DashboardPage() {
     }
   }, [currentTenant, currentRole]);
 
+  const handleSaveNote = useCallback(async (editor: any) => {
+    const content = editor.getJSON();
+    console.log('Saving note...', new Date().toISOString());
+    const result = await saveDashboardNote(content);
+    if (result.success) {
+      console.log('Note saved successfully');
+    } else {
+      console.error('Failed to save note:', result.error);
+    }
+  }, []);
 
   const toggleSidebar = () => {
     const newState = !sidebarCollapsed;
@@ -76,7 +103,7 @@ export default function DashboardPage() {
       // El dashboard ya tiene acceso al contexto de workspace
       // No es necesario volver a obtener los roles, solo usar los del contexto
       // Si se necesita actualizar los roles, debería hacerse a través del contexto
-      
+
       // Si el contexto de workspace no tiene roles pero sí tiene tenant y rol,
       // podemos confiar en esos valores
       if (currentTenant && currentRole) {
@@ -100,7 +127,7 @@ export default function DashboardPage() {
       if (logoFileName && currentTenant.id) { // Ensure currentTenant.id exists for getUrl
         // The collection ID for hub_tenants can be hardcoded or fetched if needed
         // For now, assuming collection name 'hub_tenants' for getUrl
-        return pocketbase.files.getUrl(currentTenant, logoFileName, { thumb: '40x40' }); // Optional: request a thumbnail
+        return pocketbase.files.getURL(currentTenant, logoFileName, { thumb: '40x40' }); // Optional: request a thumbnail
       }
     }
     return undefined;
@@ -142,7 +169,7 @@ export default function DashboardPage() {
             </Avatar>
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
-                <h1 
+                <h1
                   className="text-base font-semibold text-gray-900 dark:text-slate-100" // Removed truncate
                   title={currentTenant?.name || 'Hub Hospitalario'}
                 >
@@ -203,18 +230,24 @@ export default function DashboardPage() {
           transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
           className="max-w-6xl mx-auto px-8 py-12"
         >
-        {/* Header - shadcn/ui Style */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold md:text-2xl text-gray-900 dark:text-slate-100">Dashboard</h1>
-            {/* Se eliminó el bloque de texto del hospital y rol */}
+          {/* Header - shadcn/ui Style */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-lg font-semibold md:text-2xl text-gray-900 dark:text-slate-100">Dashboard</h1>
+              {/* Se eliminó el bloque de texto del hospital y rol */}
+            </div>
           </div>
-        </div>
 
-        {/* Notion-like Canvas */}
-        <div className="mt-8">
-          <NotionEditor />
-        </div>
+          {/* Notion-like Canvas */}
+          <div className="mt-8">
+            {!isLoadingNote && (
+              <NotionEditor
+                key={noteContent ? 'loaded' : 'empty'} // Force re-mount when content loads
+                initialContent={noteContent}
+                onDebouncedUpdate={handleSaveNote}
+              />
+            )}
+          </div>
 
           {/* Dialog para usuario pendiente */}
           <PendingUserDialog

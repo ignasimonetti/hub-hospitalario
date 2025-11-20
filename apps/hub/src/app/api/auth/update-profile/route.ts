@@ -1,22 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerPocketBase } from '@/lib/pocketbase-server'; // Importar la nueva utilidad
 
-export async function POST(request: NextRequest) {
+export async function PUT(request: Request) {
+  const pb = await getServerPocketBase();
   try {
     const body = await request.json();
-    const { 
-      firstName, 
-      lastName, 
-      email, 
-      dni, 
-      phone, 
-      currentPassword, 
-      newPassword, 
-      confirmPassword 
+    const {
+      firstName,
+      lastName,
+      email,
+      dni,
+      phone,
+      currentPassword,
+      newPassword,
+      confirmPassword
     } = body;
 
     // Obtener la instancia de PocketBase configurada para el servidor
-    const pb = getServerPocketBase();
+    // Obtener la instancia de PocketBase configurada para el servidor
+    // const pb = await getServerPocketBase(); // Ya obtenido arriba
 
     // Get current user from PocketBase auth store
     const currentUser = pb.authStore.model;
@@ -130,7 +132,7 @@ export async function POST(request: NextRequest) {
 
     // Update user profile in PocketBase
     const updatedUser = await pb.collection('auth_users').update(
-      currentUser.id, 
+      currentUser.id,
       updateData
     );
 
@@ -150,11 +152,11 @@ export async function POST(request: NextRequest) {
 
     // Obtener información completa del usuario actualizado
     const userProfile = await pb.collection('auth_users').getOne(currentUser.id);
-    
+
     return NextResponse.json({
       success: true,
-      message: newPassword ? 
-        'Perfil y contraseña actualizados exitosamente' : 
+      message: newPassword ?
+        'Perfil y contraseña actualizados exitosamente' :
         'Perfil actualizado exitosamente',
       user: {
         id: userProfile.id,
@@ -179,8 +181,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle duplicate key errors (email, DNI)
-    if (error.response?.data?.code === 400 && 
-        error.response?.data?.message?.includes('already exists')) {
+    if (error.response?.data?.code === 400 &&
+      error.response?.data?.message?.includes('already exists')) {
       return NextResponse.json(
         { error: 'El email o DNI ya están en uso por otro usuario' },
         { status: 409 }

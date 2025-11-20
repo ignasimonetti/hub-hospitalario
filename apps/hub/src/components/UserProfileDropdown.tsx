@@ -68,7 +68,7 @@ export function UserProfileDropdown({ user, collapsed = false }: UserProfileDrop
   const handleSignOut = async () => {
     try {
       await signOut();
-      router.push('/login');
+      window.location.href = '/'; // Force full reload and redirect to landing
     } catch (error) {
       console.error('Error signing out:', error);
     }

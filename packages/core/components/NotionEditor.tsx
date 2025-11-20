@@ -16,6 +16,12 @@ import {
 } from "novel";
 import { Extension } from "@tiptap/core";
 import { useState, useEffect, useRef } from "react";
+import { useDebounce } from "use-debounce";
+
+interface NotionEditorProps {
+  initialContent?: JSONContent;
+  onDebouncedUpdate?: (editor: any) => void;
+}
 
 // Iconos (Lucide React)
 import {
@@ -241,8 +247,8 @@ const slashCommands = [
 
 ];
 
-export const NotionEditor = () => {
-  const [content, setContent] = useState<JSONContent | undefined>(undefined);
+export const NotionEditor = ({ initialContent, onDebouncedUpdate }: NotionEditorProps) => {
+  const [content, setContent] = useState<JSONContent | undefined>(initialContent);
   const [editor, setEditor] = useState<any>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; pos: number | null } | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -276,6 +282,15 @@ export const NotionEditor = () => {
       document.removeEventListener('click', handleClick);
     };
   }, [editor]);
+
+  // Debounce update
+  const [debouncedContent] = useDebounce(content, 1000);
+
+  useEffect(() => {
+    if (debouncedContent && onDebouncedUpdate && editor) {
+      onDebouncedUpdate(editor);
+    }
+  }, [debouncedContent, onDebouncedUpdate, editor]);
 
   const handleContainerClick = (e: React.MouseEvent) => {
     if (!editor) return;

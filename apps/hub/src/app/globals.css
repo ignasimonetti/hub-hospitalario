@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Importación de estilos de novel - REINTRODUCIDA */
-@import "novel/styles.css";
+/* Importación de estilos de novel - Ruta directa a node_modules */
+@import "../../node_modules/novel/dist/styles.css";
 
 /* Estilos básicos para el editor Novel/Prosemirror (si es necesario) */
 .ProseMirror {
@@ -70,7 +70,7 @@
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
+    --chart-4: 43 74% 66%;
     --chart-5: 340 75% 55%;
   }
 }

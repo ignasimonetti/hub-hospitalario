@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Importación de estilos de novel - Usando la ruta recomendada por el paquete */
-@import "novel/styles";
+/* Importación de estilos de Tiptap Core, ya que novel se basa en él */
+@import "../../node_modules/@tiptap/core/dist/style.css";
 
 /* Estilos básicos para el editor Novel/Prosemirror (si es necesario) */
 .ProseMirror {

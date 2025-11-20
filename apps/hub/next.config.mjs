@@ -14,7 +14,7 @@ const nextConfig = {
     // Se eliminó el alias de Webpack para 'novel/dist/styles.css' ya que la ruta de importación se corrigió.
     config.resolve.alias = {
       ...config.resolve.alias,
-      'novel/dist/styles.css': path.resolve(__dirname, 'node_modules/novel/dist/styles.css'),
+      'novel/dist/styles.css': path.resolve(__dirname, 'node_modules/novel/dist/index.css'), // Actualizado a index.css
     };
 
     return config;

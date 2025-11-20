@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Importación de estilos de novel - ELIMINADA */
-/* @import "novel/styles.css"; */
+/* Importación de estilos de novel - REINTRODUCIDA */
+@import "novel/styles.css";
 
 /* Estilos básicos para el editor Novel/Prosemirror (si es necesario) */
 .ProseMirror {

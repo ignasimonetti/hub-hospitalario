@@ -5,7 +5,6 @@ import { SessionProvider } from "@/components/SessionProvider";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { WorkspaceGuard } from "@/components/WorkspaceGuard";
-// import "novel/dist/styles.css"; // Importar los estilos de novel aquí - MOVido a globals.css
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Los estilos de novel ahora se importan directamente en NotionEditor.tsx */}
+        {/* Los estilos de novel se importan globalmente en globals.css */}
       </head>
       <body
         className={`${inter.className} antialiased`}

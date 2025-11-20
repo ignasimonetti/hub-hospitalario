@@ -161,9 +161,7 @@ export const NotionEditor = () => {
             },
             attributes: {
                // Estilos Tailwind Typography + Ajustes para Tablas y Tareas
-               class: `prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full 
-               prose-table:border prose-table:border-gray-200 dark:prose-table:border-gray-800 
-               prose-td:border prose-td:p-2 prose-th:border prose-th:p-2 prose-th:bg-gray-50 dark:prose-th:bg-gray-900`,
+               class: `prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full prose-table:border prose-table:border-gray-200 dark:prose-table:border-gray-800 prose-td:border prose-td:p-2 prose-th:border prose-th:p-2 prose-th:bg-gray-50 dark:prose-th:bg-gray-900`,
             }
           }}
           className="relative min-h-[500px] w-full border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 sm:mb-[calc(20vh)] sm:rounded-lg sm:border sm:shadow-lg p-10"

@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Importación de estilos base de ProseMirror, fundamental para Tiptap/Novel */
-@import "prosemirror-view/style/prosemirror.css";
-
 /* Estilos básicos para el editor Novel/Prosemirror (si es necesario) */
 .ProseMirror {
   min-height: 500px; /* O la altura que prefieras */

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "prosemirror-view/style/prosemirror.css"; // Importación directa de estilos de ProseMirror
 import { SessionProvider } from "@/components/SessionProvider";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";

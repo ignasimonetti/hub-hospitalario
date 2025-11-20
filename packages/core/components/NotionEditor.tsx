@@ -9,10 +9,10 @@ import {
   EditorCommandItem,
   EditorCommandEmpty,
   EditorCommandList,
-  JSONContent 
+  JSONContent,
+  handleCommandNavigation // Importar directamente desde 'novel'
 } from "novel";
 import { useState } from "react";
-import { handleCommandNavigation } from "novel/extensions"; 
 
 // Iconos (Lucide React)
 import { 

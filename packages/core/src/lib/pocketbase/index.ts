@@ -19,8 +19,8 @@ export const pb = new PocketBase(POCKETBASE_URL);
 export async function authenticateAdmin(): Promise<any> {
   try {
     const authData = await pb.admins.authWithPassword(
-      'admin@cisb.com', 
-      '4F7vK8a3mX2bN9qR5wE6tY8uI1oP0sZ7xC3vB5nM8qL2wE5tY7uI1oP'
+      'ignaciosimonetti1984@gmail.com',
+      'Millonarios10$'
     );
     console.log('Autenticación de administrador exitosa:', authData);
     return authData;
@@ -265,11 +265,11 @@ export async function testConnection(): Promise<boolean> {
   try {
     // Intenta autenticar como administrador
     await authenticateAdmin();
-    
+
     // Intenta listar hospitales
     const hospitals = await pb.collection('hub_hospitals').getList(1, 10);
     console.log(`Conexión exitosa. Se encontraron ${hospitals.totalItems} hospitales.`);
-    
+
     return true;
   } catch (error) {
     console.error('Error de conexión:', error.message);

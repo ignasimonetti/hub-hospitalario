@@ -15,7 +15,7 @@ import {
   renderItems
 } from "novel";
 import { Extension } from "@tiptap/core";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Iconos (Lucide React)
 import {
@@ -32,7 +32,8 @@ import {
   Columns,
   Layout,
   Trash2,
-  Copy
+  Copy,
+  Info
 } from "lucide-react";
 
 // Extensiones de Tiptap
@@ -44,6 +45,7 @@ import TableRow from "@tiptap/extension-table-row";
 import TableHeader from "@tiptap/extension-table-header";
 import TableCell from "@tiptap/extension-table-cell";
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
+import Placeholder from '@tiptap/extension-placeholder';
 
 // Custom Extensions
 import { Column, ColumnList } from "./extensions/columns";
@@ -55,14 +57,14 @@ const extensions = [
       keepMarks: true,
       keepAttributes: false,
       HTMLAttributes: {
-        class: "list-disc list-outside leading-3 -mt-2",
+        class: "list-disc list-outside leading-3 -mt-2 ml-4", // Added ml-4 for visibility
       }
     },
     orderedList: {
       keepMarks: true,
       keepAttributes: false,
       HTMLAttributes: {
-        class: "list-decimal list-outside leading-3 -mt-2",
+        class: "list-decimal list-outside leading-3 -mt-2 ml-4", // Added ml-4 for visibility
       }
     },
     heading: {
@@ -73,9 +75,19 @@ const extensions = [
     },
     blockquote: {
       HTMLAttributes: {
-        class: "border-l-4 border-stone-300 bg-stone-50 dark:bg-stone-800 pl-4 py-1 pr-2 italic my-4",
+        class: "border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-sm my-4 not-italic", // Callout style
       }
     },
+  }),
+  // Placeholder
+  Placeholder.configure({
+    placeholder: ({ node }: { node: any }) => {
+      if (node.type.name === "heading") {
+        return `Título ${node.attrs.level}`;
+      }
+      return "Presiona '/' para comandos...";
+    },
+    includeChildren: true,
   }),
   // Tareas (Checklists)
   TaskList,
@@ -94,8 +106,8 @@ const extensions = [
   ColumnList,
   // Drag Handle
   GlobalDragHandle.configure({
-    dragHandleWidth: 20,
-    scrollTreshold: 100,
+    dragHandleWidth: 24, // Increased width for better hit area
+    scrollTreshold: 0, // Set to 0 to avoid scroll issues
   }),
   // Slash Command
   Command.configure({
@@ -211,9 +223,9 @@ const slashCommands = [
     },
   },
   {
-    title: "Alerta / Cita",
+    title: "Alerta / Callout",
     description: "Resaltar información importante.",
-    icon: <TextQuote size={18} />,
+    icon: <Info size={18} />,
     command: ({ editor, range }: any) => {
       editor.chain().focus().deleteRange(range).toggleBlockquote().run();
     },
@@ -233,6 +245,7 @@ export const NotionEditor = () => {
   const [content, setContent] = useState<JSONContent | undefined>(undefined);
   const [editor, setEditor] = useState<any>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; pos: number | null } | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleContextMenu = (e: MouseEvent) => {
@@ -264,6 +277,16 @@ export const NotionEditor = () => {
     };
   }, [editor]);
 
+  const handleContainerClick = (e: React.MouseEvent) => {
+    if (!editor) return;
+
+    // If clicking on the wrapper but not inside the editor content
+    // Focus the editor at the end
+    if (e.target === e.currentTarget) {
+      editor.chain().focus().run();
+    }
+  };
+
   const handleDoubleClick = (e: React.MouseEvent) => {
     if (!editor) return;
 
@@ -294,9 +317,9 @@ export const NotionEditor = () => {
     const style = document.createElement('style');
     style.innerHTML = `
       .drag-handle {
-        position: fixed;
+        position: fixed; /* Reverted to fixed as extension uses viewport coordinates */
         opacity: 1;
-        transition: opacity 0.2s ease-in-out;
+        /* transition: opacity 0.2s ease-in-out; Removed to prevent lag */
         border-radius: 0.25rem;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' style='fill: rgba(0, 0, 0, 0.5);'%3E%3Cpath d='M3,2 C2.44771525,2 2,1.55228475 2,1 C2,0.44771525 2.44771525,0 3,0 C3.55228475,0 4,0.44771525 4,1 C4,1.55228475 3.55228475,2 3,2 Z M3,6 C2.44771525,6 2,5.55228475 2,5 C2,4.44771525 2.44771525,4 3,4 C3.55228475,4 4,4.44771525 4,5 C4,5.55228475 3.55228475,6 3,6 Z M3,10 C2.44771525,10 2,9.55228475 2,9 C2,8.44771525 2.44771525,8 3,8 C3.55228475,8 4,8.44771525 4,9 C4,9.55228475 3.55228475,10 3,10 Z M7,2 C6.44771525,2 6,1.55228475 6,1 C6,0.44771525 6.44771525,0 7,0 C7.55228475,0 8,0.44771525 8,1 C8,1.55228475 7.55228475,2 7,2 Z M7,6 C6.44771525,6 6,5.55228475 6,5 C6,4.44771525 6.44771525,4 7,4 C7.55228475,4 8,4.44771525 8,5 C8,5.55228475 7.55228475,6 7,6 Z M7,10 C6.44771525,10 6,9.55228475 6,9 C6,8.44771525 6.44771525,8 7,8 C7.55228475,8 8,8.44771525 8,9 C8,9.55228475 7.55228475,10 7,10 Z'%3E%3C/path%3E%3C/svg%3E");
         background-repeat: no-repeat;
@@ -317,6 +340,28 @@ export const NotionEditor = () => {
         background-color: rgba(255, 255, 255, 0.1);
       }
       
+      /* Placeholder Styles */
+      .ProseMirror p.is-editor-empty:first-child::before {
+        color: #adb5bd;
+        content: attr(data-placeholder);
+        float: left;
+        height: 0;
+        pointer-events: none;
+      }
+      .ProseMirror p.is-empty::before {
+        color: #adb5bd;
+        content: attr(data-placeholder);
+        float: left;
+        height: 0;
+        pointer-events: none;
+      }
+
+      /* Selected Node Styles */
+      .ProseMirror-selectednode {
+        outline: 2px solid #3b82f6;
+        border-radius: 4px;
+      }
+
       /* Task List Styles */
       ul[data-type="taskList"] {
         list-style: none;
@@ -324,14 +369,14 @@ export const NotionEditor = () => {
       }
       ul[data-type="taskList"] li {
         display: flex;
-        align-items: flex-start; /* Align top for multi-line tasks */
+        align-items: center; /* Changed from flex-start to center for alignment */
         margin-bottom: 0.25rem;
       }
       ul[data-type="taskList"] li > label {
         flex: 0 0 auto;
         margin-right: 0.5rem;
         user-select: none;
-        margin-top: 0.35rem; /* Adjust vertical alignment to match text */
+        margin-top: 0; /* Removed margin-top to align with center */
       }
       ul[data-type="taskList"] li > div {
         flex: 1 1 auto;
@@ -390,8 +435,10 @@ export const NotionEditor = () => {
 
   return (
     <div
-      className="relative w-full max-w-screen-lg"
+      ref={editorRef}
+      className="relative w-full max-w-screen-lg cursor-text min-h-screen"
       onDoubleClick={handleDoubleClick}
+      onClick={handleContainerClick}
     >
       <EditorRoot>
         <EditorContent
@@ -409,11 +456,11 @@ export const NotionEditor = () => {
             },
             attributes: {
               // Estilos Tailwind Typography + Ajustes para Tablas y Tareas
-              // Removed prose-headings:font-title as it was not defined
+              // Added specific heading classes to force sizes
               class: "prose prose-lg dark:prose-invert font-default focus:outline-none max-w-full prose-h1:text-4xl prose-h1:font-bold prose-h2:text-3xl prose-h2:font-semibold prose-h3:text-2xl prose-h3:font-medium prose-table:border prose-table:border-gray-200 dark:prose-table:border-gray-800 prose-td:border prose-td:border-gray-200 dark:prose-td:border-gray-700 prose-td:p-2 prose-td:relative prose-th:border prose-th:border-gray-200 dark:prose-th:border-gray-700 prose-th:p-2 prose-th:bg-gray-50 dark:prose-th:bg-gray-900 prose-th:text-left [&_.drag-handle]:opacity-0 [&_.drag-handle]:hover:opacity-100",
             }
           }}
-          className="relative min-h-[500px] w-full border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 sm:mb-[calc(20vh)] sm:rounded-lg sm:border sm:shadow-lg p-10"
+          className="relative min-h-[500px] w-full border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 sm:mb-[calc(20vh)] sm:rounded-lg sm:border sm:shadow-lg p-4 sm:p-10"
         >
 
           {/* Menú de Comandos "/" */}
@@ -493,6 +540,21 @@ export const NotionEditor = () => {
                 </button>
               </>
             )}
+
+            {/* Column Tools */}
+            {editor && editor.isActive('column') && (
+              <>
+                <div className="w-[1px] bg-stone-200 dark:bg-stone-700 mx-1" />
+                <button
+                  onClick={() => editor.chain().focus().unsetColumns().run()}
+                  className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 text-sm font-medium text-red-600 dark:text-red-400"
+                  title="Eliminar Columnas"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </>
+            )}
+
           </EditorBubble>
 
         </EditorContent>
@@ -504,6 +566,37 @@ export const NotionEditor = () => {
           className="fixed z-50 w-48 rounded-md border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
+          <button
+            className="flex w-full items-center space-x-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+            onClick={() => {
+              if (editor && contextMenu.pos !== null) {
+                const node = editor.view.state.doc.nodeAt(contextMenu.pos);
+                if (node) {
+                  // Transform into 2 columns
+                  const columnList = {
+                    type: 'columnList',
+                    attrs: { cols: 2 },
+                    content: [
+                      {
+                        type: 'column',
+                        content: [node.toJSON()]
+                      },
+                      {
+                        type: 'column',
+                        content: [{ type: 'paragraph' }]
+                      }
+                    ]
+                  };
+                  const tr = editor.state.tr.replaceWith(contextMenu.pos, contextMenu.pos + node.nodeSize, editor.schema.nodeFromJSON(columnList));
+                  editor.view.dispatch(tr);
+                }
+                setContextMenu(null);
+              }
+            }}
+          >
+            <Columns size={16} />
+            <span className="flex-1 text-left">Transformar en 2 Col.</span>
+          </button>
           <button
             className="flex w-full items-center space-x-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
             onClick={() => {

@@ -74,6 +74,9 @@ export const ColumnList = Node.create({
                     content: Array(cols).fill({ type: 'column', content: [{ type: 'paragraph' }] }),
                 })
             },
+            unsetColumns: () => ({ commands }: any) => {
+                return commands.lift('column')
+            },
         } as any
     },
 })

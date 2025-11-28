@@ -585,7 +585,16 @@ export const NotionEditor = ({ initialContent, onDebouncedUpdate }: NotionEditor
             className="flex w-full items-center space-x-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
             onClick={() => {
               if (editor && contextMenu.pos !== null) {
-                const node = editor.view.state.doc.nodeAt(contextMenu.pos);
+                const $pos = editor.view.state.doc.resolve(contextMenu.pos);
+                let targetDepth = $pos.depth;
+                for (let d = targetDepth; d > 0; d--) {
+                  const node = $pos.node(d);
+                  if (node.type.name === 'table' || node.type.name === 'listItem' || node.type.name === 'taskItem') {
+                    targetDepth = d;
+                    break;
+                  }
+                }
+                const node = $pos.node(targetDepth);
                 if (node) {
                   // Transform into 2 columns
                   const columnList = {
@@ -602,7 +611,9 @@ export const NotionEditor = ({ initialContent, onDebouncedUpdate }: NotionEditor
                       }
                     ]
                   };
-                  const tr = editor.state.tr.replaceWith(contextMenu.pos, contextMenu.pos + node.nodeSize, editor.schema.nodeFromJSON(columnList));
+                  const from = $pos.before(targetDepth);
+                  const to = $pos.after(targetDepth);
+                  const tr = editor.state.tr.replaceWith(from, to, editor.schema.nodeFromJSON(columnList));
                   editor.view.dispatch(tr);
                 }
                 setContextMenu(null);
@@ -616,10 +627,19 @@ export const NotionEditor = ({ initialContent, onDebouncedUpdate }: NotionEditor
             className="flex w-full items-center space-x-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
             onClick={() => {
               if (editor && contextMenu.pos !== null) {
-                const node = editor.view.state.doc.nodeAt(contextMenu.pos);
+                const $pos = editor.view.state.doc.resolve(contextMenu.pos);
+                let targetDepth = $pos.depth;
+                for (let d = targetDepth; d > 0; d--) {
+                  const node = $pos.node(d);
+                  if (node.type.name === 'table' || node.type.name === 'listItem' || node.type.name === 'taskItem') {
+                    targetDepth = d;
+                    break;
+                  }
+                }
+                const node = $pos.node(targetDepth);
                 if (node) {
                   // Duplicate: insert content of current node after it
-                  editor.chain().insertContentAt(contextMenu.pos + node.nodeSize, node.toJSON()).run();
+                  editor.chain().insertContentAt($pos.after(targetDepth), node.toJSON()).run();
                 }
                 setContextMenu(null);
               }
@@ -632,11 +652,20 @@ export const NotionEditor = ({ initialContent, onDebouncedUpdate }: NotionEditor
             className="flex w-full items-center space-x-2 rounded-md px-2 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
             onClick={() => {
               if (editor && contextMenu.pos !== null) {
-                const node = editor.view.state.doc.nodeAt(contextMenu.pos);
-                if (node) {
-                  // Delete the node at the specific position
-                  const tr = editor.state.tr.delete(contextMenu.pos, contextMenu.pos + node.nodeSize);
-                  editor.view.dispatch(tr);
+                const $pos = editor.view.state.doc.resolve(contextMenu.pos);
+                let targetDepth = $pos.depth;
+                for (let d = targetDepth; d > 0; d--) {
+                  const node = $pos.node(d);
+                  if (node.type.name === 'table' || node.type.name === 'listItem' || node.type.name === 'taskItem') {
+                    targetDepth = d;
+                    break;
+                  }
+                }
+                if (targetDepth > 0) {
+                  // Delete the node at the specific position (parent block)
+                  const from = $pos.before(targetDepth);
+                  const to = $pos.after(targetDepth);
+                  editor.chain().deleteRange({ from, to }).run();
                 }
                 setContextMenu(null);
               }

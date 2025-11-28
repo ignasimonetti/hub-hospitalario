@@ -207,6 +207,7 @@ export default function DashboardPage() {
                 <button
                   className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors`}
                   title={sidebarCollapsed ? 'Configuración' : undefined}
+                  onClick={() => router.push('/admin')}
                 >
                   <Settings className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
                   {!sidebarCollapsed && <span>Configuración</span>}

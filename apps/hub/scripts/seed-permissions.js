@@ -51,6 +51,15 @@ const PERMISSIONS = [
     { slug: 'tenants.create', name: 'Crear Hospital', description: 'Registrar nuevos hospitales', resource: 'tenants', action: 'create' },
     { slug: 'tenants.update', name: 'Editar Hospital', description: 'Modificar datos de hospitales', resource: 'tenants', action: 'update' },
     { slug: 'tenants.delete', name: 'Eliminar Hospital', description: 'Dar de baja hospitales', resource: 'tenants', action: 'delete' },
+
+    // Blog / Content Management
+    { slug: 'blog.list', name: 'Listar Artículos', description: 'Ver la lista de artículos del blog', resource: 'blog', action: 'list' },
+    { slug: 'blog.view', name: 'Ver Artículo', description: 'Ver detalles de un artículo', resource: 'blog', action: 'view' },
+    { slug: 'blog.create', name: 'Crear Artículo', description: 'Crear nuevos artículos', resource: 'blog', action: 'create' },
+    { slug: 'blog.edit', name: 'Editar Artículo', description: 'Modificar artículos existentes', resource: 'blog', action: 'edit' },
+    { slug: 'blog.publish', name: 'Publicar Artículo', description: 'Publicar artículos en el sitio web', resource: 'blog', action: 'publish' },
+    { slug: 'blog.delete', name: 'Eliminar Artículo', description: 'Eliminar artículos del sistema', resource: 'blog', action: 'delete' },
+    { slug: 'blog.archive', name: 'Archivar Artículo', description: 'Archivar artículos publicados', resource: 'blog', action: 'archive' },
 ];
 
 async function seed() {

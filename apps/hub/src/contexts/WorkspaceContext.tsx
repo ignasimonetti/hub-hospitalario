@@ -47,7 +47,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       const tenantDetails = await pocketbase.collection('hub_tenants').getOne(tenantId);
       const roleDetails = await pocketbase.collection('hub_roles').getOne(roleId);
-      return { tenant: tenantDetails as Tenant, role: roleDetails as UserRole };
+      return { tenant: tenantDetails as unknown as Tenant, role: roleDetails as unknown as UserRole };
     } catch (error) {
       console.error('❌ Error fetching tenant or role details:', error);
       return { tenant: null, role: null };
@@ -107,7 +107,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const loadAvailableTenants = (userRoles: any[]) => {
     // Asegurarse de que los tenants en userRoles ya vienen expandidos con todos los detalles
     const tenants = userRoles.map((userRole: any) => userRole.tenant).filter((tenant): tenant is Tenant => tenant !== undefined);
-    const uniqueTenants = [...new Map(tenants.map(t => [t.id, t])).values()];
+    const uniqueTenants = Array.from(new Map(tenants.map(t => [t.id, t])).values());
     setAvailableTenants(uniqueTenants);
   };
 
@@ -117,7 +117,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     let fullRole = role;
 
     // La condición para re-buscar ahora es más estricta: si el objeto no tiene 'name'
-    if (!tenant.name || !role.name) { 
+    if (!tenant.name || !role.name) {
       const fetchedDetails = await fetchTenantAndRoleDetails(tenant.id, role.id);
       if (fetchedDetails.tenant && fetchedDetails.role) {
         fullTenant = fetchedDetails.tenant;

@@ -1,9 +1,12 @@
 // POCKETBASE AUTHENTICATION - CONFIGURACIÓN FINAL
 // Conectado a PocketBase real con colección auth_users
 
-// Importar la instancia compartida de PocketBase
-import { pocketbase } from '@hospital/core/lib/auth'
+// Configuración de PocketBase local
+import PocketBase from 'pocketbase';
 import Cookies from 'js-cookie';
+
+// Crear instancia local de PocketBase
+const pocketbase = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://localhost:8090');
 
 // PocketBase usa la colección 'auth_users' para la autenticación
 // Esta colección se crea automáticamente por PocketBase

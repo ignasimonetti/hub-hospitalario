@@ -2,7 +2,7 @@
 // Hook para verificar permisos y roles en componentes de la UI
 
 import { useState, useEffect, useCallback } from 'react'
-import { pocketbase, hasPermission, hasRole } from '@hospital/core/lib/auth'
+import { pocketbase } from '@/lib/auth'
 
 export interface Permission {
   id: string
@@ -65,7 +65,7 @@ export function usePermissions(tenantId?: string) {
     try {
       setLoading(true)
       setError(null)
-      
+
       const userPermissions = await getCurrentUserPermissions(tenantId)
       setPermissions(userPermissions)
     } catch (err) {
@@ -130,7 +130,7 @@ export function useRoles(tenantId?: string) {
     try {
       setLoading(true)
       setError(null)
-      
+
       const userRoles = await getCurrentUserRoles(tenantId)
       setRoles(userRoles)
     } catch (err) {
@@ -178,7 +178,7 @@ export function useRoles(tenantId?: string) {
 export function useAuth(tenantId?: string) {
   const permissions = usePermissions(tenantId)
   const roles = useRoles(tenantId)
-  
+
   return {
     ...permissions,
     ...roles,
@@ -192,32 +192,32 @@ export function useAuth(tenantId?: string) {
  */
 async function getCurrentUserRoles(tenantId?: string): Promise<any[]> {
   if (!pocketbase.authStore.model) return []
-  
+
   const userId = pocketbase.authStore.model.id
   let filter = `user = "${userId}"`
-  
+
   if (tenantId) {
     filter += ` && tenant = "${tenantId}"`
   }
-  
+
   const userRoles = await pocketbase.collection('hub_user_roles').getList(1, 100, {
     filter: filter,
     expand: 'role,tenant'
   })
-  
+
   return userRoles.items
 }
 
 async function getCurrentUserPermissions(tenantId?: string): Promise<any[]> {
   const userRoles = await getCurrentUserRoles(tenantId)
   if (!userRoles.length) return []
-  
+
   const roleIds = userRoles.map(ur => ur.role)
-  
+
   const rolePermissions = await pocketbase.collection('hub_role_permissions').getList(1, 100, {
     filter: `role = "${roleIds.join('" || role = "')}"`,
     expand: 'permission'
   })
-  
+
   return rolePermissions.items.map(rp => rp.expand?.permission)
 }

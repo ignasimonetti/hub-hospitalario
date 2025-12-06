@@ -20,6 +20,40 @@
 
 ---
 
+## 📚 DOCUMENTACIÓN
+
+### Documentación General
+| Documento | Ubicación | Descripción |
+|-----------|-----------|-------------|
+| **README del Proyecto** | `/docs/README_PROYECTO.md` | Este archivo - visión general |
+| **Arquitectura del Sistema** | `/docs/ARQUITECTURA_SISTEMA_FINAL.md` | Decisiones de arquitectura y estructura |
+| **Configuración de Email** | `/docs/email-configuration.md` | Configuración de correo electrónico |
+
+### Base de Datos (PocketBase)
+| Documento | Ubicación | Descripción |
+|-----------|-----------|-------------|
+| **Guía Maestra** | `/docs/infraestructura/GUIA_MAESTRA_POCKETBASE.md` | Autenticación, hooks, configuración |
+| **Esquema Completo** | `/docs/infraestructura/POCKETBASE_SCHEMA.md` | Colecciones, campos, relaciones, reglas API |
+
+### Sistema de Diseño
+| Documento | Ubicación | Descripción |
+|-----------|-----------|-------------|
+| **Design System** | `/apps/hub/docs/DESIGN_SYSTEM.md` | Paleta de colores, tipografía, componentes UI, modo oscuro |
+
+### Documentación por Módulo
+| Módulo | Ubicación | Descripción |
+|--------|-----------|-------------|
+| **Blog/Contenido** | `/apps/hub/src/app/modules/content/README.md` | Gestión de artículos y noticias |
+
+### Contexto para IA
+| Archivo | Ubicación | Descripción |
+|---------|-----------|-------------|
+| **Project Context** | `/.agent/workflows/project-context.md` | Referencias y convenciones para asistentes IA |
+
+> 💡 **Tip:** Al crear nuevos módulos, agregar un `README.md` en la carpeta del módulo siguiendo el patrón del módulo de Blog.
+
+---
+
 ## 🏗️ ARQUITECTURA TÉCNICA
 
 ### Stack Tecnológico

@@ -32,12 +32,13 @@ import {
   Save,
   X,
   AlertCircle,
- Loader2
+  Loader2
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useToast } from "@/hooks/use-toast";
+import { DashboardPreferences } from "@/components/profile/DashboardPreferences";
 
 interface UserHospital {
   id: string;
@@ -97,7 +98,7 @@ export default function ProfilePage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
-  
+
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -110,7 +111,7 @@ export default function ProfilePage() {
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
- });
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -149,7 +150,7 @@ export default function ProfilePage() {
                 created: fallbackUser.created,
                 updated: fallbackUser.updated
               });
-              
+
               // Inicializar datos del formulario con la información disponible
               setFormData({
                 firstName: fallbackUser.firstName || '',
@@ -170,13 +171,13 @@ export default function ProfilePage() {
         } else {
           // La respuesta es exitosa, procesar normalmente
           const data: FullProfileResponse = await response.json();
-          
+
           // Verificar si la respuesta tiene el formato esperado
           if (data && data.success && data.user) {
             setUser(data.user);
             setHospitals(data.hospitals || []);
             setUserRoles(data.userRoles || []);
-            
+
             // Inicializar datos del formulario
             setFormData({
               firstName: data.user.firstName || '',
@@ -388,7 +389,7 @@ export default function ProfilePage() {
     if (errors[field]) {
       setErrors((prev: any) => ({ ...prev, [field]: '' }));
     }
- };
+  };
 
   const formatDNI = (value: string) => {
     const numbers = value.replace(/\D/g, '');
@@ -437,7 +438,7 @@ export default function ProfilePage() {
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
@@ -451,9 +452,9 @@ export default function ProfilePage() {
                 <ArrowLeft className="h-4 w-4" />
                 Dashboard
               </Button>
-              
+
               <div className="h-6 w-px bg-gray-300 dark:bg-gray-600" />
-              
+
               <div className="flex items-center gap-2">
                 <UserCircle className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                 <div>
@@ -523,7 +524,7 @@ export default function ProfilePage() {
                           {getUserInitials()}
                         </AvatarFallback>
                       </Avatar>
-                      
+
                       {/* Badge de estado */}
                       <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 p-0.5 rounded-full">
                         <CheckCircle className="h-4 w-4 text-green-500" />
@@ -541,7 +542,7 @@ export default function ProfilePage() {
                       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                         {getUserDisplayName()}
                       </h2>
-                      
+
                       <div className="flex items-center gap-2 text-base text-gray-600 dark:text-gray-300">
                         <Mail className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                         <span>{user?.email}</span>
@@ -672,6 +673,8 @@ export default function ProfilePage() {
               </Card>
             </motion.div>
 
+            {/* ... (dentro del componente ProfilePage, después de la tarjeta de Info Institucional) */}
+
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -719,6 +722,16 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
             </motion.div>
+
+            {/* Preferencias de Dashboard */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.85 }}
+              className="lg:col-span-2"
+            >
+              <DashboardPreferences />
+            </motion.div>
           </div>
 
           {/* Acciones mejoradas */}
@@ -737,7 +750,7 @@ export default function ProfilePage() {
               <ArrowLeft className="h-4 w-4" />
               Volver al Dashboard
             </Button>
-            
+
             <Button
               size="lg"
               onClick={openEditModal}

@@ -99,7 +99,7 @@ export function TagSelector({ selectedTags, onTagsChange }: TagSelectorProps) {
         <div className="space-y-3">
             {/* Multi-select dropdown */}
             <Select onValueChange={handleSelectChange}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200">
                     <SelectValue placeholder="Seleccionar etiquetas..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -122,9 +122,9 @@ export function TagSelector({ selectedTags, onTagsChange }: TagSelectorProps) {
             </Select>
 
             {/* Selected tags display */}
-            <div className="flex flex-wrap gap-2 min-h-[38px] p-2 border rounded-md bg-background">
+            <div className="flex flex-wrap gap-2 min-h-[38px] p-2 border rounded-md bg-background dark:bg-slate-950 dark:border-slate-800">
                 {selectedTagObjects.map(tag => (
-                    <Badge key={tag.id} variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+                    <Badge key={tag.id} variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1 dark:bg-slate-800 dark:text-slate-200">
                         {tag.Etiquetas}
                         <button
                             type="button"
@@ -151,6 +151,7 @@ export function TagSelector({ selectedTags, onTagsChange }: TagSelectorProps) {
                             placeholder="Nombre de la etiqueta"
                             value={newTagName}
                             onChange={e => setNewTagName(e.target.value)}
+                            className="dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400"
                         />
                     </div>
                     <DialogFooter>

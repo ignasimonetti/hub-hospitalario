@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Eye } from "lucide-react";
+import { ArrowLeft, Save, Eye, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Link from 'next/link';
 import { RichTextEditor } from "@/components/modules/RichTextEditor";
@@ -119,12 +119,12 @@ function NewArticlePage() {
     return (
         <div className="container mx-auto py-10 px-4 md:px-8 max-w-5xl pb-32">
             <div className="mb-8">
-                <div className="flex items-center gap-2 mb-4 text-muted-foreground">
-                    <Link href="/modules/content" className="hover:text-foreground transition-colors flex items-center gap-1">
+                <div className="flex items-center gap-2 mb-4 text-muted-foreground dark:text-slate-400">
+                    <Link href="/modules/content" className="hover:text-foreground dark:hover:text-slate-200 transition-colors flex items-center gap-1">
                         <ArrowLeft className="h-4 w-4" /> Volver
                     </Link>
                     <span>/</span>
-                    <span className="text-foreground font-medium">Nuevo Artículo</span>
+                    <span className="text-foreground dark:text-slate-200 font-medium">Nuevo Artículo</span>
                 </div>
 
                 <div className="flex items-start justify-between gap-4">
@@ -132,7 +132,7 @@ function NewArticlePage() {
                         <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-slate-100 mb-2">
                             Crear Nuevo Artículo
                         </h1>
-                        <p className="text-muted-foreground">
+                        <p className="text-muted-foreground dark:text-slate-400">
                             Escribe y publica una nueva historia para el hospital.
                         </p>
                     </div>
@@ -160,14 +160,14 @@ function NewArticlePage() {
                                 onChange={(e) => setTitle(e.target.value)}
                                 required
                                 placeholder="Título del artículo..."
-                                className="text-4xl font-bold border-none shadow-none px-0 focus-visible:ring-0 bg-transparent placeholder:text-muted-foreground/40 h-auto py-2"
+                                className="text-4xl font-bold border-none shadow-none px-0 focus-visible:ring-0 bg-transparent placeholder:text-muted-foreground/50 dark:placeholder:text-slate-400 h-auto py-2 text-gray-900 dark:text-slate-100"
                             />
                             <Textarea
                                 id="summary"
                                 value={summary}
                                 onChange={(e) => setSummary(e.target.value)}
                                 placeholder="Escribe un breve resumen o introducción..."
-                                className="text-xl text-muted-foreground border-none shadow-none px-0 focus-visible:ring-0 bg-transparent resize-none min-h-[80px]"
+                                className="text-xl text-muted-foreground dark:text-slate-400 border-none shadow-none px-0 focus-visible:ring-0 bg-transparent resize-none min-h-[80px] placeholder:text-muted-foreground/50 dark:placeholder:text-slate-400"
                             />
                         </div>
 
@@ -184,13 +184,13 @@ function NewArticlePage() {
                     <div className="space-y-6">
                         <Card className="border-gray-200 dark:border-slate-800 shadow-sm dark:bg-slate-900/50">
                             <CardHeader>
-                                <CardTitle className="text-base font-semibold">Publicación</CardTitle>
+                                <CardTitle className="text-base font-semibold dark:text-slate-200">Publicación</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="status">Estado</Label>
+                                    <Label htmlFor="status" className="dark:text-slate-300">Estado</Label>
                                     <Select value={status} onValueChange={setStatus}>
-                                        <SelectTrigger>
+                                        <SelectTrigger className="dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -203,23 +203,25 @@ function NewArticlePage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="published_date">Fecha de Publicación</Label>
+                                    <Label htmlFor="published_date" className="dark:text-slate-300">Fecha de Publicación</Label>
                                     <Input
                                         id="published_date"
                                         type="date"
                                         value={publishedDate}
                                         onChange={(e) => setPublishedDate(e.target.value)}
                                         required
+                                        className="dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200 [color-scheme:light] dark:[color-scheme:dark]"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="scheduled_for">Programar para (Opcional)</Label>
+                                    <Label htmlFor="scheduled_for" className="dark:text-slate-300">Programar para (Opcional)</Label>
                                     <Input
                                         id="scheduled_for"
                                         type="datetime-local"
                                         value={scheduledFor}
                                         onChange={(e) => setScheduledFor(e.target.value)}
+                                        className="dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200 [color-scheme:light] dark:[color-scheme:dark]"
                                     />
                                     <p className="text-xs text-muted-foreground">
                                         Si se establece, se publicará automáticamente en esta fecha.
@@ -232,11 +234,11 @@ function NewArticlePage() {
 
                         <Card className="border-gray-200 dark:border-slate-800 shadow-sm dark:bg-slate-900/50">
                             <CardHeader>
-                                <CardTitle className="text-base font-semibold">Multimedia</CardTitle>
+                                <CardTitle className="text-base font-semibold dark:text-slate-200">Multimedia</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="cover_image">Imagen de Portada</Label>
+                                    <Label htmlFor="cover_image" className="dark:text-slate-300">Imagen de Portada</Label>
                                     <ImageUpload
                                         value={coverImage}
                                         onChange={setCoverImage}
@@ -244,13 +246,14 @@ function NewArticlePage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="video_link">Link de Video</Label>
+                                    <Label htmlFor="video_link" className="dark:text-slate-300">Link de Video</Label>
                                     <Input
                                         id="video_link"
                                         type="url"
                                         value={videoLink}
                                         onChange={(e) => setVideoLink(e.target.value)}
                                         placeholder="https://youtube.com..."
+                                        className="dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400"
                                     />
                                 </div>
                             </CardContent>
@@ -258,11 +261,11 @@ function NewArticlePage() {
 
                         <Card className="border-gray-200 dark:border-slate-800 shadow-sm dark:bg-slate-900/50">
                             <CardHeader>
-                                <CardTitle className="text-base font-semibold">Clasificación</CardTitle>
+                                <CardTitle className="text-base font-semibold dark:text-slate-200">Clasificación</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="space-y-2">
-                                    <Label>Secciones</Label>
+                                    <Label className="dark:text-slate-300">Secciones</Label>
                                     <div className="space-y-2">
                                         {SECTIONS.map(section => (
                                             <div key={section} className="flex items-center space-x-2">
@@ -273,7 +276,7 @@ function NewArticlePage() {
                                                 />
                                                 <label
                                                     htmlFor={`section-${section}`}
-                                                    className="text-sm font-medium cursor-pointer"
+                                                    className="text-sm font-medium cursor-pointer dark:text-slate-300"
                                                 >
                                                     {section}
                                                 </label>
@@ -283,7 +286,7 @@ function NewArticlePage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Etiquetas</Label>
+                                    <Label className="dark:text-slate-300">Etiquetas</Label>
                                     <TagSelector
                                         selectedTags={selectedTags}
                                         onTagsChange={setSelectedTags}
@@ -291,7 +294,7 @@ function NewArticlePage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Plataformas</Label>
+                                    <Label className="dark:text-slate-300">Plataformas</Label>
                                     <div className="space-y-2">
                                         {PLATFORMS.map(platform => (
                                             <div key={platform} className="flex items-center space-x-2">
@@ -302,7 +305,7 @@ function NewArticlePage() {
                                                 />
                                                 <label
                                                     htmlFor={`platform-${platform}`}
-                                                    className="text-sm font-medium cursor-pointer"
+                                                    className="text-sm font-medium cursor-pointer dark:text-slate-300"
                                                 >
                                                     {platform}
                                                 </label>
@@ -319,12 +322,12 @@ function NewArticlePage() {
                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-t border-gray-200 dark:border-slate-800 z-50 flex items-center justify-end gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:left-16 md:left-64 transition-all duration-300">
                     <div className="container max-w-5xl flex justify-end gap-4 px-4 md:px-8">
                         <Link href="/modules/content">
-                            <Button type="button" variant="outline" size="lg">
+                            <Button type="button" variant="outline" size="lg" className="dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800">
                                 Cancelar
                             </Button>
                         </Link>
-                        <Button type="submit" disabled={isLoading} size="lg" className="min-w-[200px]">
-                            <Save className="mr-2 h-4 w-4" />
+                        <Button type="submit" disabled={isLoading} size="lg" className="min-w-[200px] dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white">
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                             {isLoading ? 'Guardando...' : 'Guardar Artículo'}
                         </Button>
                     </div>

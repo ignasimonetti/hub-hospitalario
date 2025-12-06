@@ -54,14 +54,14 @@ export function ArticlePreview({
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button variant="outline" size="sm" className="gap-2 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800">
                     <Eye className="h-4 w-4" />
                     Vista Previa
                 </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
-                <DialogHeader className="px-6 py-4 border-b">
-                    <DialogTitle>Vista Previa del Artículo</DialogTitle>
+                <DialogHeader className="px-6 py-4 border-b dark:border-slate-800">
+                    <DialogTitle className="dark:text-slate-100">Vista Previa del Artículo</DialogTitle>
                 </DialogHeader>
 
                 <ScrollArea className="flex-1 p-6">
@@ -70,7 +70,7 @@ export function ArticlePreview({
                         <header className="space-y-4 text-center">
                             <div className="flex flex-wrap justify-center gap-2">
                                 {sections.map(section => (
-                                    <Badge key={section} variant="secondary">
+                                    <Badge key={section} variant="secondary" className="dark:bg-slate-800 dark:text-slate-200">
                                         {section}
                                     </Badge>
                                 ))}
@@ -80,7 +80,7 @@ export function ArticlePreview({
                                 {title || "Sin título"}
                             </h1>
 
-                            <div className="flex items-center justify-center text-sm text-muted-foreground gap-2">
+                            <div className="flex items-center justify-center text-sm text-muted-foreground dark:text-slate-400 gap-2">
                                 <span>Por Autor (Tú)</span>
                                 <span>•</span>
                                 <time>
@@ -99,14 +99,14 @@ export function ArticlePreview({
                                 />
                             </div>
                         ) : (
-                            <div className="aspect-video w-full rounded-xl border bg-muted flex items-center justify-center text-muted-foreground">
+                            <div className="aspect-video w-full rounded-xl border bg-muted dark:bg-slate-800 dark:border-slate-700 flex items-center justify-center text-muted-foreground dark:text-slate-400">
                                 Sin imagen de portada
                             </div>
                         )}
 
                         {/* Summary */}
                         {summary && (
-                            <div className="text-xl text-muted-foreground leading-relaxed border-l-4 border-primary pl-4 italic">
+                            <div className="text-xl text-muted-foreground dark:text-slate-300 leading-relaxed border-l-4 border-primary pl-4 italic">
                                 {summary}
                             </div>
                         )}

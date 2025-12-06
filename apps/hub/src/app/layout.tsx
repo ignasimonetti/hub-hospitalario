@@ -7,6 +7,8 @@ import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { WorkspaceGuard } from "@/components/WorkspaceGuard";
 
+import { UmamiScript } from "@/components/analytics/UmamiScript";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -36,6 +38,7 @@ export default function RootLayout({
               </WorkspaceGuard>
             </WorkspaceProvider>
           </ThemeProvider>
+          <UmamiScript />
         </SessionProvider>
       </body>
     </html>

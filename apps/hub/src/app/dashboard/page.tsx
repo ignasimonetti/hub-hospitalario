@@ -15,6 +15,7 @@ const NotionEditor = dynamic(() => import('@hospital/core').then(mod => mod.Noti
 });
 
 import { getDashboardNote, saveDashboardNote } from "@/app/actions/dashboard-notes";
+import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
 
 export default function DashboardPage() {
   const { currentTenant, currentRole, setWorkspace } = useWorkspace();
@@ -122,8 +123,18 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Dashboard Widgets */}
+          <div className="mt-8">
+            <DashboardWidgets />
+          </div>
+
           {/* Notion-like Canvas */}
           <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+                Notas
+              </h2>
+            </div>
             {!isLoadingNote && (
               <NotionEditor
                 key={noteContent ? 'loaded' : 'empty'} // Force re-mount when content loads

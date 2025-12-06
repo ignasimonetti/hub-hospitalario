@@ -35,7 +35,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         content: content,
         editorProps: {
             attributes: {
-                class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[300px] p-4 border rounded-md',
+                class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[300px] p-4 dark:prose-invert',
             },
         },
         onUpdate: ({ editor }) => {
@@ -71,13 +71,13 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     };
 
     return (
-        <div className="border rounded-md overflow-hidden bg-white dark:bg-slate-950">
-            <div className="flex flex-wrap gap-1 p-2 border-b bg-muted/30">
+        <div className="border rounded-md overflow-hidden bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
+            <div className="flex flex-wrap gap-1 p-2 border-b bg-gray-50 dark:bg-slate-950/50 border-gray-200 dark:border-slate-800">
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => editor.chain().focus().toggleBold().run()}
-                    className={editor.isActive('bold') ? 'bg-muted' : ''}
+                    className={editor.isActive('bold') ? 'bg-gray-200 dark:bg-slate-800 text-foreground dark:text-slate-100' : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'}
                     type="button"
                 >
                     <Bold className="h-4 w-4" />
@@ -86,7 +86,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => editor.chain().focus().toggleItalic().run()}
-                    className={editor.isActive('italic') ? 'bg-muted' : ''}
+                    className={editor.isActive('italic') ? 'bg-gray-200 dark:bg-slate-800 text-foreground dark:text-slate-100' : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'}
                     type="button"
                 >
                     <Italic className="h-4 w-4" />
@@ -96,7 +96,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                    className={editor.isActive('heading', { level: 1 }) ? 'bg-muted' : ''}
+                    className={editor.isActive('heading', { level: 1 }) ? 'bg-gray-200 dark:bg-slate-800 text-foreground dark:text-slate-100' : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'}
                     type="button"
                 >
                     <Heading1 className="h-4 w-4" />
@@ -105,7 +105,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                    className={editor.isActive('heading', { level: 2 }) ? 'bg-muted' : ''}
+                    className={editor.isActive('heading', { level: 2 }) ? 'bg-gray-200 dark:bg-slate-800 text-foreground dark:text-slate-100' : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'}
                     type="button"
                 >
                     <Heading2 className="h-4 w-4" />
@@ -115,7 +115,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => editor.chain().focus().toggleBulletList().run()}
-                    className={editor.isActive('bulletList') ? 'bg-muted' : ''}
+                    className={editor.isActive('bulletList') ? 'bg-gray-200 dark:bg-slate-800 text-foreground dark:text-slate-100' : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'}
                     type="button"
                 >
                     <List className="h-4 w-4" />
@@ -124,7 +124,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                    className={editor.isActive('orderedList') ? 'bg-muted' : ''}
+                    className={editor.isActive('orderedList') ? 'bg-gray-200 dark:bg-slate-800 text-foreground dark:text-slate-100' : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'}
                     type="button"
                 >
                     <ListOrdered className="h-4 w-4" />
@@ -134,7 +134,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     variant="ghost"
                     size="sm"
                     onClick={setLink}
-                    className={editor.isActive('link') ? 'bg-muted' : ''}
+                    className={editor.isActive('link') ? 'bg-gray-200 dark:bg-slate-800 text-foreground dark:text-slate-100' : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'}
                     type="button"
                 >
                     <LinkIcon className="h-4 w-4" />
@@ -143,6 +143,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     variant="ghost"
                     size="sm"
                     onClick={addImage}
+                    className="text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
                     type="button"
                 >
                     <ImageIcon className="h-4 w-4" />
@@ -151,7 +152,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                    className={editor.isActive('blockquote') ? 'bg-muted' : ''}
+                    className={editor.isActive('blockquote') ? 'bg-gray-200 dark:bg-slate-800 text-foreground dark:text-slate-100' : 'text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'}
                     type="button"
                 >
                     <Quote className="h-4 w-4" />
@@ -162,6 +163,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                         size="sm"
                         onClick={() => editor.chain().focus().undo().run()}
                         disabled={!editor.can().undo()}
+                        className="text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50"
                         type="button"
                     >
                         <Undo className="h-4 w-4" />
@@ -171,6 +173,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
                         size="sm"
                         onClick={() => editor.chain().focus().redo().run()}
                         disabled={!editor.can().redo()}
+                        className="text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50"
                         type="button"
                     >
                         <Redo className="h-4 w-4" />

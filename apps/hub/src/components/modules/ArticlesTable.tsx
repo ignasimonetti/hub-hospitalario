@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Search, Edit, Trash2, Archive, CheckCircle, AlertTriangle, LayoutGrid, List, Calendar, User } from "lucide-react";
+import { FileText, Plus, Search, Edit, Trash2, Archive, CheckCircle, AlertTriangle, LayoutGrid, List, Calendar, User, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -167,32 +167,39 @@ export function ArticlesTable() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-slate-100">Blog</h2>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground dark:text-slate-400">
                         Gestiona y publica noticias y artículos para el hospital.
                     </p>
                 </div>
-                <Link href="/modules/content/new">
-                    <Button className="shadow-lg hover:shadow-xl transition-all">
-                        <Plus className="mr-2 h-4 w-4" /> Nuevo Artículo
-                    </Button>
-                </Link>
+                <div className="flex gap-2 items-center">
+                    <Link href="/modules/content/stats">
+                        <Button variant="outline" className="h-10 shadow-sm hover:shadow-md transition-all dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                            <BarChart3 className="mr-2 h-4 w-4" /> Estadísticas
+                        </Button>
+                    </Link>
+                    <Link href="/modules/content/new">
+                        <Button className="h-10 border border-transparent shadow-sm hover:shadow-md transition-all dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white">
+                            <Plus className="mr-2 h-4 w-4" /> Nuevo Artículo
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             {/* Filters & Controls */}
-            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-900/50 backdrop-blur-sm p-4 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm sticky top-0 z-10">
+            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-900/80 backdrop-blur-md p-4 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm sticky top-0 z-10 transition-colors">
                 <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto flex-1">
                     <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-slate-400" />
                         <Input
                             placeholder="Buscar artículos..."
-                            className="pl-9 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800"
+                            className="pl-9 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                         />
                     </div>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-full sm:w-[160px] bg-gray-50 dark:bg-slate-950">
+                        <SelectTrigger className="w-full sm:w-[160px] bg-gray-50 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200">
                             <SelectValue placeholder="Estado" />
                         </SelectTrigger>
                         <SelectContent>
@@ -204,7 +211,7 @@ export function ArticlesTable() {
                         </SelectContent>
                     </Select>
                     <Select value={sectionFilter} onValueChange={setSectionFilter}>
-                        <SelectTrigger className="w-full sm:w-[160px] bg-gray-50 dark:bg-slate-950">
+                        <SelectTrigger className="w-full sm:w-[160px] bg-gray-50 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200">
                             <SelectValue placeholder="Sección" />
                         </SelectTrigger>
                         <SelectContent>
@@ -224,6 +231,7 @@ export function ArticlesTable() {
                         size="icon"
                         onClick={() => setViewMode('grid')}
                         title="Vista de cuadrícula"
+                        className="dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
                     >
                         <LayoutGrid className="h-4 w-4" />
                     </Button>
@@ -232,6 +240,7 @@ export function ArticlesTable() {
                         size="icon"
                         onClick={() => setViewMode('list')}
                         title="Vista de lista"
+                        className="dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
                     >
                         <List className="h-4 w-4" />
                     </Button>
@@ -268,7 +277,7 @@ export function ArticlesTable() {
                     {articles.map((article) => (
                         <div
                             key={article.id}
-                            className="group relative flex flex-col bg-white dark:bg-slate-800/40 rounded-2xl border border-gray-200 dark:border-slate-700/50 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/30 dark:hover:border-blue-400/30"
+                            className="group relative flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/30 dark:hover:border-blue-400/30"
                         >
                             {/* Image Area */}
                             <div className="relative aspect-video overflow-hidden bg-gray-100 dark:bg-slate-800">
@@ -305,26 +314,26 @@ export function ArticlesTable() {
                                     {article.title}
                                 </h3>
 
-                                <p className="text-sm text-muted-foreground line-clamp-3 mb-4 flex-1">
+                                <p className="text-sm text-muted-foreground dark:text-slate-300 line-clamp-3 mb-4 flex-1">
                                     {article.summary || "Sin resumen disponible..."}
                                 </p>
 
                                 <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-slate-800 mt-auto">
-                                    <div className="flex items-center text-xs text-muted-foreground">
+                                    <div className="flex items-center text-xs text-muted-foreground dark:text-slate-400">
                                         <Calendar className="h-3.5 w-3.5 mr-1.5" />
                                         {format(new Date(article.published_date), 'd MMM, yyyy', { locale: es })}
                                     </div>
 
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Link href={`/modules/content/${article.id}`}>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30">
                                                 <Edit className="h-4 w-4" />
                                             </Button>
                                         </Link>
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-8 w-8 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                                            className="h-8 w-8 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-900/30"
                                             onClick={() => openConfirm('delete', article)}
                                         >
                                             <Trash2 className="h-4 w-4" />
@@ -337,17 +346,17 @@ export function ArticlesTable() {
                 </div>
             ) : (
                 /* LIST VIEW (Original Table) */
-                <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/50">
+                <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
                     <CardContent className="p-0">
                         <Table>
                             <TableHeader>
-                                <TableRow className="bg-gray-50/50 dark:bg-slate-900/50 hover:bg-gray-50/50 dark:hover:bg-slate-900/50">
-                                    <TableHead className="w-[80px]">Imagen</TableHead>
-                                    <TableHead>Título</TableHead>
-                                    <TableHead>Estado</TableHead>
-                                    <TableHead className="hidden md:table-cell">Secciones</TableHead>
-                                    <TableHead className="hidden lg:table-cell">Fecha</TableHead>
-                                    <TableHead className="text-right">Acciones</TableHead>
+                                <TableRow className="bg-gray-50/50 dark:bg-slate-950/50 hover:bg-gray-50/50 dark:hover:bg-slate-950/50 border-gray-200 dark:border-slate-800">
+                                    <TableHead className="w-[80px] dark:text-slate-400">Imagen</TableHead>
+                                    <TableHead className="dark:text-slate-400">Título</TableHead>
+                                    <TableHead className="dark:text-slate-400">Estado</TableHead>
+                                    <TableHead className="hidden md:table-cell dark:text-slate-400">Secciones</TableHead>
+                                    <TableHead className="hidden lg:table-cell dark:text-slate-400">Fecha</TableHead>
+                                    <TableHead className="text-right dark:text-slate-400">Acciones</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -368,7 +377,7 @@ export function ArticlesTable() {
                                                 )}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="font-medium">
+                                        <TableCell className="font-medium dark:text-slate-200">
                                             <span className="line-clamp-1">{article.title}</span>
                                         </TableCell>
                                         <TableCell>
@@ -377,24 +386,24 @@ export function ArticlesTable() {
                                         <TableCell className="hidden md:table-cell">
                                             <div className="flex flex-wrap gap-1">
                                                 {article.sections?.slice(0, 2).map((section: string) => (
-                                                    <Badge key={section} variant="secondary" className="text-xs">
+                                                    <Badge key={section} variant="secondary" className="text-xs dark:bg-slate-800 dark:text-slate-200">
                                                         {section}
                                                     </Badge>
                                                 ))}
                                                 {article.sections?.length > 2 && (
-                                                    <Badge variant="secondary" className="text-xs">
+                                                    <Badge variant="secondary" className="text-xs dark:bg-slate-800 dark:text-slate-200">
                                                         +{article.sections.length - 2}
                                                     </Badge>
                                                 )}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                                        <TableCell className="hidden lg:table-cell text-sm text-muted-foreground dark:text-slate-400">
                                             {format(new Date(article.published_date), 'dd/MM/yyyy', { locale: es })}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                                                 <Link href={`/modules/content/${article.id}`}>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30">
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
                                                 </Link>
@@ -416,7 +425,7 @@ export function ArticlesTable() {
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => openConfirm('archive', article)}
-                                                        className="h-8 w-8"
+                                                        className="h-8 w-8 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
                                                         title="Archivar"
                                                     >
                                                         <Archive className="h-4 w-4" />
@@ -426,7 +435,7 @@ export function ArticlesTable() {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-900/30"
                                                     onClick={() => openConfirm('delete', article)}
                                                     title="Eliminar"
                                                 >

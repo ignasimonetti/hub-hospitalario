@@ -8,8 +8,16 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { createUser, updateUser } from "@/app/actions/users";
-import { Upload, Loader2, AlertTriangle, User } from "lucide-react";
+import { Upload, Loader2, AlertTriangle, User, Building2, Shield } from "lucide-react";
 import { pocketbase } from "@/lib/auth";
 import {
     AlertDialog,
@@ -45,8 +53,34 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Roles and Tenants state
+    const [tenants, setTenants] = useState<any[]>([]);
+    const [roles, setRoles] = useState<any[]>([]);
+    const [selectedTenantId, setSelectedTenantId] = useState<string>("");
+    const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+    const [activeUserRoles, setActiveUserRoles] = useState<any[]>([]);
+
     const isEditing = !!user;
 
+    // Fetch lists on mount
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [tenantsList, rolesList] = await Promise.all([
+                    pocketbase.collection('hub_tenants').getFullList({ sort: 'name' }),
+                    pocketbase.collection('hub_roles').getFullList({ sort: 'name' }),
+                ]);
+                setTenants(tenantsList);
+                setRoles(rolesList);
+            } catch (err: any) {
+                if (err.isAbort) return; // Ignore auto-cancellation
+                console.error("Error fetching tenants/roles:", err);
+            }
+        };
+        fetchData();
+    }, []);
+
+    // Update form when user changes
     useEffect(() => {
         if (user) {
             setFirstName(user.firstName || "");
@@ -65,6 +99,25 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
             } else {
                 setAvatarPreview(null);
             }
+
+            // Store all user roles for reference
+            const userRoles = user.expand?.hub_user_roles_via_user || [];
+            setActiveUserRoles(userRoles);
+
+            // Pre-select tenant: use passed prop, or first from user roles, or first available
+            let initialTenant = currentTenantId || "";
+            if (!initialTenant && userRoles.length > 0) {
+                // Try to find a role with a tenant
+                const roleWithTenant = userRoles.find((ur: any) => ur.tenant);
+                if (roleWithTenant) initialTenant = roleWithTenant.tenant;
+            }
+            if (!initialTenant && tenants.length > 0) {
+                // Option: default to first tenant if nothing else?
+                // initialTenant = tenants[0].id; 
+                // Better to leave empty if creating new user unless currentTenantId is forced
+            }
+            setSelectedTenantId(initialTenant);
+
         } else {
             setFirstName("");
             setLastName("");
@@ -75,9 +128,31 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
             setSendInvitation(true);
             setIsActive(true);
             setAvatarPreview(null);
+            setActiveUserRoles([]);
+            // new user defaults
+            setSelectedTenantId(currentTenantId || "");
+            setSelectedRoleIds([]);
         }
         setError(null);
-    }, [user]);
+    }, [user, currentTenantId, tenants]); // tenants added to dependency to allow auto-select if needed later
+
+    // Update selected roles when tenant changes
+    useEffect(() => {
+        if (selectedTenantId && user) {
+            // Filter roles for this tenant
+            const rolesForTenant = activeUserRoles
+                .filter((ur: any) => ur.tenant === selectedTenantId)
+                .map((ur: any) => ur.role);
+            setSelectedRoleIds(rolesForTenant);
+        } else if (!user) {
+            // For new user, we keep the selection as is or clear it?
+            // If we change tenant, we should probably clear roles as they are per-tenant.
+            // But if I selected 'Doctor' and change from Hospital A to B, do I want to keep 'Doctor'?
+            // Let's assume yes for UX convenience in creation flow, but strictly speaking roles are tied to tenant.
+            // Actually, roles are globally defined (e.g. ID for 'Doctor' is constant).
+            // So keeping the selection is user-friendly. I will NOT clear selectedRoleIds when activeUserRoles is empty/new user.
+        }
+    }, [selectedTenantId, user, activeUserRoles]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -88,6 +163,16 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
             };
             reader.readAsDataURL(file);
         }
+    };
+
+    const handleRoleToggle = (roleId: string) => {
+        setSelectedRoleIds(prev => {
+            if (prev.includes(roleId)) {
+                return prev.filter(id => id !== roleId);
+            } else {
+                return [...prev, roleId];
+            }
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -114,9 +199,14 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
             formData.append("avatar", fileInput.files[0]);
         }
 
-        // Add tenant if available
-        if (currentTenantId) {
-            formData.append("tenantId", currentTenantId);
+        // Append Tenant & Roles
+        if (selectedTenantId) {
+            formData.append("tenantId", selectedTenantId);
+        }
+        // Always send roles array if we have a tenant selected, even if empty (to plain clear roles)
+        // But createUser/updateUser logic expects 'roles' only if provided.
+        if (selectedTenantId && selectedRoleIds.length >= 0) {
+            formData.append("roles", JSON.stringify(selectedRoleIds));
         }
 
         try {
@@ -159,8 +249,8 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
                     <SheetTitle>{isEditing ? "Editar Usuario" : "Nuevo Usuario"}</SheetTitle>
                     <SheetDescription>
                         {isEditing
-                            ? "Actualiza la información del usuario."
-                            : "Crea un nuevo usuario en el sistema."}
+                            ? "Actualiza la información y roles del usuario."
+                            : "Crea un nuevo usuario y asígnale hospital y roles."}
                     </SheetDescription>
                 </SheetHeader>
 
@@ -201,31 +291,29 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
                         </div>
                     </div>
 
-                    {/* First Name */}
-                    <div className="space-y-2">
-                        <Label htmlFor="firstName">Nombre *</Label>
-                        <Input
-                            id="firstName"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            placeholder="Ej: Juan"
-                            required
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="firstName">Nombre *</Label>
+                            <Input
+                                id="firstName"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                placeholder="Ej: Juan"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lastName">Apellido *</Label>
+                            <Input
+                                id="lastName"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                placeholder="Ej: Pérez"
+                                required
+                            />
+                        </div>
                     </div>
 
-                    {/* Last Name */}
-                    <div className="space-y-2">
-                        <Label htmlFor="lastName">Apellido *</Label>
-                        <Input
-                            id="lastName"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            placeholder="Ej: Pérez"
-                            required
-                        />
-                    </div>
-
-                    {/* Email */}
                     <div className="space-y-2">
                         <Label htmlFor="email">Email *</Label>
                         <Input
@@ -244,30 +332,94 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
                         )}
                     </div>
 
-                    {/* Phone */}
-                    <div className="space-y-2">
-                        <Label htmlFor="phone">Teléfono</Label>
-                        <Input
-                            id="phone"
-                            type="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="+54 9 11 1234-5678"
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Teléfono</Label>
+                            <Input
+                                id="phone"
+                                type="tel"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                placeholder="+54 9 11..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="dni">DNI</Label>
+                            <Input
+                                id="dni"
+                                value={dni}
+                                onChange={(e) => setDni(e.target.value)}
+                                placeholder="12345678"
+                            />
+                        </div>
                     </div>
 
-                    {/* DNI */}
-                    <div className="space-y-2">
-                        <Label htmlFor="dni">DNI</Label>
-                        <Input
-                            id="dni"
-                            value={dni}
-                            onChange={(e) => setDni(e.target.value)}
-                            placeholder="12345678"
-                        />
+                    {/* Roles & Tenants Section */}
+                    <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Building2 className="h-4 w-4 text-blue-600" />
+                            <h3 className="font-medium text-gray-900 dark:text-gray-100">Accesos y Hospitales</h3>
+                        </div>
+
+                        <div className="space-y-3">
+                            <Label>Hospital (Tenant)</Label>
+                            <Select
+                                value={selectedTenantId}
+                                onValueChange={setSelectedTenantId}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Seleccionar Hospital" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {tenants.map((t) => (
+                                        <SelectItem key={t.id} value={t.id}>
+                                            {t.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                                Selecciona el hospital para el cual quieres asignar roles.
+                            </p>
+                        </div>
+
+                        {selectedTenantId && (
+                            <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                                <Label>Roles Asignados</Label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border border-gray-200 dark:border-gray-800 rounded-md p-3 max-h-48 overflow-y-auto">
+                                    {roles.map((role) => {
+                                        const isChecked = selectedRoleIds.includes(role.id);
+                                        return (
+                                            <div
+                                                key={role.id}
+                                                className={`flex items-center space-x-3 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors ${isChecked ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                                                    }`}
+                                            >
+                                                <Checkbox
+                                                    id={`role-${role.id}`}
+                                                    checked={isChecked}
+                                                    onCheckedChange={() => handleRoleToggle(role.id)}
+                                                />
+                                                <Label
+                                                    htmlFor={`role-${role.id}`}
+                                                    className="cursor-pointer flex-1 font-normal text-sm"
+                                                >
+                                                    {role.name}
+                                                </Label>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Los permisos se aplicarán al usuario solo en el hospital seleccionado.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Password (only for new users) */}
+                    <Separator className="my-6" />
+
+                    {/* Password Field */}
                     {!isEditing && (
                         <div className="space-y-2">
                             <Label htmlFor="password">Contraseña</Label>
@@ -284,49 +436,46 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
                         </div>
                     )}
 
-                    {/* Send Invitation (only for new users) */}
-                    {!isEditing && (
-                        <div className="flex items-center justify-between p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/30">
-                            <div className="space-y-1 flex-1">
-                                <Label className="text-sm font-semibold">Enviar Invitación</Label>
-                                <p className="text-xs text-muted-foreground">
-                                    {sendInvitation
-                                        ? "Se enviará un email de invitación al usuario"
-                                        : "El usuario puede acceder inmediatamente"}
-                                </p>
-                            </div>
-                            <Switch
-                                checked={sendInvitation}
-                                onCheckedChange={setSendInvitation}
-                            />
-                        </div>
-                    )}
-
-                    {/* Active Switch (only for editing existing users) */}
-                    {isEditing && (
-                        <div className="flex items-center justify-between p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/30 dark:to-gray-900/50">
-                            <div className="space-y-1 flex-1">
-                                <Label className="text-sm font-semibold">Estado de Acceso</Label>
-                                <div className="flex items-center gap-2">
-                                    {isActive ? (
-                                        <>
-                                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                            <span className="text-sm text-green-600 dark:text-green-400 font-medium">Usuario activo</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                            <span className="text-sm text-red-600 dark:text-red-400 font-medium">Usuario inactivo</span>
-                                        </>
-                                    )}
+                    {/* Status & Invitation */}
+                    <div className="space-y-4">
+                        {!isEditing && (
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-900/30">
+                                <div className="space-y-1 flex-1">
+                                    <Label className="text-sm font-semibold">Enviar Invitación</Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Se enviará un email de invitación al usuario
+                                    </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                    {isActive
-                                        ? "El usuario puede acceder al sistema normalmente"
-                                        : "El usuario NO puede iniciar sesión"}
-                                </p>
+                                <Switch
+                                    checked={sendInvitation}
+                                    onCheckedChange={setSendInvitation}
+                                />
                             </div>
-                            <div className="flex flex-col items-center gap-1">
+                        )}
+
+                        {isEditing && (
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/30 dark:to-gray-900/50">
+                                <div className="space-y-1 flex-1">
+                                    <Label className="text-sm font-semibold">Estado de Acceso</Label>
+                                    <div className="flex items-center gap-2">
+                                        {isActive ? (
+                                            <>
+                                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                                <span className="text-sm text-green-600 dark:text-green-400 font-medium">Usuario activo</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                                <span className="text-sm text-red-600 dark:text-red-400 font-medium">Usuario inactivo</span>
+                                            </>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {isActive
+                                            ? "El usuario puede acceder al sistema normalmente"
+                                            : "El usuario NO puede iniciar sesión"}
+                                    </p>
+                                </div>
                                 <Switch
                                     checked={isActive}
                                     onCheckedChange={(value) => {
@@ -336,25 +485,19 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
                                             setIsActive(value);
                                         }
                                     }}
-                                    className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 dark:data-[state=unchecked]:bg-gray-600"
                                 />
-                                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                    {isActive ? "ON" : "OFF"}
-                                </span>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     {error && (
-                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
                             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                         </div>
                     )}
 
-                    <Separator />
-
-                    {/* Actions */}
-                    <div className="flex justify-end gap-3">
+                    <div className="flex justify-end gap-3 pt-2">
                         <Button
                             type="button"
                             variant="outline"
@@ -393,7 +536,6 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
                                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
                                     <li>El usuario <strong>NO podrá iniciar sesión</strong></li>
                                     <li>Se bloqueará todo acceso al sistema</li>
-                                    <li>El email permanece verificado (no se desverifica)</li>
                                     <li>Los datos del usuario se mantienen intactos</li>
                                     <li>Podrás reactivar el usuario en cualquier momento</li>
                                 </ul>

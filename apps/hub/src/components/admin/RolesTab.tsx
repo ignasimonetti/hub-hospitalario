@@ -37,7 +37,7 @@ export function RolesTab() {
         setIsLoading(true);
         const result = await getRoles();
         if (result.success) {
-            setRoles(result.data);
+            setRoles(JSON.parse(JSON.stringify(result.data)));
         } else {
             toast.error("Error al cargar roles");
         }

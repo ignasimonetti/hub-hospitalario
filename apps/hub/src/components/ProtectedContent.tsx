@@ -2,7 +2,7 @@
 // Versión simplificada y funcional
 
 import { ReactNode } from 'react'
-import { usePermissions } from '@/hooks/usePermissions'
+import { usePermissions, useRoles } from '@/hooks/usePermissions'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ShieldX, Lock } from 'lucide-react'
@@ -27,9 +27,10 @@ export function ProtectedContent({
   children: ReactNode
   fallback?: ReactNode
 }) {
-  const { hasPermission, loading } = usePermissions(tenantId)
+  const { hasPermission, loading: loadingPermissions } = usePermissions(tenantId)
+  const { hasRole, hasAnyRole, loading: loadingRoles } = useRoles(tenantId)
 
-  if (loading) {
+  if (loadingPermissions || loadingRoles) {
     return (
       <div className="flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -45,6 +46,16 @@ export function ProtectedContent({
 
   // Verificar múltiples permisos
   if (permissions.length > 0 && !permissions.some((p: string) => hasPermission(p))) {
+    return fallback || <DefaultNoPermissionMessage />
+  }
+
+  // Verificar rol específico
+  if (role && !hasRole(role)) {
+    return fallback || <DefaultNoPermissionMessage />
+  }
+
+  // Verificar múltiples roles (acceso si tiene AL MENOS UNO de los roles listados)
+  if (roles.length > 0 && !hasAnyRole(roles)) {
     return fallback || <DefaultNoPermissionMessage />
   }
 
@@ -105,7 +116,7 @@ export function ProtectedButton({
  */
 export function useCanAccess(permission: string, tenantId?: string) {
   const { hasPermission, loading } = usePermissions(tenantId)
-  
+
   return {
     canAccess: hasPermission(permission),
     loading,

@@ -7,6 +7,8 @@ const ROLES_COLLECTION = 'hub_roles';
 const PERMISSIONS_COLLECTION = 'hub_permissions';
 const ROLE_PERMISSIONS_COLLECTION = 'hub_role_permissions';
 
+const sanitize = (data: any) => JSON.parse(JSON.stringify(data));
+
 /**
  * Get all roles with their permissions
  */
@@ -31,7 +33,7 @@ export async function getRoles() {
         // Map permissions to roles
         const rolesWithPermissions = roles.map(role => {
             const permissions = rolePermissions
-                .filter(rp => rp.role === role.id && rp.expand?.permission)
+                .filter(rp => String(rp.role) === String(role.id) && rp.expand?.permission)
                 .map(rp => rp.expand.permission);
 
             return {
@@ -42,7 +44,7 @@ export async function getRoles() {
 
         return {
             success: true,
-            data: rolesWithPermissions,
+            data: sanitize(rolesWithPermissions),
             error: null,
         };
     } catch (error: any) {
@@ -69,7 +71,7 @@ export async function getPermissions() {
 
         return {
             success: true,
-            data: permissions,
+            data: sanitize(permissions),
             error: null,
         };
     } catch (error: any) {
@@ -109,10 +111,13 @@ export async function createRole(formData: FormData) {
         if (permissionsJson) {
             const permissionIds = JSON.parse(permissionsJson);
             for (const permId of permissionIds) {
-                await pb.collection(ROLE_PERMISSIONS_COLLECTION).create({
+                const payload: any = {
                     role: role.id,
                     permission: permId,
-                });
+                };
+                // Note: Tenant omitted due to schema mismatch
+                // if (role.tenant) payload.tenant = role.tenant;
+                await pb.collection(ROLE_PERMISSIONS_COLLECTION).create(payload);
             }
         }
 
@@ -128,7 +133,7 @@ export async function createRole(formData: FormData) {
 
         return {
             success: true,
-            data: role,
+            data: sanitize(role),
             error: null,
         };
     } catch (error: any) {
@@ -160,18 +165,23 @@ export async function updateRole(id: string, formData: FormData) {
         };
 
         const role = await pb.collection(ROLES_COLLECTION).update(id, roleData);
+        const tenantId = role.tenant;
 
         // 2. Update Permissions (Sync)
         if (permissionsJson) {
             const newPermissionIds = JSON.parse(permissionsJson);
+            console.log('[updateRole] New permissions:', newPermissionIds);
 
             // Get existing permissions
             const existingRolePerms = await pb.collection(ROLE_PERMISSIONS_COLLECTION).getFullList({
                 filter: `role="${id}"`,
             });
+            console.log('[updateRole] Existing permissions count:', existingRolePerms.length);
 
             // Delete removed permissions
             const toDelete = existingRolePerms.filter(rp => !newPermissionIds.includes(rp.permission));
+            console.log('[updateRole] Deleting count:', toDelete.length);
+
             for (const rp of toDelete) {
                 await pb.collection(ROLE_PERMISSIONS_COLLECTION).delete(rp.id);
             }
@@ -180,11 +190,29 @@ export async function updateRole(id: string, formData: FormData) {
             const existingPermIds = existingRolePerms.map(rp => rp.permission);
             const toAdd = newPermissionIds.filter((pid: string) => !existingPermIds.includes(pid));
 
+            const errors = [];
             for (const permId of toAdd) {
-                await pb.collection(ROLE_PERMISSIONS_COLLECTION).create({
-                    role: id,
-                    permission: permId,
-                });
+                try {
+                    const payload: any = {
+                        role: id,
+                        permission: permId,
+                    };
+                    // Note: Tenant omitted due to schema mismatch (Role.tenant points to User, Permission.tenant points to Tenant)
+                    // if (role.tenant) payload.tenant = role.tenant;
+
+                    await pb.collection(ROLE_PERMISSIONS_COLLECTION).create(payload);
+                } catch (err: any) {
+                    console.error(`[updateRole] Failed to add permission ${permId}:`, err);
+                    errors.push(err.message || String(err));
+                }
+            }
+
+            if (errors.length > 0) {
+                return {
+                    success: false,
+                    data: null,
+                    error: `Error al guardar permisos: ${errors.join(', ')}`,
+                };
             }
         }
 
@@ -200,7 +228,7 @@ export async function updateRole(id: string, formData: FormData) {
 
         return {
             success: true,
-            data: role,
+            data: sanitize(role),
             error: null,
         };
     } catch (error: any) {

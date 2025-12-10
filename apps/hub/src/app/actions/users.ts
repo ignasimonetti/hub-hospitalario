@@ -57,33 +57,24 @@ export async function getUsers() {
  */
 export async function createUser(formData: FormData) {
     try {
-        // Use admin client to bypass permission issues (createRule failure)
+        // Use admin client to bypass permission issues
         const { createAdminClient } = await import('@/lib/pocketbase-admin');
         const pb = await createAdminClient();
 
+        // Get current admin user ID for assigned_by field
+        const serverPb = await getServerPocketBase();
+        const currentAdminId = serverPb.authStore.model?.id;
+
         console.log('[createUser] Using Admin Client. Base URL:', pb.baseUrl);
 
-        // Log key form data
-        console.log('[createUser] Raw FormData:', {
-            email: formData.get('email'),
-            firstName: formData.get('firstName'),
-            lastName: formData.get('lastName'),
-            phone: formData.get('phone'),
-            dni: formData.get('dni'),
-            active: formData.get('active'),
-            sendInvitation: formData.get('sendInvitation'),
-            hasAvatar: !!(formData.get('avatar') as File)?.size,
-        });
-
-        // Generate a strong password if not provided (min 8 chars)
+        // Generate a strong password if not provided
         const password = formData.get('password') || generatePassword();
 
         // Prepare data for PocketBase
-        // NOTE: We do NOT send 'verified' here as it is a system field.
         const data: any = {
             email: formData.get('email'),
             password: password,
-            passwordConfirm: password, // PocketBase usually requires this
+            passwordConfirm: password,
             firstName: formData.get('firstName') || '',
             lastName: formData.get('lastName') || '',
             phone: formData.get('phone') || '',
@@ -91,45 +82,47 @@ export async function createUser(formData: FormData) {
             active: formData.get('active') !== 'false',
         };
 
-        console.log('[createUser] Sending data:', { ...data, password: '***', passwordConfirm: '***' });
-
         // Handle avatar upload if present
         const avatar = formData.get('avatar') as File;
         if (avatar && avatar.size > 0) {
             data.avatar = avatar;
-            console.log('[createUser] Avatar file:', avatar.name, avatar.size, 'bytes');
         }
 
-        console.log('[createUser] Data to send to PocketBase:', {
-            ...data,
-            password: '***',
-            passwordConfirm: '***',
-            avatar: data.avatar ? `file: ${data.avatar.name}` : undefined,
-        });
+        // 1. Create User
+        let user;
+        try {
+            user = await pb.collection(USERS_COLLECTION).create(data);
+            console.log('[createUser] User created successfully:', user.id);
+        } catch (err: any) {
+            console.error('[createUser] Failed to create user record:', err);
+            throw new Error(`Error creating user: ${err.message}`);
+        }
 
-        const user = await pb.collection(USERS_COLLECTION).create(data);
-
-        console.log('[createUser] User created successfully:', user.id);
-
-        // Assign roles if provided
+        // 2. Assign Roles if provided
         const rolesJson = formData.get('roles') as string;
         const tenantId = formData.get('tenantId') as string;
 
         if (rolesJson && tenantId) {
-            const roleIds = JSON.parse(rolesJson);
-            console.log('[createUser] Assigning roles:', roleIds, 'for tenant:', tenantId);
-            for (const roleId of roleIds) {
-                await pb.collection(USER_ROLES_COLLECTION).create({
-                    user: user.id,
-                    role: roleId,
-                    tenant: tenantId,
-                    is_active: true,
-                });
-                console.log(`[createUser] Assigned role ${roleId} to user ${user.id} for tenant ${tenantId}`);
+            try {
+                const roleIds = JSON.parse(rolesJson);
+                console.log('[createUser] Assigning roles:', roleIds, 'for tenant:', tenantId);
+
+                for (const roleId of roleIds) {
+                    await pb.collection(USER_ROLES_COLLECTION).create({
+                        user: user.id,
+                        role: roleId,
+                        tenant: tenantId,
+                        assigned_at: new Date().toISOString(),
+                        assigned_by: currentAdminId,
+                    });
+                }
+            } catch (err: any) {
+                console.error('[createUser] Failed to assign roles:', err);
+                // We don't delete the user, but we warn
+                // optionally we could delete the user to be transactional
+                throw new Error(`User created but failed to assign roles: ${err.message}`);
             }
         }
-
-        // TODO: Send invitation email if sendInvitation is true
 
         revalidatePath('/admin');
 
@@ -139,46 +132,23 @@ export async function createUser(formData: FormData) {
             error: null,
         };
     } catch (error: any) {
-        console.error('[createUser] Error:', error);
-
-        // Log detailed PocketBase error response
-        if (error.data) {
-            console.error('[createUser] PocketBase Validation Errors:', JSON.stringify(error.data, null, 2));
-        }
-
-        console.error('[createUser] Error details:', {
-            message: error.message,
-            status: error.status,
-            originalError: error.originalError,
-        });
-
-        // Extract specific validation message if available
-        let errorMessage = error.message || 'Failed to create user';
-        if (error.data?.data) {
-            const validationErrors = Object.entries(error.data.data)
-                .map(([field, err]: [string, any]) => `${field}: ${err.message}`)
-                .join(', ');
-            if (validationErrors) {
-                errorMessage = `Validation error: ${validationErrors}`;
-            }
-        }
-
+        console.error('[createUser] Top level error:', error);
         return {
             success: false,
             data: null,
-            error: errorMessage,
+            error: error.message || 'Failed to create user',
         };
     }
 }
 
-/**
- * Update an existing user
- */
 export async function updateUser(id: string, formData: FormData) {
     try {
-        // Use admin client to bypass permission issues
         const { createAdminClient } = await import('@/lib/pocketbase-admin');
         const pb = await createAdminClient();
+
+        // Get current admin user ID for assigned_by field
+        const serverPb = await getServerPocketBase();
+        const currentAdminId = serverPb.authStore.model?.id;
 
         const firstName = formData.get('firstName') as string || '';
         const lastName = formData.get('lastName') as string || '';
@@ -194,42 +164,57 @@ export async function updateUser(id: string, formData: FormData) {
             active: formData.get('active') === 'true',
         };
 
-        // Handle avatar upload if present
         const avatar = formData.get('avatar') as File;
         if (avatar && avatar.size > 0) {
             data.avatar = avatar;
         }
 
-        console.log('[updateUser] Updating user:', id);
-        const user = await pb.collection(USERS_COLLECTION).update(id, data);
+        // 1. Update User
+        let user;
+        try {
+            console.log('[updateUser] Updating user:', id);
+            user = await pb.collection(USERS_COLLECTION).update(id, data);
+        } catch (err: any) {
+            console.error('[updateUser] Failed to update user record:', err);
+            throw new Error(`Error updating user: ${err.message}`);
+        }
 
-        // Update roles if provided
+        // 2. Update Roles if provided
         const rolesJson = formData.get('roles') as string;
         const tenantId = formData.get('tenantId') as string;
 
         if (rolesJson && tenantId) {
-            // Remove existing roles for this tenant
-            const existingRoles = await pb.collection(USER_ROLES_COLLECTION).getList(1, 100, {
-                filter: `user="${id}" && tenant="${tenantId}"`,
-            });
-
-            for (const role of existingRoles.items) {
-                await pb.collection(USER_ROLES_COLLECTION).delete(role.id);
-            }
-
-            // Add new roles
-            const roleIds = JSON.parse(rolesJson);
-            for (const roleId of roleIds) {
-                await pb.collection(USER_ROLES_COLLECTION).create({
-                    user: id,
-                    role: roleId,
-                    tenant: tenantId,
-                    is_active: true,
+            try {
+                // Remove existing roles for this tenant
+                const existingRoles = await pb.collection(USER_ROLES_COLLECTION).getList(1, 100, {
+                    filter: `user="${id}" && tenant="${tenantId}"`,
                 });
+
+                for (const role of existingRoles.items) {
+                    await pb.collection(USER_ROLES_COLLECTION).delete(role.id);
+                }
+
+                // Add new roles
+                const roleIds = JSON.parse(rolesJson);
+                for (const roleId of roleIds) {
+                    await pb.collection(USER_ROLES_COLLECTION).create({
+                        user: id,
+                        role: roleId,
+                        tenant: tenantId,
+                        assigned_at: new Date().toISOString(),
+                        assigned_by: currentAdminId,
+                    });
+                }
+            } catch (err: any) {
+                console.error('[updateUser] Failed to update roles:', err);
+                let detailedError = err.message;
+                if (err.data) {
+                    detailedError += ' Details: ' + JSON.stringify(err.data);
+                }
+                throw new Error(`User updated but failed to update roles: ${detailedError}`);
             }
         }
 
-        // Audit Log
         await logAudit({
             action: 'update',
             resource: 'users',
@@ -245,7 +230,7 @@ export async function updateUser(id: string, formData: FormData) {
             error: null,
         };
     } catch (error: any) {
-        console.error('[updateUser] Error:', error);
+        console.error('[updateUser] Top level error:', error);
         return {
             success: false,
             data: null,

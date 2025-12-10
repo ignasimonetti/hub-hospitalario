@@ -17,6 +17,7 @@ interface Tenant {
 interface UserRole {
   id: string;
   name: string;
+  slug: string;
   // Add other role properties as needed
 }
 
@@ -74,8 +75,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           const { tenant: savedTenant, role: savedRole } = JSON.parse(savedWorkspace);
 
           // Si solo se guardaron los IDs, buscar los detalles completos
-          // O si el objeto guardado no tiene la propiedad 'name' (indicando que no es el objeto completo)
-          if (typeof savedTenant === 'string' || !savedTenant.name || typeof savedRole === 'string' || !savedRole.name) {
+          // O si el objeto guardado no tiene la propiedad 'name' o 'slug' (indicando que es incompleto o antiguo)
+          if (typeof savedTenant === 'string' || !savedTenant.name || typeof savedRole === 'string' || !savedRole.name || !savedRole.slug) {
             // Asegurarse de pasar los IDs correctos, incluso si el objeto guardado es incompleto
             const tenantIdToFetch = typeof savedTenant === 'string' ? savedTenant : savedTenant.id;
             const roleIdToFetch = typeof savedRole === 'string' ? savedRole : savedRole.id;
@@ -116,8 +117,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     let fullTenant = tenant;
     let fullRole = role;
 
-    // La condición para re-buscar ahora es más estricta: si el objeto no tiene 'name'
-    if (!tenant.name || !role.name) {
+    // La condición para re-buscar ahora es más estricta: si el objeto no tiene 'name' o 'slug'
+    if (!tenant.name || !role.name || !role.slug) {
       const fetchedDetails = await fetchTenantAndRoleDetails(tenant.id, role.id);
       if (fetchedDetails.tenant && fetchedDetails.role) {
         fullTenant = fetchedDetails.tenant;

@@ -146,8 +146,38 @@ export function useRoles(tenantId?: string) {
   }, [loadRoles])
 
   // Verificar si el usuario tiene un rol específico
-  const hasUserRole = useCallback((roleSlug: string) => {
-    return roles.some(r => r.expand?.role?.slug === roleSlug)
+  const hasUserRole = useCallback((roleIdentifier: string) => {
+    // 1. Acceso Universal para Super Admin (Flag en Usuario)
+    if (pocketbase.authStore.model?.is_super_admin) return true;
+
+    return roles.some(r => {
+      const role = r.expand?.role;
+      if (!role) return false;
+
+      // 2. Coincidencia exacta de Slug
+      if (role.slug === roleIdentifier) return true;
+
+      // 3. Manejo de variaciones comunes (superadmin vs super_admin)
+      if (roleIdentifier === 'superadmin' && role.slug === 'super_admin') return true;
+
+      // 4. Fallback: Coincidencia por Nombre (si el slug falla o no existe)
+      const normalizedName = role.name.toLowerCase();
+      const search = roleIdentifier.toLowerCase();
+
+      // "Editor Blog" vs "editor_blog"
+      if (search.includes('_')) {
+        if (normalizedName === search.replace('_', ' ')) return true;
+      }
+
+      // Coincidencia directa de nombre
+      if (normalizedName === search) return true;
+
+      // Casos especiales conocidos
+      if (search === 'superadmin' && (normalizedName.includes('admin') || normalizedName.includes('super'))) return true;
+      if (search === 'editor_blog' && normalizedName.includes('editor')) return true;
+
+      return false;
+    })
   }, [roles])
 
   // Verificar si el usuario tiene cualquier rol de una lista

@@ -5,7 +5,8 @@ import { TenantsTab } from "@/components/admin/TenantsTab";
 import { UsersTab } from "@/components/admin/UsersTab";
 import { RolesTab } from "@/components/admin/RolesTab";
 import { AuditTab } from "@/components/admin/AuditTab";
-import { Building2, Users, ShieldCheck, FileText, ArrowLeft } from "lucide-react";
+import { AnnouncementsTab } from "@/components/admin/AnnouncementsTab";
+import { Building2, Users, ShieldCheck, FileText, ArrowLeft, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
@@ -27,7 +28,7 @@ export default function AdminPage() {
             </div>
 
             <Tabs defaultValue="tenants" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto p-1">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto p-1">
                     <TabsTrigger value="tenants" className="flex items-center gap-2 py-3">
                         <Building2 className="h-4 w-4" />
                         <span className="hidden md:inline">Hospitales</span>
@@ -48,6 +49,11 @@ export default function AdminPage() {
                         <span className="hidden md:inline">Auditoría</span>
                         <span className="md:hidden">Logs</span>
                     </TabsTrigger>
+                    <TabsTrigger value="announcements" className="flex items-center gap-2 py-3">
+                        <Megaphone className="h-4 w-4" />
+                        <span className="hidden md:inline">Anuncios</span>
+                        <span className="md:hidden">Avisos</span>
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="tenants" className="space-y-4">
@@ -65,7 +71,11 @@ export default function AdminPage() {
                 <TabsContent value="audit" className="space-y-4">
                     <AuditTab />
                 </TabsContent>
+
+                <TabsContent value="announcements" className="space-y-4">
+                    <AnnouncementsTab />
+                </TabsContent>
             </Tabs>
-        </div>
+        </div >
     );
 }

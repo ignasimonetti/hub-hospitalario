@@ -21,6 +21,7 @@ interface Tenant {
 interface UserRole {
   id: string;
   name: string;
+  slug: string;
   description?: string;
   level?: number;
 }
@@ -119,11 +120,10 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
                 transition={{ delay: 0.1 * index, duration: 0.3 }}
               >
                 <Card
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-2 ${
-                    selectedWorkspace === tenantId
+                  className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-2 ${selectedWorkspace === tenantId
                       ? 'border-blue-500 shadow-lg'
                       : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
-                  }`}
+                    }`}
                   onClick={() => handleWorkspaceSelect(tenantId)}
                 >
                   <CardHeader className="pb-3">

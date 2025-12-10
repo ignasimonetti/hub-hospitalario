@@ -3,14 +3,14 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { confirmEmail } from '../../../lib/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
-export default function ConfirmEmailPage() {
+function ConfirmEmailContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
   const searchParams = useSearchParams()
@@ -55,7 +55,7 @@ export default function ConfirmEmailPage() {
         console.log('Email verification successful:', data)
         setStatus('success')
         setMessage('¡Email confirmado exitosamente! Ya puedes acceder a tu cuenta.')
-        
+
         // Redirect to login after 2 seconds
         setTimeout(() => {
           router.push('/login?confirmed=true')
@@ -97,15 +97,14 @@ export default function ConfirmEmailPage() {
         </CardHeader>
         <CardContent>
           <div className={
-            `text-center p-4 rounded border ${
-              status === 'success' ? 'border-green-200 bg-green-50 text-green-800' :
+            `text-center p-4 rounded border ${status === 'success' ? 'border-green-200 bg-green-50 text-green-800' :
               status === 'error' ? 'border-red-200 bg-red-50 text-red-800' :
-              'border-blue-200 bg-blue-50 text-blue-800'
+                'border-blue-200 bg-blue-50 text-blue-800'
             }`
           }>
             {message || 'Procesando tu confirmación...'}
           </div>
-          
+
           {status === 'success' && (
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-600 mb-4">
@@ -116,7 +115,7 @@ export default function ConfirmEmailPage() {
               </Button>
             </div>
           )}
-          
+
           {status === 'error' && (
             <div className="mt-4 text-center">
               <Button onClick={() => router.push('/confirm/resend')} variant="outline" className="w-full mb-2">
@@ -130,5 +129,24 @@ export default function ConfirmEmailPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function ConfirmEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            </div>
+            <CardTitle className="text-2xl">Cargando...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <ConfirmEmailContent />
+    </Suspense>
   )
 }

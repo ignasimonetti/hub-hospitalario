@@ -7,11 +7,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function VerifyPage() {
+function VerifyContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -19,7 +19,7 @@ export default function VerifyPage() {
 
   useEffect(() => {
     const token = searchParams.get('token');
-    
+
     if (!token) {
       setStatus('error');
       setMessage('Token de verificación no encontrado');
@@ -34,7 +34,7 @@ export default function VerifyPage() {
         if (response.ok) {
           setStatus('success');
           setMessage('¡Email verificado exitosamente! Redirigiendo al login...');
-          
+
           // Redirect to login after 3 seconds
           setTimeout(() => {
             router.push('/login');
@@ -93,7 +93,7 @@ export default function VerifyPage() {
           <p className={`mb-4 ${getStatusColor()}`}>
             {message}
           </p>
-          
+
           {status === 'error' && (
             <div className="space-y-2">
               <p className="text-sm text-gray-600">
@@ -104,7 +104,7 @@ export default function VerifyPage() {
               </Link>
             </div>
           )}
-          
+
           {status === 'success' && (
             <div className="space-y-2">
               <p className="text-sm text-green-600">
@@ -118,5 +118,25 @@ export default function VerifyPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle className="text-2xl">Verificación de Email</CardTitle>
+            <CardDescription>Cargando...</CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <div className="text-6xl mb-4">⏳</div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <VerifyContent />
+    </Suspense>
   );
 }

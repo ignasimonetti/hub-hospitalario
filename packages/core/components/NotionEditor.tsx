@@ -57,7 +57,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { Column, ColumnList } from "./extensions/columns";
 
 // 1. Configuración de Extensiones
-const extensions = [
+const extensions: any[] = [
   StarterKit.configure({
     bulletList: {
       keepMarks: true,

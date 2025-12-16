@@ -75,6 +75,7 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
     const canAccessBlog = isAdmin || isBlogEditor;
 
     // Check if user has access to Expedientes
+    console.log('DEBUG SIDEBAR ROLE:', currentRole);
     const isMesaEntrada = ['mesa_entrada', 'mesa de entrada', 'mesa de entradas'].includes(currentRole?.slug || '') ||
         (currentRole?.name?.toLowerCase() || '').includes('mesa de entrada');
 

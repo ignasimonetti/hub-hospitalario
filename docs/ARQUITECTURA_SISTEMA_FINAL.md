@@ -146,7 +146,14 @@ hub_user_roles (pbc_1985360964)
 - `enviar_mensajes` - Comunicación interna
 - `recibir_notificaciones` - Notificaciones
 - `grupos_trabajo` - Grupos de trabajo
+- `grupos_trabajo` - Grupos de trabajo
 - `alertas_medicas` - Alertas de emergencia
+
+#### 📁 **MÓDULO EXPEDIENTES**
+- `ver_expedientes` - Consultar trámites
+- `crear_expedientes` - Iniciar nuevos expedientes
+- `mover_expedientes` - Cambiar estado/área
+- `archivar_expedientes` - Finalizar trámites
 
 ---
 # 🎨 GUIAS DE ESTILO Y DISEÑO

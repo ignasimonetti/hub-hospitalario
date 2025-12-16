@@ -63,6 +63,8 @@ export default function LoginPage() {
     } else {
       // Login exitoso - redirigir al dashboard
       console.log("Login successful!");
+      // Resetear el temporizador de sesión para evitar logout inmediato por sesión antigua
+      localStorage.setItem('session_start', Date.now().toString());
       window.location.href = "/dashboard";
     }
 

@@ -621,3 +621,4 @@ Umami Authentication Successful
  POST /dashboard 200 in 2500ms
  ✓ Compiled in 1023ms (2976 modules)
  GET /dashboard 200 in 16ms
+ ELIFECYCLE  Command failed.

@@ -41,6 +41,7 @@ Cada módulo tiene su propio README con:
 | Módulo | README |
 |--------|--------|
 | Blog/Contenido | `/apps/hub/src/app/modules/content/README.md` |
+| Expedientes | `/apps/hub/src/app/modules/expedientes/README.md` |
 
 ---
 

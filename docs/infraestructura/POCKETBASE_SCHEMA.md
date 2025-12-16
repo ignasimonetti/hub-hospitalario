@@ -242,6 +242,54 @@ Etiquetas/tags para categorizar artículos.
 
 ---
 
+## 📁 Colecciones del Módulo Expedientes
+
+### `expedientes`
+
+**ID:** *(autogenerado)* | **Tipo:** `base`
+
+Gestión y seguimiento de expedientes físicos/digitales.
+
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `id` | text (15) | ✅ | ID único |
+| `numero` | text | ✅ | Número de expediente oficial |
+| `descripcion` | text | ❌ | Asunto o título breve |
+| `estado` | select | ✅ | `En trámite`, `Finalizado`, `Archivado` |
+| `prioridad` | select | ✅ | `Alta`, `Media`, `Baja` |
+| `ubicacion` | relation → `ubicaciones` | ❌ | Ubicación física actual |
+| `observacion` | editor | ❌ | Notas detalladas o historial (HTML) |
+| `fecha_inicio` | date | ❌ | Fecha de inicio del trámite |
+| `ultimo_movimiento` | date | ❌ | Fecha de última actualización relevante |
+| `tenant` | relation → `hub_tenants` | ✅ | Organización |
+| `created_by` | relation → `auth_users` | ❌ | Usuario que creó el registro |
+
+**Reglas de API:**
+```
+List:   @request.auth.id != "" && tenant = @request.auth.tenant
+View:   @request.auth.id != "" && tenant = @request.auth.tenant
+Create: @request.auth.id != ""
+Update: @request.auth.id != "" && tenant = @request.auth.tenant
+Delete: @request.auth.role.name = "superadmin" || @request.auth.role.name = "mesa_entrada"
+```
+
+---
+
+### `ubicaciones`
+
+**ID:** *(autogenerado)* | **Tipo:** `base`
+
+Lugares físicos o áreas donde pueden estar los expedientes.
+
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `id` | text (15) | ✅ | ID único |
+| `nombre` | text | ✅ | Nombre del área u oficina |
+| `descripcion` | text | ❌ | Detalles adicionales |
+| `tenant` | relation → `hub_tenants` | ✅ | Organización |
+
+---
+
 ## 🔧 Colecciones Auxiliares
 
 ### `hub_dashboard_notes`

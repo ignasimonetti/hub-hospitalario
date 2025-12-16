@@ -56,26 +56,7 @@ export async function saveDashboardNote(content: any) {
             });
         }
 
-        // Sync updated auth store back to cookie (in case of token refresh)
-        if (pb.authStore.isValid) {
-            const cookieStore = await cookies();
-            const exported = pb.authStore.exportToCookie({ httpOnly: false });
 
-            // Extract the value of the pb_auth cookie from the exported string
-            // Format is usually: pb_auth=VALUE; Path=/; ...
-            const match = exported.match(/pb_auth=([^;]+)/);
-            if (match && match[1]) {
-                // Set the cookie with the extracted value
-                // We explicitly set httpOnly: false so the client can read it too
-                cookieStore.set('pb_auth', match[1], {
-                    path: '/',
-                    secure: process.env.NODE_ENV === 'production',
-                    httpOnly: false,
-                    sameSite: 'lax',
-                    maxAge: 34560000 // 400 days roughly, or match PB default
-                });
-            }
-        }
 
         revalidatePath('/dashboard');
         return { success: true };

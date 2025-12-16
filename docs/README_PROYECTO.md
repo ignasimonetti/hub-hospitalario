@@ -11,6 +11,8 @@
 - **Design System** - Sistema de diseño médico especializado
 - **Autenticación** - Sistema completo login/signup con PocketBase
 - **Dashboard** - Interface moderna con módulos hospitalarios
+- **Expedientes** - Sistema de Mesa de Entrada y seguimiento
+- **Ayuda y Soporte** - Centro de ayuda con guías, FAQs y contacto
 - **Base de Datos RBAC** - Sistema multi-tenant completo con PocketBase
 - **Arquitectura Escalable** - Estructura lista para módulos adicionales
 

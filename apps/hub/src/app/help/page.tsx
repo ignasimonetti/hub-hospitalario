@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   ArrowLeft,
   Search,
   Book,
@@ -22,65 +30,57 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle,
-  HelpCircle
+  HelpCircle,
+  LayoutDashboard,
+  Newspaper,
+  FolderOpen,
+  Bell
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function HelpPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
-  const helpCategories = [
+  const modules = [
     {
-      id: 'getting-started',
-      title: 'Primeros Pasos',
-      icon: Book,
-      description: 'Guía básica para comenzar a usar el sistema',
+      id: 'dashboard',
+      title: 'Dashboard',
+      icon: LayoutDashboard,
+      description: 'Panel principal con métricas y accesos rápidos.',
       color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300',
-      items: [
-        'Cómo iniciar sesión',
-        'Configuración inicial del perfil',
-        'Selección de hospital',
-        'Navegación básica'
+      features: [
+        'Vista general de estadísticas',
+        'Accesos directos a módulos',
+        'Notificaciones recientes',
+        'Notas personales'
       ]
     },
     {
-      id: 'user-management',
-      title: 'Gestión de Usuarios',
-      icon: Users,
-      description: 'Administración de cuentas y permisos',
-      color: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300',
-      items: [
-        'Cambiar contraseña',
-        'Actualizar información personal',
-        'Roles y permisos',
-        'Configuración de preferencias'
-      ]
-    },
-    {
-      id: 'security',
-      title: 'Seguridad',
-      icon: Shield,
-      description: 'Políticas de seguridad y mejores prácticas',
-      color: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300',
-      items: [
-        'Políticas de contraseña',
-        'Autenticación de dos factores',
-        'Protección de datos médicos',
-        'Reportar incidentes de seguridad'
-      ]
-    },
-    {
-      id: 'technical-support',
-      title: 'Soporte Técnico',
-      icon: Zap,
-      description: 'Ayuda con problemas técnicos',
+      id: 'blog',
+      title: 'Noticias / Blog',
+      icon: Newspaper,
+      description: 'Sistema de comunicación institucional y novedades.',
       color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300',
-      items: [
-        'Problemas de conexión',
-        'Errores del sistema',
-        'Compatibilidad de dispositivos',
-        'Actualizaciones del sistema'
+      features: [
+        'Lectura de comunicados oficiales',
+        'Creación de artículos (Editores)',
+        'Suscripción a categorías',
+        'Archivo de noticias'
+      ]
+    },
+    {
+      id: 'expedientes',
+      title: 'Expedientes',
+      icon: FolderOpen,
+      description: 'Seguimiento y gestión de trámites administrativos.',
+      color: 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300',
+      features: [
+        'Búsqueda de expedientes',
+        'Seguimiento de estado (En trámite/Finalizado)',
+        'Consulta de movimientos',
+        'Gestión de Mesa de Entrada'
       ]
     }
   ];
@@ -88,47 +88,43 @@ export default function HelpPage() {
   const quickActions = [
     {
       title: 'Contactar Soporte',
-      description: '¿Necesitas ayuda inmediata?',
-      icon: MessageCircle,
-      action: () => window.open('mailto:soporte@hospital.com', '_blank'),
+      description: 'Envíanos un correo electrónico',
+      icon: Mail,
+      action: () => window.open('mailto:info@cisb.gob.ar', '_blank'),
       color: 'bg-blue-500 hover:bg-blue-600'
     },
     {
-      title: 'Llamar Helpdesk',
-      description: 'Soporte telefónico 24/7',
+      title: 'Llamar al Centro',
+      description: 'Atención telefónica',
       icon: Phone,
-      action: () => window.open('tel:+5491123456789', '_blank'),
+      action: () => window.open('tel:03854254480', '_blank'),
       color: 'bg-green-500 hover:bg-green-600'
     },
     {
       title: 'Reportar Problema',
-      description: 'Enviar reporte de bug',
+      description: 'Notificar un error del sistema',
       icon: AlertTriangle,
-      action: () => window.open('mailto:bugs@hospital.com', '_blank'),
+      action: () => setIsReportModalOpen(true),
       color: 'bg-orange-500 hover:bg-orange-600'
     }
   ];
 
   const faqs = [
     {
-      question: '¿Cómo cambio mi contraseña?',
-      answer: 'Ve a tu perfil → Configuración → Cambiar Contraseña. Necesitarás tu contraseña actual.'
+      question: '¿Cómo solicito acceso a un nuevo módulo?',
+      answer: 'Debes contactar a tu superior inmediato o al departamento de sistemas para solicitar la ampliación de permisos en tu perfil.'
     },
     {
-      question: '¿Qué hago si olvido mi contraseña?',
-      answer: 'Usa la opción "Olvidé mi contraseña" en la pantalla de login. Recibirás un email con instrucciones.'
+      question: '¿Qué hago si olvidé mi contraseña?',
+      answer: 'Si no puedes ingresar, utiliza la opción "Olvidé mi contraseña" en la pantalla de inicio o contacta al administrador del sistema.'
     },
     {
-      question: '¿Cómo cambio entre modo claro y oscuro?',
-      answer: 'Ve a tu perfil → Configuración → Preferencias → Tema de la aplicación.'
+      question: '¿Cómo veo mis notificaciones?',
+      answer: 'Las notificaciones aparecen en el ícono de campana en la parte superior derecha de tu pantalla. Un punto rojo indica novedades sin leer.'
     },
     {
-      question: '¿Cómo reporto un problema técnico?',
-      answer: 'Usa el botón "Reportar Problema" en esta página o contacta al helpdesk.'
-    },
-    {
-      question: '¿Los datos están seguros?',
-      answer: 'Sí, cumplimos con todas las normativas de protección de datos médicos (HIPAA, LGPD, etc.).'
+      question: '¿Puedo acceder al sistema desde mi celular?',
+      answer: 'Sí, el Hub Hospitalario es completamente responsivo y puede utilizarse desde el navegador de cualquier dispositivo móvil.'
     }
   ];
 
@@ -138,9 +134,9 @@ export default function HelpPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-12">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
@@ -151,13 +147,13 @@ export default function HelpPage() {
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Volver al Dashboard
+                Volver
               </Button>
               <div className="h-6 w-px bg-gray-300 dark:bg-gray-600" />
               <div className="flex items-center gap-2">
                 <HelpCircle className="h-5 w-5 text-blue-600" />
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Centro de Ayuda
+                  Ayuda y Soporte
                 </h1>
               </div>
             </div>
@@ -166,142 +162,207 @@ export default function HelpPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+
+        {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="space-y-8"
+          className="text-center space-y-4"
         >
-
-          {/* Welcome Section */}
-          <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-full">
-                <Heart className="h-8 w-8 text-blue-600" />
-              </div>
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              ¿Cómo podemos ayudarte?
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Encuentra respuestas rápidas o contacta a nuestro equipo de soporte especializado en salud.
-            </p>
+          <div className="inline-flex p-3 bg-blue-100 dark:bg-blue-900/20 rounded-full mb-2">
+            <Stethoscope className="h-8 w-8 text-blue-600 dark:text-blue-400" />
           </div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Centro de Ayuda CISB
+          </h2>
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            Bienvenido al Hub Hospitalario del Centro Integral de Salud Banda. Aquí encontrarás guías y recursos para utilizar el sistema eficientemente.
+          </p>
 
           {/* Search */}
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto pt-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Buscar en preguntas frecuentes..."
+                placeholder="Buscar ayuda..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-white dark:bg-gray-800"
               />
             </div>
           </div>
+        </motion.div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {quickActions.map((action, index) => (
-              <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardContent className="p-6 text-center" onClick={action.action}>
-                  <div className={`inline-flex p-3 rounded-full ${action.color} text-white mb-4`}>
-                    <action.icon className="h-6 w-6" />
+        {/* Modules Section */}
+        <div className="space-y-6">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Book className="h-5 w-5 text-blue-500" />
+            Módulos del Sistema
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {modules.map((module) => (
+              <Card key={module.id} className="hover:shadow-lg transition-all duration-200 border-t-4" style={{ borderTopColor: module.color.includes('blue') ? '#3b82f6' : module.color.includes('purple') ? '#a855f7' : '#f97316' }}>
+                <CardHeader>
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${module.color} mb-2`}>
+                    <module.icon className="h-6 w-6" />
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                    {action.title}
-                  </h3>
+                  <CardTitle className="text-lg">{module.title}</CardTitle>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 min-h-[40px]">
+                    {module.description}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {module.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {/* Future: Add 'Ver Manual' button here */}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="space-y-6">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <HelpCircle className="h-5 w-5 text-blue-500" />
+            Preguntas Frecuentes
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredFAQs.map((faq, index) => (
+              <Card key={index} className="border-l-4 border-l-gray-200 dark:border-l-gray-700">
+                <CardContent className="p-6">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                    {faq.question}
+                  </h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {action.description}
+                    {faq.answer}
                   </p>
                 </CardContent>
               </Card>
             ))}
           </div>
+        </div>
 
-          {/* Help Categories */}
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-              Guías y Tutoriales
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {helpCategories.map((category) => (
-                <Card key={category.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className={`inline-flex p-2 rounded-lg ${category.color} mb-3`}>
-                      <category.icon className="h-5 w-5" />
-                    </div>
-                    <CardTitle className="text-lg">{category.title}</CardTitle>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {category.description}
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {category.items.map((item, index) => (
-                        <li key={index} className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                          <span className="text-gray-700 dark:text-gray-300">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+        {/* Contact Logic */}
+        <div className="bg-slate-900 text-white rounded-2xl p-8 md:p-12 overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-12 opacity-10">
+            <Heart className="w-64 h-64" />
           </div>
 
-          {/* FAQ Section */}
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-              Preguntas Frecuentes
-            </h3>
-            <div className="space-y-4">
-              {filteredFAQs.map((faq, index) => (
-                <Card key={index}>
-                  <CardContent className="p-6">
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                      {faq.question}
-                    </h4>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      {faq.answer}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+          <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h3 className="text-2xl font-bold mb-4">¿Necesitas asistencia directa?</h3>
+              <p className="text-slate-300 mb-8 max-w-md">
+                Si tienes problemas técnicos o dudas administrativas que no se resuelven con esta guía, estamos disponibles para ayudarte.
+              </p>
 
-          {/* Contact Information */}
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
-            <CardContent className="p-8 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 bg-blue-100 dark:bg-blue-900/40 rounded-full">
-                  <Stethoscope className="h-8 w-8 text-blue-600" />
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-slate-800 rounded-lg">
+                    <Users className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-400">Dirección</p>
+                    <p className="font-medium">San Martín N° 449, La Banda</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-slate-800 rounded-lg">
+                    <Phone className="h-5 w-5 text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-400">Teléfono</p>
+                    <p className="font-medium">0385-425-4480</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-slate-800 rounded-lg">
+                    <Mail className="h-5 w-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-400">Email</p>
+                    <p className="font-medium">info@cisb.gob.ar</p>
+                  </div>
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                ¿No encontraste lo que buscas?
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                Nuestro equipo de soporte especializado está aquí para ayudarte con cualquier consulta sobre el sistema hospitalario.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  soporte@hospital.com
-                </Button>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  +54 9 11 2345-6789
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
 
-        </motion.div>
+            <div className="grid gap-4">
+              {quickActions.map((action, index) => (
+                <button
+                  key={index}
+                  onClick={action.action}
+                  className="bg-white/10 hover:bg-white/20 transition-colors p-4 rounded-xl flex items-center gap-4 text-left group"
+                >
+                  <div className={`p-3 rounded-full ${action.color} text-white shadow-lg`}>
+                    <action.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold group-hover:text-blue-300 transition-colors">
+                      {action.title}
+                    </h4>
+                    <p className="text-sm text-slate-400">
+                      {action.description}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Report Issue Modal */}
+        <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+          <DialogContent className="sm:max-w-md dark:bg-slate-900 border-gray-200 dark:border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 dark:text-white">
+                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                Reportar un Problema
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 dark:text-gray-400 pt-2">
+                Para reportar un error o sugerir una mejora, por favor utiliza la herramienta de notificaciones integrada en el sistema.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-4 flex flex-col items-center text-center space-y-4">
+              <div className="p-4 bg-gray-100 dark:bg-slate-800 rounded-full">
+                <Bell className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                <p>
+                  1. Busca el ícono de la <strong>campana</strong> en la esquina superior derecha de tu pantalla.
+                </p>
+                <p>
+                  2. Haz clic en él y selecciona la opción <strong>"Reportar problema"</strong>.
+                </p>
+              </div>
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300 w-full">
+                Esto nos permite capturar automáticamente información técnica útil para resolver tu inconveniente más rápido.
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => setIsReportModalOpen(false)}
+                className="w-full sm:w-auto"
+              >
+                Entendido
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </div>
   );

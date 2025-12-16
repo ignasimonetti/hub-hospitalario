@@ -45,12 +45,14 @@ import { BlogKPIWidget } from '@/components/modules/blog/widgets/BlogKPIWidget';
 import { BlogStatusWidget } from '@/components/modules/blog/widgets/BlogStatusWidget';
 import { BlogSectionWidget } from '@/components/modules/blog/widgets/BlogSectionWidget';
 import { UmamiWidget } from '@/components/modules/analytics/widgets/UmamiWidget';
+import { ExpedientesKPIWidget } from '@/components/modules/expedientes/widgets/ExpedientesKPIWidget';
 
 const WIDGET_COMPONENTS: Record<string, React.ComponentType<any>> = {
     'BlogKPIWidget': BlogKPIWidget,
     'BlogStatusWidget': BlogStatusWidget,
     'BlogSectionWidget': BlogSectionWidget,
     'UmamiWidget': UmamiWidget,
+    'ExpedientesKPIWidget': ExpedientesKPIWidget,
 };
 
 interface WidgetConfig extends WidgetDefinition {

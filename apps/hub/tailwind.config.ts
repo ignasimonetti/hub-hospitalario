@@ -7,7 +7,7 @@ const config: Config = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
     // AGREGADO: Escanear archivos de novel para estilos de Tailwind
-    "./node_modules/novel/**/*.{js,ts,jsx,tsx}", 
+    "./node_modules/novel/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -20,7 +20,7 @@ const config: Config = {
   },
   plugins: [
     // AGREGADO: Plugin para la tipografía de novel
-    require("@tailwindcss/typography"), 
+    require("@tailwindcss/typography"),
   ],
 };
 export default config;

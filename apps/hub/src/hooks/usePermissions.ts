@@ -1,3 +1,5 @@
+'use client';
+
 // HUB HOSPITALARIO - HOOK DE PERMISOS Y ROLES
 // Hook para verificar permisos y roles en componentes de la UI
 

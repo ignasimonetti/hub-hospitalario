@@ -121,8 +121,8 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
               >
                 <Card
                   className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-2 ${selectedWorkspace === tenantId
-                      ? 'border-blue-500 shadow-lg'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                    ? 'border-blue-500 shadow-lg'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
                     }`}
                   onClick={() => handleWorkspaceSelect(tenantId)}
                 >
@@ -157,7 +157,7 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
                           <Badge
                             key={roleIndex}
                             variant={getRoleBadgeVariant(role.name)}
-                            className="text-xs"
+                            className="text-xs dark:text-white dark:border-slate-600"
                           >
                             {role.name}
                           </Badge>
@@ -196,7 +196,7 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
                           e.stopPropagation();
                           handleWorkspaceSelect(tenantId);
                         }}
-                        className="text-xs"
+                        className="text-xs dark:text-white dark:border-slate-600"
                       >
                         {selectedWorkspace === tenantId ? 'Seleccionado' : 'Seleccionar'}
                       </Button>

@@ -1,3 +1,5 @@
+'use client';
+
 // HUB HOSPITALARIO - COMPONENTES CON PROTECCIÓN DE PERMISOS
 // Versión simplificada y funcional
 

@@ -15,15 +15,18 @@ import {
     Settings,
     PanelLeftClose,
     PanelLeftOpen,
-    LifeBuoy
+    LifeBuoy,
+    FolderOpen
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AppSidebarProps {
-    currentPage?: 'dashboard' | 'blog' | 'admin';
+    currentPage?: 'dashboard' | 'blog' | 'admin' | 'expedientes';
+    isMobile?: boolean;
+    onMobileClose?: () => void;
 }
 
-export function AppSidebar({ currentPage = 'dashboard' }: AppSidebarProps) {
+export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobileClose }: AppSidebarProps) {
     const router = useRouter();
     const { currentTenant, currentRole } = useWorkspace();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -33,12 +36,14 @@ export function AppSidebar({ currentPage = 'dashboard' }: AppSidebarProps) {
         const currentUser = getCurrentUser();
         setUser(currentUser);
 
-        // Load sidebar state from localStorage
-        const savedSidebarState = localStorage.getItem('sidebar-collapsed');
-        if (savedSidebarState !== null) {
-            setSidebarCollapsed(JSON.parse(savedSidebarState));
+        // Load sidebar state from localStorage only if not mobile
+        if (!isMobile) {
+            const savedSidebarState = localStorage.getItem('sidebar-collapsed');
+            if (savedSidebarState !== null) {
+                setSidebarCollapsed(JSON.parse(savedSidebarState));
+            }
         }
-    }, []);
+    }, [isMobile]);
 
     const toggleSidebar = () => {
         const newState = !sidebarCollapsed;
@@ -46,6 +51,13 @@ export function AppSidebar({ currentPage = 'dashboard' }: AppSidebarProps) {
         localStorage.setItem('sidebar-collapsed', JSON.stringify(newState));
         // Emit custom event for same-tab updates
         window.dispatchEvent(new CustomEvent('sidebarToggle'));
+    };
+
+    const handleNavigation = (path: string) => {
+        router.push(path);
+        if (isMobile && onMobileClose) {
+            onMobileClose();
+        }
     };
 
     // Helper to determine role access safely
@@ -62,6 +74,12 @@ export function AppSidebar({ currentPage = 'dashboard' }: AppSidebarProps) {
 
     const canAccessBlog = isAdmin || isBlogEditor;
 
+    // Check if user has access to Expedientes
+    const isMesaEntrada = ['mesa_entrada', 'mesa de entrada', 'mesa de entradas'].includes(currentRole?.slug || '') ||
+        (currentRole?.name?.toLowerCase() || '').includes('mesa de entrada');
+
+    const canAccessExpedientes = isAdmin || isMesaEntrada;
+
     const getTenantLogoUrl = () => {
         if (currentTenant && currentTenant.logo) {
             const logoFileName = Array.isArray(currentTenant.logo) ? currentTenant.logo[0] : currentTenant.logo;
@@ -74,24 +92,35 @@ export function AppSidebar({ currentPage = 'dashboard' }: AppSidebarProps) {
 
     const tenantLogoUrl = getTenantLogoUrl();
 
+    // Base classes
+    const containerClasses = isMobile
+        ? "h-full w-full bg-gray-50 dark:bg-slate-900 flex flex-col"
+        : `fixed left-0 top-0 bottom-0 bg-gray-50 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 z-10 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`;
+
+    const showContent = isMobile || !sidebarCollapsed;
+
     return (
         <>
-            <div className={`fixed left-0 top-0 bottom-0 bg-gray-50 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 z-10 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
+            <div className={containerClasses}>
                 {/* Integrated Header */}
-                <div className="h-14 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-4 flex-shrink-0">
-                    <button
-                        onClick={toggleSidebar}
-                        className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-slate-800 rounded flex items-center justify-center"
-                        title={sidebarCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
-                    >
-                        {sidebarCollapsed ? (
-                            <PanelLeftOpen className="h-4 w-4 text-gray-600 dark:text-slate-400" />
-                        ) : (
-                            <PanelLeftClose className="h-4 w-4 text-gray-600 dark:text-slate-400" />
-                        )}
-                    </button>
-                    {!sidebarCollapsed && (
-                        <div className="flex items-center gap-2">
+                <div className={`h-14 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between flex-shrink-0 ${isMobile ? 'pl-4 pr-12' : 'px-4'}`}>
+                    {!isMobile && (
+                        <button
+                            onClick={toggleSidebar}
+                            className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-slate-800 rounded flex items-center justify-center"
+                            title={sidebarCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+                        >
+                            {sidebarCollapsed ? (
+                                <PanelLeftOpen className="h-4 w-4 text-gray-600 dark:text-slate-400" />
+                            ) : (
+                                <PanelLeftClose className="h-4 w-4 text-gray-600 dark:text-slate-400" />
+                            )}
+                        </button>
+                    )}
+
+                    {/* On mobile, align items typically or hide the toggle but show other controls if needed */}
+                    {showContent && (
+                        <div className={`flex items-center gap-2 ${isMobile ? 'ml-auto' : ''}`}>
                             <ThemeToggleButton />
                             <NotificationBell />
                         </div>
@@ -100,14 +129,14 @@ export function AppSidebar({ currentPage = 'dashboard' }: AppSidebarProps) {
 
                 {/* Logo */}
                 <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-center">
-                    <div className={`flex items-center w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start gap-3'}`}>
+                    <div className={`flex items-center w-full ${!showContent ? 'justify-center' : 'justify-start gap-3'}`}>
                         <Avatar className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
                             <AvatarImage src={tenantLogoUrl} alt={currentTenant?.name} />
                             <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white">
                                 {currentTenant?.name?.charAt(0).toUpperCase() || 'H'}
                             </AvatarFallback>
                         </Avatar>
-                        {!sidebarCollapsed && (
+                        {showContent && (
                             <div className="flex-1 min-w-0">
                                 <h1
                                     className="text-base font-semibold text-gray-900 dark:text-slate-100"
@@ -122,9 +151,9 @@ export function AppSidebar({ currentPage = 'dashboard' }: AppSidebarProps) {
                 </div>
 
                 {/* Navigation */}
-                <nav className={`flex-1 ${sidebarCollapsed ? 'p-2' : 'p-4'} overflow-y-auto`}>
+                <nav className={`flex-1 ${!showContent ? 'p-2' : 'p-4'} overflow-y-auto`}>
                     <div className="space-y-2">
-                        {!sidebarCollapsed && (
+                        {showContent && (
                             <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">
                                 Principal
                             </div>
@@ -132,62 +161,77 @@ export function AppSidebar({ currentPage = 'dashboard' }: AppSidebarProps) {
 
                         {/* Dashboard Button */}
                         <button
-                            className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm font-medium ${currentPage === 'dashboard'
+                            className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm font-medium ${currentPage === 'dashboard'
                                 ? 'text-gray-900 dark:text-slate-100 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700'
                                 : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
                                 } transition-colors`}
-                            title={sidebarCollapsed ? 'Dashboard' : undefined}
-                            onClick={() => router.push('/dashboard')}
+                            title={!showContent ? 'Dashboard' : undefined}
+                            onClick={() => handleNavigation('/dashboard')}
                         >
                             <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                            {!sidebarCollapsed && <span>Dashboard</span>}
+                            {showContent && <span>Dashboard</span>}
                         </button>
 
                         {/* Content Management Module */}
                         {canAccessBlog && (
                             <button
-                                className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'blog'
+                                className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'blog'
                                     ? 'text-gray-900 dark:text-slate-100 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700'
                                     : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
                                     } transition-colors`}
-                                title={sidebarCollapsed ? 'Blog' : undefined}
-                                onClick={() => router.push('/modules/content')}
+                                title={!showContent ? 'Blog' : undefined}
+                                onClick={() => handleNavigation('/modules/content')}
                             >
                                 <FileText className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
-                                {!sidebarCollapsed && <span>Blog</span>}
+                                {showContent && <span>Blog</span>}
+                            </button>
+                        )}
+
+                        {/* Expedientes Module */}
+                        {canAccessExpedientes && (
+                            <button
+                                className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'expedientes'
+                                    ? 'text-gray-900 dark:text-slate-100 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700'
+                                    : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
+                                    } transition-colors`}
+                                title={!showContent ? 'Expedientes' : undefined}
+                                onClick={() => handleNavigation('/modules/expedientes')}
+                            >
+                                <FolderOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                {showContent && <span>Expedientes</span>}
                             </button>
                         )}
 
                         {/* Admin Section */}
                         {isAdmin && (
                             <>
-                                {!sidebarCollapsed && (
+                                {showContent && (
                                     <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide mt-2">
                                         Administración
                                     </div>
                                 )}
                                 <button
-                                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'admin'
+                                    className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'admin'
                                         ? 'text-gray-900 dark:text-slate-100 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700'
                                         : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
                                         } transition-colors`}
-                                    title={sidebarCollapsed ? 'Configuración' : undefined}
-                                    onClick={() => router.push('/admin')}
+                                    title={!showContent ? 'Configuración' : undefined}
+                                    onClick={() => handleNavigation('/admin')}
                                 >
                                     <Settings className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
-                                    {!sidebarCollapsed && <span>Configuración</span>}
+                                    {showContent && <span>Configuración</span>}
                                 </button>
 
                                 <button
-                                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'admin'
+                                    className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'admin'
                                         ? 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
                                         : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
                                         } transition-colors`}
-                                    title={sidebarCollapsed ? 'Soporte' : undefined}
-                                    onClick={() => router.push('/admin/support')}
+                                    title={!showContent ? 'Soporte' : undefined}
+                                    onClick={() => handleNavigation('/admin/support')}
                                 >
                                     <LifeBuoy className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
-                                    {!sidebarCollapsed && <span>Soporte</span>}
+                                    {showContent && <span>Soporte</span>}
                                 </button>
                             </>
                         )}
@@ -196,7 +240,7 @@ export function AppSidebar({ currentPage = 'dashboard' }: AppSidebarProps) {
 
                 {/* User Profile Dropdown - Fixed at bottom */}
                 <div className="border-t border-gray-200 dark:border-slate-700">
-                    {user && <UserProfileDropdown user={user} collapsed={sidebarCollapsed} />}
+                    {user && <UserProfileDropdown user={user} collapsed={!showContent} />}
                 </div>
 
                 {/* Error Report Button - Fixed at bottom */}
@@ -205,8 +249,11 @@ export function AppSidebar({ currentPage = 'dashboard' }: AppSidebarProps) {
                 </div>
             </div>
 
-            {/* Announcement Banner - Fixed position */}
-            <AnnouncementBanner />
+            {/* Announcement Banner - Show only on desktop, or inside mobile sidebar if preferred. 
+                Keeping it global as per original code, but note it might be covered on mobile if not careful. 
+                The original code had check for sidebarCollapsed? No, it was outside.
+            */}
+            {!isMobile && <AnnouncementBanner />}
         </>
     );
 }

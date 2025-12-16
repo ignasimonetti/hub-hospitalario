@@ -1,0 +1,623 @@
+
+> hub@0.1.0 dev /Users/ignaciosimonetti/dyad-apps/hub-hospitalario/apps/hub
+> next dev
+
+   ▲ Next.js 15.5.6
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.88.242:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.5s
+ ○ Compiling /modules/expedientes ...
+ ✓ Compiled /modules/expedientes in 3.1s (3694 modules)
+ GET /modules/expedientes 200 in 3582ms
+ ✓ Compiled in 241ms (1806 modules)
+ GET /modules/expedientes 200 in 37ms
+ ○ Compiling /api/migrate-expedientes ...
+ ✓ Compiled /api/migrate-expedientes in 743ms (3709 modules)
+🚀 Iniciando migración de expedientes...
+🍪 Cookie pb_auth: Presente (Con valor)
+🔗 Conectando a PocketBase en: https://pocketbase.manta.com.ar
+🔐 AuthStore Valido?: true
+👤 Usuario: ignaciosimonetti1984@gmail.com
+📂 Leyendo CSV desde: /Users/ignaciosimonetti/dyad-apps/hub-hospitalario/apps/hub/datos_notion.csv
+📄 Archivo leído. Longitud: 56049
+📊 Filas parseadas: 176
+ POST /api/migrate-expedientes 200 in 167381ms
+ GET /modules/expedientes 200 in 178ms
+ ✓ Compiled in 1049ms (3695 modules)
+ GET /modules/expedientes 200 in 135ms
+ ✓ Compiled in 621ms (3695 modules)
+ GET /modules/expedientes 200 in 48ms
+ ✓ Compiled in 466ms (3695 modules)
+ GET /modules/expedientes 200 in 39ms
+ ✓ Compiled in 547ms (1807 modules)
+ GET /modules/expedientes 200 in 17ms
+ ✓ Compiled in 219ms (1807 modules)
+ GET /modules/expedientes 200 in 22ms
+ ✓ Compiled in 338ms (1807 modules)
+ GET /modules/expedientes 200 in 19ms
+ ✓ Compiled in 514ms (1807 modules)
+ GET /modules/expedientes 200 in 22ms
+ GET /modules/expedientes 200 in 432ms
+ ✓ Compiled in 1569ms (3680 modules)
+ ✓ Compiled in 1020ms (3692 modules)
+ ✓ Compiled in 917ms (3763 modules)
+ ✓ Compiled in 895ms (3763 modules)
+ GET /modules/expedientes 200 in 256ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 2.6s (5684 modules)
+ GET /dashboard 200 in 2783ms
+ GET /dashboard 200 in 8ms
+ GET /dashboard 200 in 14ms
+ GET /dashboard 200 in 33ms
+ GET /dashboard 200 in 23ms
+ GET /dashboard 200 in 8ms
+ GET /dashboard 200 in 10ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 1513ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 193ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ ○ Compiling /modules/content ...
+ ✓ Compiled /modules/content in 877ms (5716 modules)
+ GET /modules/content 200 in 947ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 1134ms
+ POST /dashboard 200 in 235ms
+ POST /modules/content 200 in 247ms
+Authenticating with Umami...
+Umami Authentication Successful
+ GET /modules/content 200 in 26ms
+ POST /dashboard 200 in 1969ms
+ POST /modules/content 200 in 1977ms
+ POST /dashboard 200 in 1474ms
+ POST /modules/content 200 in 1490ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 1153ms
+ POST /modules/content 200 in 1160ms
+ POST /modules/content 200 in 789ms
+ POST /modules/content 200 in 475ms
+ GET /modules/content 200 in 24ms
+ GET /modules/content 200 in 28ms
+ GET /modules/content 200 in 41ms
+ GET /modules/expedientes 200 in 38ms
+ ✓ Compiled in 1147ms (4857 modules)
+ GET /modules/expedientes 200 in 129ms
+ ⨯ ./src/hooks/usePermissions.ts
+Error:   [31mx[0m You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/ignaciosimonetti/dyad-apps/hub-hospitalario/apps/hub/src/hooks/usePermissions.ts[0m:4:1]
+ [2m1[0m | // HUB HOSPITALARIO - HOOK DE PERMISOS Y ROLES
+ [2m2[0m | // Hook para verificar permisos y roles en componentes de la UI
+ [2m3[0m | 
+ [2m4[0m | import { useState, useEffect, useCallback } from 'react'
+   : [35;1m         ^^^^^^^^[0m
+ [2m5[0m | import { pocketbase } from '@/lib/auth'
+ [2m6[0m | 
+ [2m7[0m | export interface Permission {
+   `----
+  [31mx[0m You're importing a component that needs `useEffect`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/ignaciosimonetti/dyad-apps/hub-hospitalario/apps/hub/src/hooks/usePermissions.ts[0m:4:1]
+ [2m1[0m | // HUB HOSPITALARIO - HOOK DE PERMISOS Y ROLES
+ [2m2[0m | // Hook para verificar permisos y roles en componentes de la UI
+ [2m3[0m | 
+ [2m4[0m | import { useState, useEffect, useCallback } from 'react'
+   : [35;1m                   ^^^^^^^^^[0m
+ [2m5[0m | import { pocketbase } from '@/lib/auth'
+ [2m6[0m | 
+ [2m7[0m | export interface Permission {
+   `----
+
+Import trace for requested module:
+./src/hooks/usePermissions.ts
+./src/components/ProtectedContent.tsx
+./src/app/modules/expedientes/page.tsx
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ○ Compiling /_error ...
+ ⨯ ./src/hooks/usePermissions.ts
+Error:   [31mx[0m You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/ignaciosimonetti/dyad-apps/hub-hospitalario/apps/hub/src/hooks/usePermissions.ts[0m:4:1]
+ [2m1[0m | // HUB HOSPITALARIO - HOOK DE PERMISOS Y ROLES
+ [2m2[0m | // Hook para verificar permisos y roles en componentes de la UI
+ [2m3[0m | 
+ [2m4[0m | import { useState, useEffect, useCallback } from 'react'
+   : [35;1m         ^^^^^^^^[0m
+ [2m5[0m | import { pocketbase } from '@/lib/auth'
+ [2m6[0m | 
+ [2m7[0m | export interface Permission {
+   `----
+  [31mx[0m You're importing a component that needs `useEffect`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/ignaciosimonetti/dyad-apps/hub-hospitalario/apps/hub/src/hooks/usePermissions.ts[0m:4:1]
+ [2m1[0m | // HUB HOSPITALARIO - HOOK DE PERMISOS Y ROLES
+ [2m2[0m | // Hook para verificar permisos y roles en componentes de la UI
+ [2m3[0m | 
+ [2m4[0m | import { useState, useEffect, useCallback } from 'react'
+   : [35;1m                   ^^^^^^^^^[0m
+ [2m5[0m | import { pocketbase } from '@/lib/auth'
+ [2m6[0m | 
+ [2m7[0m | export interface Permission {
+   `----
+
+Import trace for requested module:
+./src/hooks/usePermissions.ts
+./src/components/ProtectedContent.tsx
+./src/app/modules/expedientes/page.tsx
+ GET /modules/expedientes 500 in 1427ms
+ GET /modules/expedientes 500 in 664ms
+ GET /modules/content 500 in 24ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ ./src/hooks/usePermissions.ts
+Error:   [31mx[0m You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/ignaciosimonetti/dyad-apps/hub-hospitalario/apps/hub/src/hooks/usePermissions.ts[0m:4:1]
+ [2m1[0m | // HUB HOSPITALARIO - HOOK DE PERMISOS Y ROLES
+ [2m2[0m | // Hook para verificar permisos y roles en componentes de la UI
+ [2m3[0m | 
+ [2m4[0m | import { useState, useEffect, useCallback } from 'react'
+   : [35;1m         ^^^^^^^^[0m
+ [2m5[0m | import { pocketbase } from '@/lib/auth'
+ [2m6[0m | 
+ [2m7[0m | export interface Permission {
+   `----
+  [31mx[0m You're importing a component that needs `useEffect`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/ignaciosimonetti/dyad-apps/hub-hospitalario/apps/hub/src/hooks/usePermissions.ts[0m:4:1]
+ [2m1[0m | // HUB HOSPITALARIO - HOOK DE PERMISOS Y ROLES
+ [2m2[0m | // Hook para verificar permisos y roles en componentes de la UI
+ [2m3[0m | 
+ [2m4[0m | import { useState, useEffect, useCallback } from 'react'
+   : [35;1m                   ^^^^^^^^^[0m
+ [2m5[0m | import { pocketbase } from '@/lib/auth'
+ [2m6[0m | 
+ [2m7[0m | export interface Permission {
+   `----
+
+Import trace for requested module:
+./src/hooks/usePermissions.ts
+./src/components/ProtectedContent.tsx
+./src/app/modules/expedientes/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ ./src/hooks/usePermissions.ts
+Error:   [31mx[0m You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/ignaciosimonetti/dyad-apps/hub-hospitalario/apps/hub/src/hooks/usePermissions.ts[0m:4:1]
+ [2m1[0m | // HUB HOSPITALARIO - HOOK DE PERMISOS Y ROLES
+ [2m2[0m | // Hook para verificar permisos y roles en componentes de la UI
+ [2m3[0m | 
+ [2m4[0m | import { useState, useEffect, useCallback } from 'react'
+   : [35;1m         ^^^^^^^^[0m
+ [2m5[0m | import { pocketbase } from '@/lib/auth'
+ [2m6[0m | 
+ [2m7[0m | export interface Permission {
+   `----
+  [31mx[0m You're importing a component that needs `useEffect`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/ignaciosimonetti/dyad-apps/hub-hospitalario/apps/hub/src/hooks/usePermissions.ts[0m:4:1]
+ [2m1[0m | // HUB HOSPITALARIO - HOOK DE PERMISOS Y ROLES
+ [2m2[0m | // Hook para verificar permisos y roles en componentes de la UI
+ [2m3[0m | 
+ [2m4[0m | import { useState, useEffect, useCallback } from 'react'
+   : [35;1m                   ^^^^^^^^^[0m
+ [2m5[0m | import { pocketbase } from '@/lib/auth'
+ [2m6[0m | 
+ [2m7[0m | export interface Permission {
+   `----
+
+Import trace for requested module:
+./src/hooks/usePermissions.ts
+./src/components/ProtectedContent.tsx
+./src/app/modules/expedientes/page.tsx
+ GET / 500 in 1384ms
+ GET / 500 in 7ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled / in 1362ms (5193 modules)
+ GET / 200 in 105ms
+ GET / 200 in 40ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1743ms (5238 modules)
+ GET /login 200 in 1943ms
+ GET /login 200 in 15ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1036ms (3196 modules)
+ GET /dashboard 200 in 1401ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ ⨯ Error: Attempted to call usePermissions() from the server but usePermissions is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.
+    at ProtectedContent (src/components/ProtectedContent.tsx:30:72)
+  28 |   fallback?: ReactNode
+  29 | }) {
+> 30 |   const { hasPermission, loading: loadingPermissions } = usePermissions(tenantId)
+     |                                                                        ^
+  31 |   const { hasRole, hasAnyRole, loading: loadingRoles } = useRoles(tenantId)
+  32 |
+  33 |   if (loadingPermissions || loadingRoles) { {
+  digest: '2673594656'
+}
+ GET /modules/expedientes 200 in 40ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 1075ms
+ POST /modules/expedientes 200 in 1093ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 5271ms
+ POST /dashboard 200 in 1513ms
+ POST /modules/expedientes 200 in 1535ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 1873ms
+ POST /modules/expedientes 200 in 1880ms
+ ⨯ Error: Attempted to call usePermissions() from the server but usePermissions is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.
+    at ProtectedContent (src/components/ProtectedContent.tsx:30:72)
+  28 |   fallback?: ReactNode
+  29 | }) {
+> 30 |   const { hasPermission, loading: loadingPermissions } = usePermissions(tenantId)
+     |                                                                        ^
+  31 |   const { hasRole, hasAnyRole, loading: loadingRoles } = useRoles(tenantId)
+  32 |
+  33 |   if (loadingPermissions || loadingRoles) { {
+  digest: '2673594656'
+}
+ GET /modules/expedientes 200 in 183ms
+ ✓ Compiled in 1304ms (6108 modules)
+ GET /modules/expedientes 200 in 186ms
+ GET /dashboard 200 in 114ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 5857ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 559ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 532ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 311ms
+Authenticating with Umami...
+Umami Authentication Successful
+ POST /dashboard 200 in 2067ms
+ POST /dashboard 200 in 364ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 632ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 454ms
+ ○ Compiling /profile ...
+ ✓ Compiled /profile in 1573ms (6122 modules)
+ GET /profile 200 in 1657ms
+ ○ Compiling /api/auth/full-profile ...
+ ✓ Compiled /api/auth/full-profile in 660ms (6149 modules)
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ GET /api/auth/full-profile 200 in 8947ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /profile 200 in 1099ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ GET /api/auth/full-profile 200 in 1400ms
+ POST /profile 200 in 465ms
+ GET /profile 200 in 316ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ GET /api/auth/full-profile 200 in 2084ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ GET /api/auth/full-profile 200 in 1986ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ GET /api/auth/full-profile 200 in 399ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /profile 200 in 498ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ GET /api/auth/full-profile 200 in 1634ms
+ POST /profile 200 in 1135ms
+ GET /dashboard 200 in 31ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 551ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 218ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 466ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 208ms
+Authenticating with Umami...
+Umami Authentication Successful
+ POST /dashboard 200 in 3534ms
+ POST /dashboard 200 in 267ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 2633ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 3363ms
+ GET /modules/content 200 in 33ms
+ POST /modules/content 200 in 2088ms
+ GET /dashboard 200 in 23ms
+ GET /dashboard 200 in 19ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /modules/content 200 in 766ms
+ POST /dashboard 200 in 518ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 207ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 454ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 199ms
+ POST /dashboard 200 in 2319ms
+ POST /dashboard 200 in 761ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 3270ms
+ ✓ Compiled in 2.1s (5680 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /dashboard 200 in 451ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 1506ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 199ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 1004ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 557ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 812ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 1381ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getWidgetsWithUserConfig] User: 3qpld9847s04935
+[getWidgetsWithUserConfig] Roles: []
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 478ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 194ms
+Authenticating with Umami...
+Umami Authentication Successful
+ POST /dashboard 200 in 1368ms
+ POST /dashboard 200 in 274ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 774ms
+ ✓ Compiled in 2.9s (5693 modules)
+ GET /dashboard 200 in 99ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 3683ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 2.6s (5776 modules)
+ GET /admin 200 in 2810ms
+ GET /admin 200 in 11ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /admin 200 in 461ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /admin 200 in 353ms
+ GET /dashboard 200 in 48ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ GET /profile 200 in 21ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ ✓ Compiled /api/auth/full-profile in 215ms (2810 modules)
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 1648ms
+ POST /profile 200 in 1656ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ GET /api/auth/full-profile 200 in 1926ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 5196ms
+ POST /profile 200 in 1698ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ GET /api/auth/full-profile 200 in 1448ms
+ POST /dashboard 200 in 596ms
+ POST /profile 200 in 621ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /profile 200 in 2757ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /profile 200 in 1106ms
+ GET /profile 200 in 39ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /profile 200 in 2492ms
+ GET /dashboard 200 in 43ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 4196ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 213ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 987ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 215ms
+Authenticating with Umami...
+Umami Authentication Successful
+ POST /dashboard 200 in 5768ms
+[getBlogStats] Could not fetch sections, using IDs instead
+ POST /dashboard 200 in 3468ms
+ POST /dashboard 200 in 2314ms
+[getBlogStats] Could not fetch sections, using IDs instead
+ POST /dashboard 200 in 2384ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 435ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 6037ms
+[getBlogStats] Could not fetch sections, using IDs instead
+ POST /dashboard 200 in 900ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 2249ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 1349ms
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+[getServerPocketBase] Cookie found: true
+[getServerPocketBase] Auth loaded. Valid: true User: 3qpld9847s04935
+ POST /dashboard 200 in 2500ms
+ ✓ Compiled in 1023ms (2976 modules)
+ GET /dashboard 200 in 16ms

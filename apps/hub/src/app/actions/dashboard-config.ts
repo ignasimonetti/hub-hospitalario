@@ -203,9 +203,24 @@ export async function updateWidgetConfig(
 /**
  * Get merged widget list: all available widgets with user's visibility settings
  */
-import { getCurrentUserRoles } from '@/lib/auth';
+/**
+ * Helper to fetch user roles server-side
+ */
+async function fetchUserRoles(userId: string) {
+    try {
+        const pb = await createAdminClient();
+        const records = await pb.collection('hub_user_roles').getFullList({
+            filter: `user = "${userId}"`,
+            expand: 'role'
+        });
 
-// ... (código existente)
+        // Extract the actual role objects
+        return records.map(r => r.expand?.role).filter(Boolean);
+    } catch (e) {
+        console.error('Error fetching user roles:', e);
+        return [];
+    }
+}
 
 /**
  * Get merged widget list: all available widgets with user's visibility settings
@@ -220,43 +235,29 @@ export async function getWidgetsWithUserConfig(): Promise<{
         const userId = await getCurrentUserId();
 
         // Get user roles to check permissions
-        const userRoles = await getCurrentUserRoles();
+        // We must fetch this server-side using the admin client or server context
+        // reusing client-side auth.ts functions here won't work due to empty authStore on server actions
+        const userRoles = userId ? await fetchUserRoles(userId) : [];
 
         // Flatten all permissions from all roles into a Set for efficient lookup
         const userPermissions = new Set<string>();
 
-        console.log('[getWidgetsWithUserConfig] User:', userId);
-        console.log('[getWidgetsWithUserConfig] Roles:', JSON.stringify(userRoles, null, 2));
+        // console.log('[getWidgetsWithUserConfig] User:', userId);
+        // console.log('[getWidgetsWithUserConfig] Roles:', JSON.stringify(userRoles, null, 2));
 
-        userRoles.forEach(role => {
-            // Asumiendo que role.permissions es un array de strings o similar
-            // Si la estructura es diferente, ajustar aquí. 
-            // Por ahora, simulamos que si tiene rol 'admin' tiene todo, 
-            // o si el rol tiene una lista explícita de permisos.
-
-            // NOTA: La implementación actual de roles en el sistema parece ser simple.
-            // Si no hay un sistema de permisos granular explícito en el objeto role,
-            // podemos mapear roles a permisos o asumir que ciertos roles tienen acceso.
-
-            // Por ahora, vamos a ser permisivos si no hay lista de permisos explícita,
-            // pero idealmente deberíamos leer role.permissions.
-
+        userRoles.forEach((role: any) => {
             // Si el rol es admin, dar acceso total
-            if (role.name === 'admin' || role.name === 'Administrador') {
+            if (['admin', 'administrator', 'administrador', 'superadmin', 'super_admin'].includes(role.slug) ||
+                ['admin', 'administrator', 'administrador', 'superadmin', 'super admin'].includes(role.name?.toLowerCase())) {
                 userPermissions.add('*');
             }
         });
 
-        // NOTA IMPORTANTE: Como no tengo acceso a la definición exacta de permisos en el objeto role
-        // en este momento, voy a implementar una lógica simplificada:
-        // Si el widget requiere permiso, verificamos si el usuario tiene algún rol.
-        // En un sistema real, aquí verificaríamos `role.permissions.includes(widget.requiredPermission)`.
-
         // Para este caso específico del blog:
         // Si no tiene roles (dev) o tiene rol permitido, dar acceso
-        const hasBlogAccess = userRoles.length === 0 || userRoles.some(r =>
-            ['admin', 'medico', 'enfermero', 'administrativo', 'superadmin', 'Superadmin'].includes(r.name) ||
-            ['admin', 'medico', 'enfermero', 'administrativo', 'superadmin'].includes(r.name.toLowerCase())
+        const hasBlogAccess = userRoles.length === 0 || userRoles.some((r: any) =>
+            ['admin', 'medico', 'enfermero', 'administrativo', 'superadmin', 'super_admin', 'editor_blog', 'editor blog'].includes(r.slug) ||
+            ['admin', 'medico', 'enfermero', 'administrativo', 'superadmin', 'editor'].some(allowed => r.name?.toLowerCase().includes(allowed))
         );
 
         const configResult = await getUserWidgetConfigs();
@@ -272,9 +273,25 @@ export async function getWidgetsWithUserConfig(): Promise<{
                 // Si no requiere permiso, mostrar
                 if (!widget.requiredPermission) return true;
 
-                // Lógica específica para blog (ajustar según tu sistema real de permisos)
+                // Lógica específica para blog
                 if (widget.requiredPermission === 'blog:read') {
                     return hasBlogAccess;
+                }
+
+                // Lógica para expedientes
+                if (widget.requiredPermission === 'expedientes:read') {
+                    // Check logic similar to Sidebar: isAdmin or isMesaEntrada
+                    const isMesaEntrada = userRoles.some((r: any) =>
+                        ['mesa_entrada', 'mesa de entrada', 'mesa de entradas'].includes(r.slug || '') ||
+                        (r.name || '').toLowerCase().includes('mesa de entrada')
+                    );
+
+                    const isAdmin = userRoles.some((r: any) =>
+                        ['superadmin', 'super_admin', 'admin', 'administrador'].includes(r.slug || '') ||
+                        ['superadmin', 'super admin', 'administrador', 'admin'].includes((r.name || '').toLowerCase())
+                    );
+
+                    return isAdmin || isMesaEntrada;
                 }
 
                 return true; // Default allow si no matchea reglas específicas

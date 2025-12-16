@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useSession } from '@/components/SessionProvider';
 import { pocketbase } from '@/lib/auth'; // Importar la instancia de PocketBase
 
-type WorkspaceStatus = "waiting" | "initializing" | "ready";
+type WorkspaceStatus = "waiting" | "initializing" | "ready" | "loading";
 
 interface Tenant {
   id: string;
@@ -49,7 +49,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const tenantDetails = await pocketbase.collection('hub_tenants').getOne(tenantId);
       const roleDetails = await pocketbase.collection('hub_roles').getOne(roleId);
       return { tenant: tenantDetails as unknown as Tenant, role: roleDetails as unknown as UserRole };
-    } catch (error) {
+    } catch (error: any) {
+      // Ignore auto-cancellation errors
+      if (error?.isAutoCancellation) {
+        // console.debug('Fetch autocancelled'); // Optional logging
+        return { tenant: null, role: null };
+      }
       console.error('❌ Error fetching tenant or role details:', error);
       return { tenant: null, role: null };
     }

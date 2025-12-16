@@ -105,7 +105,7 @@ export function PendingUserDialog({ open, onOpenChange, userEmail }: PendingUser
           </div>
 
           <AlertDialogFooter className="flex-col gap-2 pt-4">
-            <Button onClick={handleUnderstood} className="w-full">
+            <Button onClick={handleUnderstood} className="w-full dark:text-white">
               Entendido
             </Button>
             <Button

@@ -14,6 +14,8 @@ const NotionEditor = dynamic(() => import('@hospital/core').then(mod => mod.Noti
   loading: () => <div className="h-[500px] w-full animate-pulse bg-gray-100 dark:bg-gray-800 rounded-lg" />
 });
 
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 import { getDashboardNote, saveDashboardNote } from "@/app/actions/dashboard-notes";
 import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
 
@@ -25,6 +27,7 @@ export default function DashboardPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [noteContent, setNoteContent] = useState<any>(undefined);
   const [isLoadingNote, setIsLoadingNote] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Session timeout management
   const { showWarning, timeRemaining, extendSession, logout } = useSessionTimeout(currentRole?.name);
@@ -80,19 +83,27 @@ export default function DashboardPage() {
 
   const checkUserRoles = async (userId: string) => {
     try {
-      // El dashboard ya tiene acceso al contexto de workspace
-      // No es necesario volver a obtener los roles, solo usar los del contexto
-      // Si se necesita actualizar los roles, debería hacerse a través del contexto
-
-      // Si el contexto de workspace no tiene roles pero sí tiene tenant y rol,
-      // podemos confiar en esos valores
+      // Si ya tenemos un workspace activo (tenant y rol), asumimos que el usuario
+      // NO está pendiente y tiene acceso. Esto evita el "fogonazo" del modal.
       if (currentTenant && currentRole) {
-        // Ya tenemos la información del entorno hospitalario
         setShowPendingDialog(false);
-      } else {
-        // Si no tenemos información del workspace, mostrar diálogo de pendiente
-        setShowPendingDialog(true);
+        return;
       }
+
+      // TODO: Aquí se podría implementar una lógica más robusta si fuera necesario
+      // verificar roles contra el servidor, pero por ahora confiamos en el contexto
+      // del WorkspaceProvider para saber si el usuario debe seleccionar un espacio
+      // o si está pendiente de asignación.
+
+      // Si no hay tenant/rol y tampoco roles en la lista (userRoles), entonces sí podría estar pendiente.
+      // Pero como userRoles no se está obteniendo aquí (está vacío), esta lógica es delicada.
+      // Lo mejor es confiar en que si llegó al dashboard y no tiene workspace, el WorkspaceGuard
+      // o el selector de workspace deberían haber intervenido antes si fuera necesario.
+
+      // Mantenemos showPendingDialog en false por defecto para evitar el flash,
+      // a menos que estemos seguros de que el usuario NO tiene ningún acceso.
+      setShowPendingDialog(false);
+
     } catch (error) {
       console.error('Error checking user roles:', error);
     }
@@ -102,18 +113,42 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
-      {/* Sidebar - Hidden on mobile, shown on desktop */}
+      {/* Mobile Header & Sidebar */}
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 sticky top-0 z-20">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-gray-900 dark:text-white">
+            {currentTenant?.name || 'Hub Hospitalario'}
+          </span>
+        </div>
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetTrigger asChild>
+            <button className="p-2 -mr-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg">
+              <Menu className="h-6 w-6" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-80 border-r-gray-200 dark:border-slate-800">
+            <SheetTitle className="sr-only">Menú de Navegación</SheetTitle>
+            <AppSidebar
+              currentPage="dashboard"
+              isMobile={true}
+              onMobileClose={() => setIsMobileMenuOpen(false)}
+            />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <AppSidebar currentPage="dashboard" />
       </div>
 
       {/* Main Content */}
-      <div className={`pt-14 transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'} ml-0`}>
+      <div className={`pt-4 md:pt-14 transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'} ml-0`}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-          className="max-w-6xl mx-auto px-4 md:px-8 py-12"
+          className="max-w-6xl mx-auto px-4 md:px-8 py-4 md:py-12"
         >
           {/* Header - shadcn/ui Style */}
           <div className="flex items-center justify-between">

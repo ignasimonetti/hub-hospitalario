@@ -56,7 +56,7 @@ export function PasswordInput({
           disabled={disabled}
           required={required}
           className={cn(
-            "pr-10",
+            "pr-10 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-400",
             (error || hasMismatch) && "border-red-500 focus:border-red-500"
           )}
         />

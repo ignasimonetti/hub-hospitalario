@@ -54,4 +54,12 @@ export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
         requiredPermission: 'blog:read', // Alineado con permisos del Blog
     },
     // Future widgets can be added here
+    {
+        id: 'expedientes_kpi',
+        name: 'KPIs Expedientes',
+        description: 'Estado actual de trámites.',
+        component: 'ExpedientesKPIWidget',
+        requiredPermission: 'expedientes:read',
+        defaultSize: 'medium',
+    },
 ];

@@ -89,7 +89,7 @@ export default function LoginPage() {
         <Card className="w-full mb-8 shadow-2xl border-0 ring-1 ring-gray-200 dark:ring-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl">
           <CardHeader>
             <CardTitle className="text-2xl text-center font-bold text-gray-900 dark:text-slate-100">Login</CardTitle>
-            <CardDescription className="text-center">
+            <CardDescription className="text-center dark:text-slate-400">
               Ingresa tu email y contraseña para acceder a la intranet.
             </CardDescription>
           </CardHeader>
@@ -107,7 +107,7 @@ export default function LoginPage() {
                   if (error) setError(""); // Limpiar error al escribir
                 }}
                 disabled={isLoading}
-                className="bg-white dark:bg-slate-950"
+                className="bg-white dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-400"
               />
             </div>
             <SimplePasswordInput
@@ -131,7 +131,7 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="flex flex-col">
             <Button
-              className="w-full text-base py-5 shadow-sm hover:shadow-md transition-all"
+              className="w-full text-base py-5 shadow-sm hover:shadow-md transition-all dark:text-white"
               onClick={handleLogin}
               disabled={isLoading}
             >
@@ -163,7 +163,7 @@ export default function LoginPage() {
               alt={logo.alt}
               width={logo.width}
               height={logo.height}
-              className="object-contain h-20 w-auto grayscaleHover transition-all duration-300"
+              className="object-contain h-20 w-auto grayscaleHover transition-all duration-300 dark:invert dark:hue-rotate-180"
             />
           </motion.div>
         ))}

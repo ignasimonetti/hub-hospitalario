@@ -248,7 +248,7 @@ export async function getWidgetsWithUserConfig(): Promise<{
         userRoles.forEach((role: any) => {
             // Si el rol es admin, dar acceso total
             if (['admin', 'administrator', 'administrador', 'superadmin', 'super_admin'].includes(role.slug) ||
-                ['admin', 'administrator', 'administrador', 'superadmin', 'super admin'].includes(role.name?.toLowerCase())) {
+                ['admin', 'administrator', 'administrador', 'superadmin', 'super admin', 'super usuario', 'sysadmin', 'sistema'].includes(role.name?.toLowerCase())) {
                 userPermissions.add('*');
             }
         });
@@ -288,7 +288,7 @@ export async function getWidgetsWithUserConfig(): Promise<{
 
                     const isAdmin = userRoles.some((r: any) =>
                         ['superadmin', 'super_admin', 'admin', 'administrador'].includes(r.slug || '') ||
-                        ['superadmin', 'super admin', 'administrador', 'admin'].includes((r.name || '').toLowerCase())
+                        ['superadmin', 'super admin', 'administrador', 'admin', 'super usuario', 'sysadmin', 'sistema'].includes((r.name || '').toLowerCase())
                     );
 
                     return isAdmin || isMesaEntrada;

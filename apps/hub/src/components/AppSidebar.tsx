@@ -65,8 +65,8 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
     // 2. Check currentRole.slug (preferred if available)
     // 3. Fallback to currentRole.name normalized (legacy/fallback)
     const isAdmin = user?.is_super_admin ||
-        ['superadmin', 'super_admin'].includes(currentRole?.slug || '') ||
-        ['superadmin', 'super admin', 'administrador', 'admin'].includes(currentRole?.name?.toLowerCase() || '');
+        ['superadmin', 'super_admin', 'super_usuario', 'sysadmin', 'root'].includes(currentRole?.slug || '') ||
+        ['superadmin', 'super admin', 'administrador', 'admin', 'super usuario', 'sysadmin', 'sistema'].includes(currentRole?.name?.toLowerCase() || '');
 
     // Check if user has blog editor access
     const isBlogEditor = ['editor_blog', 'editor blog'].includes(currentRole?.slug || '') ||

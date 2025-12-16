@@ -31,7 +31,7 @@ export interface UbicacionRecord {
     tenant: string;
 }
 
-export type ExpedienteEstado = "En trámite" | "Finalizado" | "Archivado";
+export type ExpedienteEstado = "En trámite" | "Finalizado" | "Archivado" | "Pendiente";
 export type ExpedientePrioridad = "Alta" | "Media" | "Baja";
 
 export interface ExpedienteCreateData {

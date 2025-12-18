@@ -11,8 +11,18 @@ export async function sendEmailConfirmation(email: string, confirmationUrl: stri
   const fullName = firstName && lastName ? `${firstName} ${lastName}` : '';
   const greetingName = fullName || 'Usuario';
 
+  // Debug logs for Resend troubleshooting
+  const isDefaultKey = resendApiKey === 're_123456789';
+  console.log(`[Resend] Attempting to send confirmation email to: ${email}`);
+  console.log(`[Resend] Using default build key? ${isDefaultKey}`);
+  if (!isDefaultKey && resendApiKey) {
+    console.log(`[Resend] Configured Key Prefix: ${resendApiKey.substring(0, 3)}...`);
+  }
+
   // Fix: Since (auth) is a route group, the correct URL is /confirm not /auth/confirm
   const correctedUrl = confirmationUrl.replace('/auth/confirm', '/confirm');
+
+  console.log(`[Resend] Confirmation URL: ${correctedUrl}`);
 
   return await resend.emails.send({
     from: 'onboarding@resend.dev',

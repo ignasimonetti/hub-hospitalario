@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '../../../../lib/pocketbase-admin';
+import { createAdminClient } from '../../../../../lib/pocketbase-admin';
 
 export async function POST(request: NextRequest) {
     try {

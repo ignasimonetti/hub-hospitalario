@@ -3,9 +3,9 @@
 
 import { Resend } from 'resend'
 
-const resendApiKey = process.env.RESEND_API_KEY;
+const resendApiKey = process.env.RESEND_API_KEY || 're_123456789';
 
-export const resend = new Resend(resendApiKey)
+const resend = new Resend(resendApiKey)
 
 export async function sendEmailConfirmation(email: string, confirmationUrl: string, firstName: string = '', lastName: string = '') {
   const fullName = firstName && lastName ? `${firstName} ${lastName}` : '';

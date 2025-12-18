@@ -3,17 +3,17 @@
 
 import { Resend } from 'resend'
 
-const resendApiKey = process.env.RESEND_API_KEY || 're_7Tv6eaT5_K1DLgfX7KUDk3urr6qFtFJjh'
+const resendApiKey = process.env.RESEND_API_KEY;
 
 export const resend = new Resend(resendApiKey)
 
 export async function sendEmailConfirmation(email: string, confirmationUrl: string, firstName: string = '', lastName: string = '') {
   const fullName = firstName && lastName ? `${firstName} ${lastName}` : '';
   const greetingName = fullName || 'Usuario';
-  
+
   // Fix: Since (auth) is a route group, the correct URL is /confirm not /auth/confirm
   const correctedUrl = confirmationUrl.replace('/auth/confirm', '/confirm');
-  
+
   return await resend.emails.send({
     from: 'onboarding@resend.dev',
     to: email,
@@ -87,7 +87,7 @@ export async function sendWelcomeEmail(email: string, userName: string) {
 
 export async function sendPasswordResetEmail(email: string, resetUrl: string, firstName: string = '') {
   const greetingName = firstName || 'Usuario';
-  
+
   return await resend.emails.send({
     from: 'onboarding@resend.dev',
     to: email,

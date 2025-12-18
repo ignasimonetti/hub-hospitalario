@@ -47,6 +47,7 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
     const [password, setPassword] = useState("");
     const [sendInvitation, setSendInvitation] = useState(false);
     const [isActive, setIsActive] = useState(true);
+    const [isVerified, setIsVerified] = useState(false);
     const [showInactiveConfirm, setShowInactiveConfirm] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,6 +92,7 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
             setPassword("");
             setSendInvitation(false);
             setIsActive(user.active !== false); // Default to true if undefined
+            setIsVerified(user.verified === true);
 
             // Set avatar preview if exists
             if (user.avatar) {
@@ -127,6 +129,7 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
             setPassword("");
             setSendInvitation(true);
             setIsActive(true);
+            setIsVerified(false);
             setAvatarPreview(null);
             setActiveUserRoles([]);
             // new user defaults
@@ -187,6 +190,7 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
         formData.append("phone", phone);
         formData.append("dni", dni);
         formData.append("active", String(isActive));
+        formData.append("verified", String(isVerified));
         formData.append("sendInvitation", String(sendInvitation));
 
         if (!isEditing && password) {
@@ -454,38 +458,68 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
                         )}
 
                         {isEditing && (
-                            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/30 dark:to-gray-900/50">
-                                <div className="space-y-1 flex-1">
-                                    <Label className="text-sm font-semibold">Estado de Acceso</Label>
-                                    <div className="flex items-center gap-2">
-                                        {isActive ? (
-                                            <>
-                                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                                <span className="text-sm text-green-600 dark:text-green-400 font-medium">Usuario activo</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                                <span className="text-sm text-red-600 dark:text-red-400 font-medium">Usuario inactivo</span>
-                                            </>
-                                        )}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/30 dark:to-gray-900/50">
+                                    <div className="space-y-1 flex-1">
+                                        <Label className="text-sm font-semibold">Estado de Acceso</Label>
+                                        <div className="flex items-center gap-2">
+                                            {isActive ? (
+                                                <>
+                                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                                    <span className="text-sm text-green-600 dark:text-green-400 font-medium">Usuario activo</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                                    <span className="text-sm text-red-600 dark:text-red-400 font-medium">Usuario inactivo</span>
+                                                </>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {isActive
+                                                ? "El usuario puede acceder al sistema normalmente"
+                                                : "El usuario NO puede iniciar sesión"}
+                                        </p>
                                     </div>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        {isActive
-                                            ? "El usuario puede acceder al sistema normalmente"
-                                            : "El usuario NO puede iniciar sesión"}
-                                    </p>
+                                    <Switch
+                                        checked={isActive}
+                                        onCheckedChange={(value) => {
+                                            if (!value && isActive) {
+                                                setShowInactiveConfirm(true);
+                                            } else {
+                                                setIsActive(value);
+                                            }
+                                        }}
+                                    />
                                 </div>
-                                <Switch
-                                    checked={isActive}
-                                    onCheckedChange={(value) => {
-                                        if (!value && isActive) {
-                                            setShowInactiveConfirm(true);
-                                        } else {
-                                            setIsActive(value);
-                                        }
-                                    }}
-                                />
+
+                                <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-900/30">
+                                    <div className="space-y-1 flex-1">
+                                        <Label className="text-sm font-semibold">Email Verificado</Label>
+                                        <div className="flex items-center gap-2">
+                                            {isVerified ? (
+                                                <>
+                                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                                    <span className="text-sm text-green-600 dark:text-green-400 font-medium">Verificado</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                                    <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">Pendiente</span>
+                                                </>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {isVerified
+                                                ? "El email ya ha sido verificado"
+                                                : "Puedes verificar el email manualmente si el usuario no recibió el correo"}
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        checked={isVerified}
+                                        onCheckedChange={setIsVerified}
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>

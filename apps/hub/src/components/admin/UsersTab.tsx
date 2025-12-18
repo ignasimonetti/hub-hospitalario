@@ -25,7 +25,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Users, Plus, Edit, Trash2, Search, Loader2, UserCheck, UserX, UserCog } from "lucide-react";
-import { getUsers, deleteUser } from "@/app/actions/users";
+import { getUsers, deleteUser, toggleUserStatus, updateUser } from "@/app/actions/users";
 import { UserSheet } from "./UserSheet";
 import { pocketbase } from "@/lib/auth";
 
@@ -38,6 +38,7 @@ export function UsersTab() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<any | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isToggling, setIsToggling] = useState<string | null>(null);
 
     useEffect(() => {
         loadUsers();
@@ -100,6 +101,37 @@ export function UsersTab() {
         }
     };
 
+    const handleToggleStatus = async (user: any) => {
+        setIsToggling(user.id);
+        try {
+            const newStatus = !(user.active !== false);
+            const result = await toggleUserStatus(user.id, newStatus);
+            if (result.success) {
+                await loadUsers();
+            }
+        } catch (error) {
+            console.error("Error toggling user status:", error);
+        } finally {
+            setIsToggling(null);
+        }
+    };
+
+    const handleToggleVerified = async (user: any) => {
+        setIsToggling(user.id);
+        try {
+            const formData = new FormData();
+            formData.append('verified', String(!user.verified));
+            const result = await updateUser(user.id, formData);
+            if (result.success) {
+                await loadUsers();
+            }
+        } catch (error) {
+            console.error("Error toggling user verification:", error);
+        } finally {
+            setIsToggling(null);
+        }
+    };
+
     const filteredUsers = users.filter(user =>
         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -125,8 +157,8 @@ export function UsersTab() {
         return `${firstName} ${lastName}`.trim() || user.email || "";
     };
 
-    const activeUsers = users.filter(u => u.verified && !u.disabled);
-    const pendingUsers = users.filter(u => !u.verified);
+    const verifiedUsers = users.filter(u => u.verified);
+    const inactiveUsers = users.filter(u => u.active === false);
     const usersWithoutRoles = users.filter(u => !u.expand || !u.expand.hub_user_roles_via_user || u.expand.hub_user_roles_via_user.length === 0);
 
     if (loading) {
@@ -173,7 +205,7 @@ export function UsersTab() {
                         <div className="flex items-center">
                             <UserCheck className="h-8 w-8 text-green-600" />
                             <div className="ml-4">
-                                <p className="text-2xl font-bold">{activeUsers.length}</p>
+                                <p className="text-2xl font-bold">{verifiedUsers.length}</p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">Emails Verificados</p>
                             </div>
                         </div>
@@ -183,10 +215,10 @@ export function UsersTab() {
                 <Card>
                     <CardContent className="p-6">
                         <div className="flex items-center">
-                            <UserX className="h-8 w-8 text-blue-600" />
+                            <UserX className="h-8 w-8 text-red-600" />
                             <div className="ml-4">
-                                <p className="text-2xl font-bold">{pendingUsers.length}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Sin Verificar</p>
+                                <p className="text-2xl font-bold">{inactiveUsers.length}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Sin Activar</p>
                             </div>
                         </div>
                     </CardContent>
@@ -277,17 +309,21 @@ export function UsersTab() {
                                                         </Badge>
                                                     ))
                                                 ) : (
-                                                    <Badge variant="outline" className="text-gray-600 border-gray-600 text-xs">
+                                                    <Badge variant="outline" className="text-gray-600 border-gray-600 text-xs text-nowrap">
                                                         Sin rol
                                                     </Badge>
                                                 )}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex flex-wrap gap-1">
-                                                {!user.active && user.active !== undefined && (
-                                                    <Badge variant="outline" className="text-red-600 border-red-600">
+                                            <div className="flex flex-wrap gap-1 min-w-[120px]">
+                                                {user.active === false ? (
+                                                    <Badge variant="outline" className="text-red-600 border-red-600 bg-red-50 dark:bg-red-900/10">
                                                         🔒 Inactivo
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50 dark:bg-green-900/10">
+                                                        🟢 Activo
                                                     </Badge>
                                                 )}
                                                 {user.verified ? (
@@ -303,6 +339,36 @@ export function UsersTab() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    title={user.active === false ? "Activar Usuario" : "Desactivar Usuario"}
+                                                    onClick={() => handleToggleStatus(user)}
+                                                    disabled={isToggling === user.id}
+                                                >
+                                                    {isToggling === user.id ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : user.active === false ? (
+                                                        <UserCheck className="h-4 w-4 text-green-600" />
+                                                    ) : (
+                                                        <UserX className="h-4 w-4 text-orange-600" />
+                                                    )}
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    title={user.verified ? "Marcar como No Verificado" : "Marcar como Verificado"}
+                                                    onClick={() => handleToggleVerified(user)}
+                                                    disabled={isToggling === user.id}
+                                                >
+                                                    {isToggling === user.id ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : user.verified ? (
+                                                        <UserCheck className="h-4 w-4 text-green-600 fill-green-100" />
+                                                    ) : (
+                                                        <UserCheck className="h-4 w-4 text-blue-600" />
+                                                    )}
+                                                </Button>
                                                 <Button
                                                     size="sm"
                                                     variant="outline"

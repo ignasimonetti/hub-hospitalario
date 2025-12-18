@@ -80,6 +80,7 @@ export async function createUser(formData: FormData) {
             phone: formData.get('phone') || '',
             dni: formData.get('dni') || '',
             active: formData.get('active') !== 'false',
+            verified: formData.get('verified') === 'true',
         };
 
         // Handle avatar upload if present
@@ -162,6 +163,7 @@ export async function updateUser(id: string, formData: FormData) {
             phone: phone,
             dni: dni,
             active: formData.get('active') === 'true',
+            verified: formData.get('verified') === 'true',
         };
 
         const avatar = formData.get('avatar') as File;
@@ -293,7 +295,8 @@ export async function deleteUser(id: string) {
  */
 export async function toggleUserStatus(id: string, isActive: boolean) {
     try {
-        const pb = await getServerPocketBase();
+        const { createAdminClient } = await import('@/lib/pocketbase-admin');
+        const pb = await createAdminClient();
 
         await pb.collection(USERS_COLLECTION).update(id, {
             active: isActive,

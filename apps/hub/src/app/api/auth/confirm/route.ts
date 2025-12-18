@@ -15,21 +15,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use our confirmEmail function to update user verified status
-    const { data, error } = await confirmEmail(token)
+    // Use Admin Client to mark user as verified
+    try {
+      const { createAdminClient } = await import('../../../../lib/pocketbase-admin');
+      const pbAdmin = await createAdminClient();
 
-    if (error) {
-      console.error('Email confirmation error:', error)
+      // In our custom flow, the 'token' is actually the userId
+      const userData = await pbAdmin.collection('auth_users').getOne(token);
+
+      if (!userData) {
+        throw new Error('Usuario no encontrado');
+      }
+
+      // Update the user as verified
+      const updatedUser = await pbAdmin.collection('auth_users').update(token, {
+        verified: true
+      });
+
+      return NextResponse.json({
+        message: 'Email confirmado exitosamente',
+        user: updatedUser
+      })
+
+    } catch (pbError: any) {
+      console.error('PocketBase confirmation update error:', pbError)
       return NextResponse.json(
-        { error: (error as any).message || 'Error al confirmar email' },
+        { error: pbError.message || 'Error al actualizar el estado de verificación' },
         { status: 400 }
       )
     }
-
-    return NextResponse.json({
-      message: 'Email confirmado exitosamente',
-      user: data?.user || null
-    })
 
   } catch (error: any) {
     console.error('Confirm API error:', error)

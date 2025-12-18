@@ -131,19 +131,26 @@ export async function signOut() {
 }
 
 /**
- * Confirmar email - Enfoque simplificado para PocketBase
+ * Confirmar email - Llama a nuestra API interna que usa el Admin Client
  */
 export async function confirmEmail(token: string) {
   try {
-    // En PocketBase, los tokens de confirmación de email son IDs de usuario
-    // Solo obtener los datos del usuario - si podemos obtenerlos, el email está confirmado
-    const userData = await pocketbase.collection(USERS_COLLECTION).getOne(token)
+    const response = await fetch('/api/auth/confirm', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
 
-    console.log('Confirmación de email exitosa para el usuario:', userData.email)
-    console.log('Estado de verificación del usuario:', userData.verified)
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al confirmar email');
+    }
 
     return {
-      data: { user: userData },
+      data: { user: data.user },
       error: null
     }
   } catch (err: any) {

@@ -5,15 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -21,19 +21,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Users, 
-  Plus, 
-  Edit, 
-  Shield, 
-  UserCheck, 
+import {
+  Users,
+  Plus,
+  Edit,
+  Shield,
+  UserCheck,
   Search,
   Loader2,
   AlertCircle
@@ -84,16 +84,29 @@ export default function AdminUsersPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // TODO: Implementar llamadas a la API
-      // Por ahora, datos de prueba
-      setUsers([]);
-      setRoles([
-        { id: "1", name: "Super Admin", level: 1, description: "Acceso completo al sistema" },
-        { id: "2", name: "Hospital Admin", level: 2, description: "Administrador del hospital" },
-        { id: "3", name: "Doctor", level: 3, description: "Médico tratante" },
-        { id: "4", name: "Enfermero", level: 4, description: "Personal de enfermería" },
-        { id: "5", name: "Recepcionista", level: 5, description: "Personal de recepción" }
+      const [usersResponse, rolesResponse] = await Promise.all([
+        fetch('/api/admin/users'),
+        fetch('/api/admin/roles')
       ]);
+
+      if (usersResponse.ok) {
+        const usersData = await usersResponse.json();
+        // Ensure user_roles is an array to avoid map errors if API returns weird data
+        const safeUsers = Array.isArray(usersData) ? usersData.map((u: any) => ({
+          ...u,
+          user_roles: u.user_roles || []
+        })) : [];
+        setUsers(safeUsers);
+      } else {
+        console.error("Failed to fetch users");
+      }
+
+      if (rolesResponse.ok) {
+        const rolesData = await rolesResponse.json();
+        setRoles(Array.isArray(rolesData) ? rolesData : []);
+      } else {
+        console.error("Failed to fetch roles");
+      }
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -101,7 +114,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.user_metadata?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.user_metadata?.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -111,23 +124,28 @@ export default function AdminUsersPage() {
     if (!user.email_confirmed_at) {
       return <Badge variant="outline" className="text-yellow-600 border-yellow-600">Pendiente</Badge>;
     }
-    if (user.last_sign_in_at) {
+    // Since we don't track last_sign_in_at reliably in PB yet, we can assume confirmed users are active enough
+    // or just check if they have a role
+    if (user.user_roles && user.user_roles.length > 0) {
       return <Badge variant="outline" className="text-green-600 border-green-600">Activo</Badge>;
     }
-    return <Badge variant="outline" className="text-gray-600 border-gray-600">Inactivo</Badge>;
+    return <Badge variant="outline" className="text-gray-600 border-gray-600">Registrado</Badge>;
   };
 
   const getRoleBadge = (role: UserRole) => {
     const colors = {
       1: "bg-red-100 text-red-800",
-      2: "bg-orange-100 text-orange-800", 
+      2: "bg-orange-100 text-orange-800",
       3: "bg-blue-100 text-blue-800",
       4: "bg-green-100 text-green-800",
       5: "bg-purple-100 text-purple-800"
     };
-    
+
+    // Fallback if level is missing or non-standard
+    const bgClass = (role.level && colors[role.level as keyof typeof colors]) || "bg-gray-100 text-gray-800";
+
     return (
-      <Badge className={colors[role.level as keyof typeof colors] || "bg-gray-100 text-gray-800"}>
+      <Badge className={bgClass}>
         {role.role_name}
       </Badge>
     );
@@ -135,12 +153,25 @@ export default function AdminUsersPage() {
 
   const handleAssignRole = async () => {
     if (!selectedUser || !selectedRole) return;
-    
+
     try {
-      // TODO: Implementar asignación de rol via API
-      console.log(`Assigning role ${selectedRole} to user ${selectedUser.id}`);
-      setShowAssignDialog(false);
-      setSelectedRole("");
+      const response = await fetch('/api/admin/users/assign-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          roleId: selectedRole
+        })
+      });
+
+      if (response.ok) {
+        setShowAssignDialog(false);
+        setSelectedRole("");
+        // Reload data to show new role
+        loadData();
+      } else {
+        console.error("Failed to assign role");
+      }
     } catch (error) {
       console.error("Error assigning role:", error);
     }
@@ -193,7 +224,7 @@ export default function AdminUsersPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
@@ -320,7 +351,7 @@ export default function AdminUsersPage() {
                         {new Date(user.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {user.last_sign_in_at 
+                        {user.last_sign_in_at
                           ? new Date(user.last_sign_in_at).toLocaleDateString()
                           : "Nunca"
                         }
@@ -329,8 +360,8 @@ export default function AdminUsersPage() {
                         <div className="flex items-center gap-2">
                           <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
                             <DialogTrigger asChild>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 onClick={() => setSelectedUser(user)}
                               >

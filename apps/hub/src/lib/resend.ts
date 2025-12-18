@@ -24,8 +24,10 @@ export async function sendEmailConfirmation(email: string, confirmationUrl: stri
 
   console.log(`[Resend] Confirmation URL: ${correctedUrl}`);
 
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+
   return await resend.emails.send({
-    from: 'onboarding@resend.dev',
+    from: fromEmail,
     to: email,
     subject: `¡Bienvenido/a ${greetingName}! - Confirma tu cuenta`,
     html: `
@@ -62,8 +64,9 @@ export async function sendEmailConfirmation(email: string, confirmationUrl: stri
 }
 
 export async function sendWelcomeEmail(email: string, userName: string) {
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
   return await resend.emails.send({
-    from: 'onboarding@resend.dev',
+    from: fromEmail,
     to: email,
     subject: '¡Tu cuenta ha sido confirmada - Hub Hospitalario',
     html: `
@@ -98,8 +101,10 @@ export async function sendWelcomeEmail(email: string, userName: string) {
 export async function sendPasswordResetEmail(email: string, resetUrl: string, firstName: string = '') {
   const greetingName = firstName || 'Usuario';
 
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+
   return await resend.emails.send({
-    from: 'onboarding@resend.dev',
+    from: fromEmail,
     to: email,
     subject: 'Recuperación de contraseña - Hub Hospitalario',
     html: `

@@ -1,0 +1,1095 @@
+[
+    {
+        "id": "splycategory001",
+        "name": "supply_categories",
+        "type": "base",
+        "system": false,
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": null,
+        "fields": [
+            {
+                "autogeneratePattern": "[a-z0-9]{15}",
+                "hidden": false,
+                "id": "field_id_cat",
+                "max": 15,
+                "min": 15,
+                "name": "id",
+                "pattern": "^[a-z0-9]+$",
+                "presentable": false,
+                "primaryKey": true,
+                "required": true,
+                "system": true,
+                "type": "text"
+            },
+            {
+                "id": "field_name_cat",
+                "name": "name",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_desc_cat",
+                "name": "description",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_active_cat",
+                "name": "is_active",
+                "type": "bool",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false
+            },
+            {
+                "hidden": false,
+                "id": "field_created_cat",
+                "name": "created",
+                "onCreate": true,
+                "onUpdate": false,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            },
+            {
+                "hidden": false,
+                "id": "field_updated_cat",
+                "name": "updated",
+                "onCreate": true,
+                "onUpdate": true,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            }
+        ]
+    },
+    {
+        "id": "splyactivity001",
+        "name": "supply_provider_activities",
+        "type": "base",
+        "system": false,
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": null,
+        "fields": [
+            {
+                "autogeneratePattern": "[a-z0-9]{15}",
+                "hidden": false,
+                "id": "field_id_act",
+                "max": 15,
+                "min": 15,
+                "name": "id",
+                "pattern": "^[a-z0-9]+$",
+                "presentable": false,
+                "primaryKey": true,
+                "required": true,
+                "system": true,
+                "type": "text"
+            },
+            {
+                "id": "field_code_act",
+                "name": "code",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": true,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_desc_act",
+                "name": "description",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "hidden": false,
+                "id": "field_created_act",
+                "name": "created",
+                "onCreate": true,
+                "onUpdate": false,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            },
+            {
+                "hidden": false,
+                "id": "field_updated_act",
+                "name": "updated",
+                "onCreate": true,
+                "onUpdate": true,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            }
+        ]
+    },
+    {
+        "id": "splyprovider001",
+        "name": "supply_providers",
+        "type": "base",
+        "system": false,
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": null,
+        "fields": [
+            {
+                "autogeneratePattern": "[a-z0-9]{15}",
+                "hidden": false,
+                "id": "field_id_prov",
+                "max": 15,
+                "min": 15,
+                "name": "id",
+                "pattern": "^[a-z0-9]+$",
+                "presentable": false,
+                "primaryKey": true,
+                "required": true,
+                "system": true,
+                "type": "text"
+            },
+            {
+                "id": "field_name_prov",
+                "name": "name",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_business_prov",
+                "name": "business_name",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_cuit_prov",
+                "name": "cuit",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": true,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": "^\\d{11}$"
+            },
+            {
+                "id": "field_email_prov",
+                "name": "email",
+                "type": "email",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "exceptDomains": null,
+                "onlyDomains": null
+            },
+            {
+                "id": "field_phone_prov",
+                "name": "phone",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_cbu_prov",
+                "name": "cbu",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_rupse_prov",
+                "name": "rupse_number",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_rupse_exp_prov",
+                "name": "rupse_expiration_date",
+                "type": "date",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": "",
+                "max": ""
+            },
+            {
+                "id": "field_rupse_cert_prov",
+                "name": "rupse_certificate",
+                "type": "file",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "maxSelect": 1,
+                "maxSize": 5242880,
+                "mimeTypes": [
+                    "application/pdf"
+                ],
+                "thumbs": [],
+                "protected": false
+            },
+            {
+                "id": "field_status_prov",
+                "name": "status",
+                "type": "select",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "maxSelect": 1,
+                "values": [
+                    "activo",
+                    "suspendido",
+                    "vencido"
+                ]
+            },
+            {
+                "id": "field_activ_prov",
+                "name": "activities",
+                "type": "relation",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "collectionId": "splyactivity001",
+                "cascadeDelete": false,
+                "minSelect": null,
+                "maxSelect": null
+            },
+            {
+                "hidden": false,
+                "id": "field_created_prov",
+                "name": "created",
+                "onCreate": true,
+                "onUpdate": false,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            },
+            {
+                "hidden": false,
+                "id": "field_updated_prov",
+                "name": "updated",
+                "onCreate": true,
+                "onUpdate": true,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            }
+        ]
+    },
+    {
+        "id": "splywarehouse01",
+        "name": "supply_warehouses",
+        "type": "base",
+        "system": false,
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": null,
+        "fields": [
+            {
+                "autogeneratePattern": "[a-z0-9]{15}",
+                "hidden": false,
+                "id": "field_id_wh",
+                "max": 15,
+                "min": 15,
+                "name": "id",
+                "pattern": "^[a-z0-9]+$",
+                "presentable": false,
+                "primaryKey": true,
+                "required": true,
+                "system": true,
+                "type": "text"
+            },
+            {
+                "id": "field_name_wh",
+                "name": "name",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": true,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_loc_wh",
+                "name": "location",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_main_wh",
+                "name": "is_main",
+                "type": "bool",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false
+            },
+            {
+                "hidden": false,
+                "id": "field_created_wh",
+                "name": "created",
+                "onCreate": true,
+                "onUpdate": false,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            },
+            {
+                "hidden": false,
+                "id": "field_updated_wh",
+                "name": "updated",
+                "onCreate": true,
+                "onUpdate": true,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            }
+        ]
+    },
+    {
+        "id": "splyproduct0001",
+        "name": "supply_products",
+        "type": "base",
+        "system": false,
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": null,
+        "fields": [
+            {
+                "autogeneratePattern": "[a-z0-9]{15}",
+                "hidden": false,
+                "id": "field_id_prod",
+                "max": 15,
+                "min": 15,
+                "name": "id",
+                "pattern": "^[a-z0-9]+$",
+                "presentable": false,
+                "primaryKey": true,
+                "required": true,
+                "system": true,
+                "type": "text"
+            },
+            {
+                "id": "field_name_prod",
+                "name": "name",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_desc_prod",
+                "name": "description",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_sku_prod",
+                "name": "sku",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": true,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_type_prod",
+                "name": "type",
+                "type": "select",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "maxSelect": 1,
+                "values": [
+                    "consumible",
+                    "activo_fijo",
+                    "servicio"
+                ]
+            },
+            {
+                "id": "field_cat_prod",
+                "name": "category",
+                "type": "relation",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "collectionId": "splycategory001",
+                "cascadeDelete": false,
+                "minSelect": null,
+                "maxSelect": 1
+            },
+            {
+                "id": "field_unit_prod",
+                "name": "unit",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_thresh_prod",
+                "name": "alert_threshold",
+                "type": "number",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": 0,
+                "max": null,
+                "onlyInt": false
+            },
+            {
+                "id": "field_def_prov_prod",
+                "name": "default_provider",
+                "type": "relation",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "collectionId": "splyprovider001",
+                "cascadeDelete": false,
+                "minSelect": null,
+                "maxSelect": 1
+            },
+            {
+                "id": "field_crit_prod",
+                "name": "is_critical",
+                "type": "bool",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false
+            },
+            {
+                "hidden": false,
+                "id": "field_created_prod",
+                "name": "created",
+                "onCreate": true,
+                "onUpdate": false,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            },
+            {
+                "hidden": false,
+                "id": "field_updated_prod",
+                "name": "updated",
+                "onCreate": true,
+                "onUpdate": true,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            }
+        ]
+    },
+    {
+        "id": "splyrequest0001",
+        "name": "supply_requests",
+        "type": "base",
+        "system": false,
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": null,
+        "fields": [
+            {
+                "autogeneratePattern": "[a-z0-9]{15}",
+                "hidden": false,
+                "id": "field_id_req",
+                "max": 15,
+                "min": 15,
+                "name": "id",
+                "pattern": "^[a-z0-9]+$",
+                "presentable": false,
+                "primaryKey": true,
+                "required": true,
+                "system": true,
+                "type": "text"
+            },
+            {
+                "id": "field_num_req",
+                "name": "request_number",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": true,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_date_req",
+                "name": "request_date",
+                "type": "date",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "min": "",
+                "max": ""
+            },
+            {
+                "id": "field_sect_req",
+                "name": "requesting_sector",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_dest_req",
+                "name": "destination_sector",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_usr_req",
+                "name": "requester",
+                "type": "relation",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "collectionId": "pbc_2445445395",
+                "cascadeDelete": false,
+                "minSelect": null,
+                "maxSelect": 1
+            },
+            {
+                "id": "field_mot_req",
+                "name": "motive",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_prio_req",
+                "name": "priority",
+                "type": "select",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "maxSelect": 1,
+                "values": [
+                    "baja",
+                    "normal",
+                    "urgente"
+                ]
+            },
+            {
+                "id": "field_stat_req",
+                "name": "status",
+                "type": "select",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "maxSelect": 1,
+                "values": [
+                    "pendiente_autorizacion",
+                    "autorizado",
+                    "rechazado",
+                    "entregado_parcial",
+                    "entregado_total"
+                ]
+            },
+            {
+                "id": "field_item_req",
+                "name": "items",
+                "type": "json",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "maxSize": 0
+            },
+            {
+                "id": "field_obs_req",
+                "name": "observations",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "hidden": false,
+                "id": "field_created_req",
+                "name": "created",
+                "onCreate": true,
+                "onUpdate": false,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            },
+            {
+                "hidden": false,
+                "id": "field_updated_req",
+                "name": "updated",
+                "onCreate": true,
+                "onUpdate": true,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            }
+        ]
+    },
+    {
+        "id": "splypurchase001",
+        "name": "supply_purchases",
+        "type": "base",
+        "system": false,
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": null,
+        "fields": [
+            {
+                "autogeneratePattern": "[a-z0-9]{15}",
+                "hidden": false,
+                "id": "field_id_pur",
+                "max": 15,
+                "min": 15,
+                "name": "id",
+                "pattern": "^[a-z0-9]+$",
+                "presentable": false,
+                "primaryKey": true,
+                "required": true,
+                "system": true,
+                "type": "text"
+            },
+            {
+                "id": "field_gde_pur",
+                "name": "gde_code",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_title_pur",
+                "name": "title",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_type_pur",
+                "name": "contract_type",
+                "type": "select",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "maxSelect": 1,
+                "values": [
+                    "directa",
+                    "directa_excepcion",
+                    "licitacion_publica",
+                    "firma_ministra"
+                ]
+            },
+            {
+                "id": "field_fin_pur",
+                "name": "financing_source",
+                "type": "select",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "maxSelect": 1,
+                "values": [
+                    "rentas_generales",
+                    "programa_nacional",
+                    "hospital_tesoro"
+                ]
+            },
+            {
+                "id": "field_amt_pur",
+                "name": "total_amount",
+                "type": "number",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": 0,
+                "max": null,
+                "onlyInt": false
+            },
+            {
+                "id": "field_stat_pur",
+                "name": "status",
+                "type": "select",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "maxSelect": 1,
+                "values": [
+                    "borrador",
+                    "orden_compra",
+                    "adjudicado",
+                    "recibido_parcial",
+                    "facturado",
+                    "completado"
+                ]
+            },
+            {
+                "id": "field_snap_pur",
+                "name": "stock_evidence_snapshot",
+                "type": "json",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "maxSize": 0
+            },
+            {
+                "hidden": false,
+                "id": "field_created_pur",
+                "name": "created",
+                "onCreate": true,
+                "onUpdate": false,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            },
+            {
+                "hidden": false,
+                "id": "field_updated_pur",
+                "name": "updated",
+                "onCreate": true,
+                "onUpdate": true,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            }
+        ]
+    },
+    {
+        "id": "splyinvtrans001",
+        "name": "supply_inventory_transactions",
+        "type": "base",
+        "system": false,
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": null,
+        "fields": [
+            {
+                "autogeneratePattern": "[a-z0-9]{15}",
+                "hidden": false,
+                "id": "field_id_inv",
+                "max": 15,
+                "min": 15,
+                "name": "id",
+                "pattern": "^[a-z0-9]+$",
+                "presentable": false,
+                "primaryKey": true,
+                "required": true,
+                "system": true,
+                "type": "text"
+            },
+            {
+                "id": "field_type_inv",
+                "name": "type",
+                "type": "select",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "maxSelect": 1,
+                "values": [
+                    "ingreso_compra",
+                    "ingreso_ministerio",
+                    "ingreso_adelanto",
+                    "salida_consumo",
+                    "baja_mercaderia",
+                    "transferencia"
+                ]
+            },
+            {
+                "id": "field_adv_inv",
+                "name": "is_advance_delivery",
+                "type": "bool",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false
+            },
+            {
+                "id": "field_date_inv",
+                "name": "date",
+                "type": "date",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": true,
+                "min": "",
+                "max": ""
+            },
+            {
+                "id": "field_rel_pur_inv",
+                "name": "related_purchase",
+                "type": "relation",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "collectionId": "splypurchase001",
+                "cascadeDelete": false,
+                "minSelect": null,
+                "maxSelect": 1
+            },
+            {
+                "id": "field_item_inv",
+                "name": "items",
+                "type": "json",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "maxSize": 0
+            },
+            {
+                "id": "field_stat_inv",
+                "name": "status",
+                "type": "select",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": false,
+                "maxSelect": 1,
+                "values": [
+                    "activo",
+                    "anulado"
+                ]
+            },
+            {
+                "hidden": false,
+                "id": "field_created_inv",
+                "name": "created",
+                "onCreate": true,
+                "onUpdate": false,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            },
+            {
+                "hidden": false,
+                "id": "field_updated_inv",
+                "name": "updated",
+                "onCreate": true,
+                "onUpdate": true,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            }
+        ]
+    },
+    {
+        "id": "sysconfig000001",
+        "name": "sys_config",
+        "type": "base",
+        "system": false,
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": null,
+        "fields": [
+            {
+                "autogeneratePattern": "[a-z0-9]{15}",
+                "hidden": false,
+                "id": "field_id_conf",
+                "max": 15,
+                "min": 15,
+                "name": "id",
+                "pattern": "^[a-z0-9]+$",
+                "presentable": false,
+                "primaryKey": true,
+                "required": true,
+                "system": true,
+                "type": "text"
+            },
+            {
+                "id": "field_key_conf",
+                "name": "key",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": true,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_val_conf",
+                "name": "value",
+                "type": "text",
+                "system": false,
+                "required": true,
+                "unique": false,
+                "presentable": true,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "id": "field_desc_conf",
+                "name": "description",
+                "type": "text",
+                "system": false,
+                "required": false,
+                "unique": false,
+                "presentable": false,
+                "min": null,
+                "max": null,
+                "pattern": ""
+            },
+            {
+                "hidden": false,
+                "id": "field_created_conf",
+                "name": "created",
+                "onCreate": true,
+                "onUpdate": false,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            },
+            {
+                "hidden": false,
+                "id": "field_updated_conf",
+                "name": "updated",
+                "onCreate": true,
+                "onUpdate": true,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            }
+        ]
+    }
+]

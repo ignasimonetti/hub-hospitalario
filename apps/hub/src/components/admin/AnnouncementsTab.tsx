@@ -81,11 +81,12 @@ export function AnnouncementsTab() {
 
             const records = await pocketbase.collection('hub_announcements').getFullList<Announcement>({
                 sort: '-created',
+                requestKey: null,
             });
             setAnnouncements(records);
         } catch (error: any) {
             // Ignore auto-cancellation errors
-            if (error.isAbort) return;
+            if (error?.isAbort || error?.status === 0) return;
 
             console.error('Error fetching announcements:', error);
             // Ignore 403/404 if it's just empty or permission issue, but show toast
@@ -157,13 +158,12 @@ export function AnnouncementsTab() {
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-xl font-bold dark:text-white">Anuncios del Sistema</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Gestiona los avisos que ven todos los usuarios.
-                        <br />
-                        <span className="text-xs text-yellow-600 dark:text-yellow-500">
-                            Nota: Asegúrate que la regla 'List' de la colección 'hub_announcements' permita ver inactivos a los admins ('active = true || @request.auth.is_super_admin = true').
-                        </span>
+                    <div className="flex items-center gap-2">
+                        <Megaphone className="h-5 w-5 text-indigo-500" />
+                        <h2 className="text-xl font-bold dark:text-white">Anuncios del Sistema</h2>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Gestiona comunicados globales que aparecerán en la parte superior de la plataforma para todos los usuarios.
                     </p>
                 </div>
                 <Button onClick={() => { setCurrentAnnouncement({ active: true }); setIsDialogOpen(true); }}>

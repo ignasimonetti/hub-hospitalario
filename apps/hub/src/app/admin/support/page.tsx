@@ -20,6 +20,16 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -31,11 +41,9 @@ import {
     MessageSquare,
     ExternalLink,
     Trash2,
-    RefreshCw,
-    ArrowLeft
+    RefreshCw
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/use-notifications';
-import { useRouter } from 'next/navigation';
 
 interface ErrorReport {
     id: string;
@@ -62,9 +70,9 @@ export default function AdminSupportPage() {
     const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
     const [replyMessage, setReplyMessage] = useState('');
     const [isReplying, setIsReplying] = useState(false);
+    const [reportToDelete, setReportToDelete] = useState<string | null>(null);
     const { toast } = useToast();
     const { createNotification } = useNotifications();
-    const router = useRouter();
 
     const fetchReports = async () => {
         try {
@@ -73,9 +81,13 @@ export default function AdminSupportPage() {
             const records = await pb.collection('hub_error_reports').getFullList<ErrorReport>({
                 sort: '-created',
                 expand: 'reporter',
+                requestKey: null,
             });
             setReports(records);
-        } catch (error) {
+        } catch (error: any) {
+            // Ignore autocancelled requests (status 0 or isAbort)
+            if (error?.isAbort || error?.status === 0) return;
+
             console.error('Error fetching reports:', error);
             toast({
                 title: 'Error',
@@ -115,12 +127,12 @@ export default function AdminSupportPage() {
         }
     };
 
-    const deleteReport = async (id: string) => {
-        if (!confirm('¿Estás seguro de que deseas eliminar este reporte?')) return;
+    const confirmDelete = async () => {
+        if (!reportToDelete) return;
 
         try {
-            await pocketbase.collection('hub_error_reports').delete(id);
-            setReports(prev => prev.filter(r => r.id !== id));
+            await pocketbase.collection('hub_error_reports').delete(reportToDelete);
+            setReports(prev => prev.filter(r => r.id !== reportToDelete));
             toast({
                 title: 'Reporte eliminado',
                 variant: 'default',
@@ -132,6 +144,8 @@ export default function AdminSupportPage() {
                 description: 'No se pudo eliminar el reporte',
                 variant: 'destructive',
             });
+        } finally {
+            setReportToDelete(null);
         }
     };
 
@@ -218,10 +232,6 @@ export default function AdminSupportPage() {
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Actualizar
                     </Button>
-                    <Button onClick={() => router.push('/admin')} variant="ghost" size="sm">
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Volver al Dashboard
-                    </Button>
                 </div>
             </div>
 
@@ -307,7 +317,7 @@ export default function AdminSupportPage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => deleteReport(report.id)}
+                                                    onClick={() => setReportToDelete(report.id)}
                                                     className="hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:text-slate-400 dark:hover:text-red-300"
                                                     title="Eliminar"
                                                 >
@@ -369,6 +379,32 @@ export default function AdminSupportPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div >
+
+            {/* Delete Confirmation Alert */}
+            <AlertDialog open={!!reportToDelete} onOpenChange={(open) => !open && setReportToDelete(null)}>
+                <AlertDialogContent className="dark:bg-slate-900 dark:border-slate-800">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="dark:text-slate-100 text-red-600 flex items-center gap-2">
+                            <Trash2 className="h-5 w-5" />
+                            ¿Eliminar reporte?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="dark:text-slate-400">
+                            Esta acción no se puede deshacer. El reporte de error será eliminado permanentemente del sistema.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="dark:text-slate-300 dark:hover:bg-slate-800 dark:border-slate-700">
+                            Cancelar
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDelete}
+                            className="bg-red-600 hover:bg-red-700 text-white border-none"
+                        >
+                            Eliminar ahora
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
     );
 }

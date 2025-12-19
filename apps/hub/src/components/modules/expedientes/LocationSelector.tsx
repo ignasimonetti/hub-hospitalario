@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown, Plus } from "lucide-react"
+import { Check, ChevronsUpDown, Plus, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -38,6 +38,7 @@ export function LocationSelector({ value, onChange, className }: LocationSelecto
     const [open, setOpen] = React.useState(false);
     const [ubicaciones, setUbicaciones] = React.useState<UbicacionOption[]>([]);
     const [loading, setLoading] = React.useState(false);
+    const [isCreating, setIsCreating] = React.useState(false);
     const [searchValue, setSearchValue] = React.useState("");
 
     // Load locations
@@ -47,8 +48,7 @@ export function LocationSelector({ value, onChange, className }: LocationSelecto
         try {
             const result = await pocketbase.collection('ubicaciones').getList(1, 100, {
                 sort: 'nombre',
-                requestKey: null, // Avoid auto-cancellation
-                // filter: `tenant = "${currentTenant.id}"` // Uncomment if filtering by tenant is needed
+                requestKey: null,
             });
             setUbicaciones(result.items.map(i => ({ id: i.id, nombre: i.nombre })));
         } catch (error) {
@@ -59,33 +59,39 @@ export function LocationSelector({ value, onChange, className }: LocationSelecto
     }, [currentTenant]);
 
     React.useEffect(() => {
-        loadLocations();
-    }, [loadLocations]);
+        if (open) {
+            loadLocations();
+        }
+    }, [open, loadLocations]);
 
-    const handleCreate = async () => {
-        if (!searchValue || !currentTenant) return;
+    const handleCreate = async (nameToCreate: string) => {
+        const name = nameToCreate || searchValue;
+        if (!name || !currentTenant) return;
 
         try {
-            setLoading(true);
+            setIsCreating(true);
             const newLoc = await pocketbase.collection('ubicaciones').create({
-                nombre: searchValue,
+                nombre: name,
                 tenant: currentTenant.id
             });
 
             // Add to list and select
-            setUbicaciones(prev => [...prev, { id: newLoc.id, nombre: newLoc.nombre }]);
+            const newOption = { id: newLoc.id, nombre: newLoc.nombre };
+            setUbicaciones(prev => [...prev, newOption]);
             onChange(newLoc.id);
             setOpen(false);
+            setSearchValue("");
             toast.success(`Ubicación "${newLoc.nombre}" creada.`);
         } catch (e) {
             console.error(e);
             toast.error("Error al crear la ubicación.");
         } finally {
-            setLoading(false);
+            setIsCreating(false);
         }
     };
 
     const selectedName = ubicaciones.find((u) => u.id === value)?.nombre;
+    const exactMatch = ubicaciones.find(u => u.nombre.toLowerCase() === searchValue.toLowerCase());
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -94,61 +100,90 @@ export function LocationSelector({ value, onChange, className }: LocationSelecto
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className={cn("w-full justify-between bg-white dark:bg-slate-900 font-normal", className)}
+                    className={cn("w-full justify-between bg-white dark:bg-slate-900 font-normal border-gray-200 dark:border-slate-800", className)}
                 >
-                    {value
-                        ? selectedName || "Cargando..."
-                        : "Seleccionar ubicación..."}
+                    <span className="truncate">
+                        {value
+                            ? selectedName || "Cargando..."
+                            : "Seleccionar ubicación..."}
+                    </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 shadow-md z-50">
-                <Command className="bg-transparent">
-                    <CommandInput
-                        placeholder="Buscar ubicación..."
-                        onValueChange={setSearchValue}
-                    />
-                    <CommandList>
-                        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-                            {searchValue ? (
-                                <div className="flex flex-col items-center gap-2 px-4">
-                                    <span>Ubicación no encontrada.</span>
-                                    <Button
-                                        size="sm"
-                                        className="w-full mt-1 gap-2"
-                                        onClick={handleCreate}
-                                        disabled={loading}
+            <PopoverContent className="w-[300px] p-0 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 shadow-xl z-50 rounded-xl overflow-hidden">
+                <Command className="bg-transparent" loop>
+                    <div className="flex items-center border-b border-gray-100 dark:border-slate-800 px-3">
+                        <CommandInput
+                            placeholder="Buscar o crear ubicación..."
+                            value={searchValue}
+                            onValueChange={setSearchValue}
+                            className="h-10 border-0 focus:ring-0"
+                        />
+                    </div>
+                    <CommandList className="max-h-[300px] overflow-y-auto">
+                        <CommandEmpty className="p-0">
+                            {searchValue && !isCreating && (
+                                <div className="p-1">
+                                    <button
+                                        type="button"
+                                        className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 dark:hover:bg-slate-800 text-blue-600 dark:text-blue-400 font-medium transition-colors"
+                                        onClick={() => handleCreate(searchValue)}
                                     >
-                                        <Plus className="h-4 w-4" />
+                                        <Plus className="mr-2 h-4 w-4" />
                                         Crear "{searchValue}"
-                                    </Button>
+                                    </button>
                                 </div>
-                            ) : (
-                                <span>No se encontraron resultados.</span>
+                            )}
+                            {!searchValue && (
+                                <div className="py-6 text-center text-sm text-muted-foreground">
+                                    No se encontraron resultados.
+                                </div>
                             )}
                         </CommandEmpty>
+
                         <CommandGroup>
                             {ubicaciones.map((ubicacion) => (
                                 <CommandItem
                                     key={ubicacion.id}
                                     value={ubicacion.nombre}
-                                    onSelect={(currentValue) => {
-                                        // command returns the 'value' prop (nombre) normalized usually
-                                        // so we search by id or original object
-                                        onChange(ubicacion.id === value ? "" : ubicacion.id);
+                                    onSelect={() => {
+                                        onChange(ubicacion.id);
                                         setOpen(false);
+                                        setSearchValue("");
                                     }}
+                                    className="flex items-center justify-between"
                                 >
-                                    <Check
-                                        className={cn(
-                                            "mr-2 h-4 w-4",
-                                            value === ubicacion.id ? "opacity-100" : "opacity-0"
-                                        )}
-                                    />
-                                    {ubicacion.nombre}
+                                    <div className="flex items-center flex-1">
+                                        <Check
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                value === ubicacion.id ? "opacity-100" : "opacity-0"
+                                            )}
+                                        />
+                                        <span className="truncate">{ubicacion.nombre}</span>
+                                    </div>
                                 </CommandItem>
                             ))}
                         </CommandGroup>
+
+                        {searchValue && !exactMatch && !loading && (
+                            <CommandGroup className="border-t border-gray-100 dark:border-slate-800 mt-1 pt-1">
+                                <CommandItem
+                                    value={searchValue}
+                                    onSelect={() => handleCreate(searchValue)}
+                                    className="text-blue-600 dark:text-blue-400 font-medium cursor-pointer"
+                                >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Crear "{searchValue}"
+                                </CommandItem>
+                            </CommandGroup>
+                        )}
+
+                        {loading && (
+                            <div className="py-2 text-center">
+                                <Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" />
+                            </div>
+                        )}
                     </CommandList>
                 </Command>
             </PopoverContent>

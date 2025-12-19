@@ -46,6 +46,7 @@ export function useNotifications() {
                 sort: '-created',
                 filter: `user = "${pb.authStore.model?.id}"`,
                 expand: 'user',
+                requestKey: null,
             });
 
             setNotifications(records);
@@ -66,7 +67,7 @@ export function useNotifications() {
 
         } catch (err: any) {
             // Ignore auto-cancellation errors
-            if (err?.status === 0) return;
+            if (err?.isAbort || err?.status === 0) return;
 
             console.error('Error fetching notifications:', err);
             setError(err instanceof Error ? err.message : 'Failed to fetch notifications');

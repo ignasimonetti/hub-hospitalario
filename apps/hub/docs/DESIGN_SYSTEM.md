@@ -12,7 +12,9 @@ Esta guía documenta los patrones de diseño, tokens de color y convenciones de 
 4. [Componentes UI](#componentes-ui)
 5. [Estados Interactivos](#estados-interactivos)
 6. [Patrones Comunes](#patrones-comunes)
-7. [Checklist de Modo Oscuro](#checklist-de-modo-oscuro)
+7. [Experiencia Tipo Notion](#experiencia-tipo-notion)
+8. [Manejo de Errores Técnicos](#manejo-de-errores-técnicos)
+9. [Checklist de Modo Oscuro](#checklist-de-modo-oscuro)
 
 ---
 
@@ -325,6 +327,73 @@ className="focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
     No hay elementos
   </h3>
 </div>
+```
+
+---
+
+## 🏛️ Experiencia Tipo Notion
+
+El Hub Hospitalario busca imitar la fluidez de Notion, donde el usuario nunca siente que "sale" de la aplicación principal para realizar tareas secundarias.
+
+### 1. Layout Unificado y Sidebar Permanente
+Todas las páginas de módulos y administración deben renderizarse **dentro** de la estructura principal. El Sidebar (`AppSidebar`) debe estar siempre visible.
+
+**Patrón de Implementación:**
+Usa un `layout.tsx` en la raíz del módulo que envuelva a los hijos en `ModulesLayout`:
+```tsx
+export default function ModuleLayout({ children }) {
+  return (
+    <ModulesLayout currentPage="tu-modulo">
+      <ProtectedContent roles={['admin']}>
+        {children}
+      </ProtectedContent>
+    </ModulesLayout>
+  );
+}
+```
+
+### 2. Patrón de Navegación (Breadcrumbs)
+En lugar de modales disruptivos para formularios largos, usamos páginas completas pero con un enlace de "Volver" que mantiene el contexto.
+
+**Ejemplo de Header en Formulario:**
+```tsx
+<div className="flex flex-col space-y-2 mb-6">
+  <Link 
+    href="/modules/config" 
+    className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2 w-fit"
+  >
+    <ChevronLeft className="h-4 w-4 mr-1" />
+    Volver / Configuración
+  </Link>
+  <h2 className="text-3xl font-bold tracking-tight">Editar Perfil</h2>
+</div>
+```
+
+### 3. Creación Inline desde Selectores
+Cuando un campo es una relación (vínculo a otra colección), el selector debe permitir crear un nuevo registro sin salir del formulario actual.
+
+**Componente Recomendado:** `LocationSelector` (o similares basados en `Command`).
+- Si la búsqueda no coincide, mostrar: `+ Crear "[texto]"`
+- La creación debe ser asíncrona y autoseleccionar el nuevo elemento.
+
+---
+
+## 🔧 Manejo de Errores Técnicos
+
+### PocketBase Auto-cancellation (`ClientResponseError 0`)
+Debido a `StrictMode` en React, las peticiones pueden cancelarse automáticamente al desmontarse un componente. Esto no es un error real, pero ensucia logs y UI.
+
+**Regla de Oro:**
+1. Añadir `requestKey: null` en el fetch inicial.
+2. Ignorar el error en el `catch`.
+
+```tsx
+try {
+  const data = await pb.collection('...').getFullList({ requestKey: null });
+} catch (err: any) {
+  if (err?.isAbort || err?.status === 0) return;
+  // Manejar otros errores reales...
+}
 ```
 
 ---

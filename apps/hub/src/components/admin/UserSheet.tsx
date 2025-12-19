@@ -68,13 +68,13 @@ export function UserSheet({ open, onOpenChange, user, onSuccess, currentTenantId
         const fetchData = async () => {
             try {
                 const [tenantsList, rolesList] = await Promise.all([
-                    pocketbase.collection('hub_tenants').getFullList({ sort: 'name' }),
-                    pocketbase.collection('hub_roles').getFullList({ sort: 'name' }),
+                    pocketbase.collection('hub_tenants').getFullList({ sort: 'name', requestKey: null }),
+                    pocketbase.collection('hub_roles').getFullList({ sort: 'name', requestKey: null }),
                 ]);
                 setTenants(tenantsList);
                 setRoles(rolesList);
             } catch (err: any) {
-                if (err.isAbort) return; // Ignore auto-cancellation
+                if (err?.isAbort || err?.status === 0) return; // Ignore auto-cancellation
                 console.error("Error fetching tenants/roles:", err);
             }
         };

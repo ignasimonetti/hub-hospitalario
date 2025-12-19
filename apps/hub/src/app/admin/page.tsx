@@ -6,23 +6,18 @@ import { UsersTab } from "@/components/admin/UsersTab";
 import { RolesTab } from "@/components/admin/RolesTab";
 import { AuditTab } from "@/components/admin/AuditTab";
 import { AnnouncementsTab } from "@/components/admin/AnnouncementsTab";
-import { Building2, Users, ShieldCheck, FileText, ArrowLeft, Megaphone } from "lucide-react";
+import { Building2, Users, ShieldCheck, FileText, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 
 export default function AdminPage() {
-    const router = useRouter();
 
     return (
         <div className="container mx-auto py-10 px-4">
             <div className="flex flex-col space-y-4 mb-8">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')}>
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard Administrativo</h1>
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 ml-14">
+                <p className="text-gray-500 dark:text-gray-400">
                     Gestiona hospitales, usuarios, roles y auditoría del sistema desde un solo lugar.
                 </p>
             </div>
@@ -76,6 +71,6 @@ export default function AdminPage() {
                     <AnnouncementsTab />
                 </TabsContent>
             </Tabs>
-        </div >
+        </div>
     );
 }

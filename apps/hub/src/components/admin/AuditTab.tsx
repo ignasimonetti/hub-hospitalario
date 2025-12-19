@@ -186,6 +186,26 @@ export function AuditTab() {
                 </CardContent>
             </Card>
 
+            {hasMore && (
+                <div className="flex justify-center pt-4">
+                    <Button
+                        variant="outline"
+                        onClick={() => fetchLogs()}
+                        disabled={isLoading}
+                        className="w-full sm:w-[200px]"
+                    >
+                        {isLoading ? (
+                            <>
+                                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                Cargando...
+                            </>
+                        ) : (
+                            "Cargar más registros"
+                        )}
+                    </Button>
+                </div>
+            )}
+
             {/* Log Detail Sheet */}
             <Sheet open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
                 <SheetContent className="sm:max-w-xl w-full bg-white dark:bg-slate-950">

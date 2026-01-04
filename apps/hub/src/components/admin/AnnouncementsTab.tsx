@@ -166,20 +166,20 @@ export function AnnouncementsTab() {
                         Gestiona comunicados globales que aparecerán en la parte superior de la plataforma para todos los usuarios.
                     </p>
                 </div>
-                <Button onClick={() => { setCurrentAnnouncement({ active: true }); setIsDialogOpen(true); }}>
+                <Button onClick={() => { setCurrentAnnouncement({ active: true }); setIsDialogOpen(true); }} className="dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white">
                     <Plus className="h-4 w-4 mr-2" />
                     Nuevo Anuncio
                 </Button>
             </div>
 
-            <div className="rounded-md border border-gray-200 dark:border-gray-800">
+            <div className="rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Título</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead>Última Act.</TableHead>
-                            <TableHead className="text-right">Acciones</TableHead>
+                            <TableHead className="dark:text-slate-400">Título</TableHead>
+                            <TableHead className="dark:text-slate-400">Estado</TableHead>
+                            <TableHead className="dark:text-slate-400">Última Act.</TableHead>
+                            <TableHead className="text-right dark:text-slate-400">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -191,28 +191,41 @@ export function AnnouncementsTab() {
                             </TableRow>
                         ) : announcements.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center text-gray-500">
+                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground dark:text-slate-400">
                                     No hay anuncios creados.
                                 </TableCell>
                             </TableRow>
                         ) : (
                             announcements.map((item) => (
                                 <TableRow key={item.id}>
-                                    <TableCell className="font-medium">{item.title}</TableCell>
+                                    <TableCell className="font-medium dark:text-slate-200">{item.title}</TableCell>
                                     <TableCell>
-                                        <Badge variant={item.active ? 'default' : 'secondary'} className={item.active ? 'bg-green-600' : ''}>
+                                        <Badge 
+                                            variant={item.active ? 'default' : 'secondary'} 
+                                            className={item.active ? 'bg-green-600 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : 'dark:bg-slate-800 dark:text-slate-200'}
+                                        >
                                             {item.active ? 'Activo' : 'Inactivo'}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="text-sm text-gray-500">
+                                    <TableCell className="text-sm text-muted-foreground dark:text-slate-400">
                                         {formatDistanceToNow(new Date(item.updated), { addSuffix: true, locale: es })}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => { setCurrentAnnouncement(item); setIsDialogOpen(true); }}>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                onClick={() => { setCurrentAnnouncement(item); setIsDialogOpen(true); }}
+                                                className="hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
+                                            >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => setDeleteId(item.id)}>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-900/30" 
+                                                onClick={() => setDeleteId(item.id)}
+                                            >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>
@@ -226,7 +239,7 @@ export function AnnouncementsTab() {
 
             {/* Create/Edit Modal */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-xl dark:bg-slate-900 border-gray-200 dark:border-slate-800">
+                <DialogContent className="sm:max-w-xl dark:bg-slate-950 dark:border-slate-700">
                     <DialogHeader>
                         <DialogTitle>{currentAnnouncement.id ? 'Editar Anuncio' : 'Crear Nuevo Anuncio'}</DialogTitle>
                         <DialogDescription>
@@ -235,24 +248,25 @@ export function AnnouncementsTab() {
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="title">Título</Label>
+                            <Label htmlFor="title" className="dark:text-slate-200">Título</Label>
                             <Input
                                 id="title"
                                 value={currentAnnouncement.title || ''}
                                 onChange={(e) => setCurrentAnnouncement(prev => ({ ...prev, title: e.target.value }))}
                                 placeholder="Ej: Mantenimiento programado..."
+                                className="bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="content">Contenido (HTML simple soportado)</Label>
+                            <Label htmlFor="content" className="dark:text-slate-200">Contenido (HTML simple soportado)</Label>
                             <Textarea
                                 id="content"
                                 value={currentAnnouncement.content || ''}
                                 onChange={(e) => setCurrentAnnouncement(prev => ({ ...prev, content: e.target.value }))}
                                 placeholder="Describa el anuncio. Puede usar etiquetas HTML básicas como <b>, <br>..."
-                                className="min-h-[150px]"
+                                className="min-h-[150px] bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400"
                             />
-                            <p className="text-xs text-gray-500">El contenido se mostrará en el banner superior.</p>
+                            <p className="text-xs text-muted-foreground dark:text-slate-400">El contenido se mostrará en el banner superior.</p>
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch
@@ -260,7 +274,7 @@ export function AnnouncementsTab() {
                                 checked={currentAnnouncement.active}
                                 onCheckedChange={(checked) => setCurrentAnnouncement(prev => ({ ...prev, active: checked }))}
                             />
-                            <Label htmlFor="active">Anuncio Activo (Visible para todos)</Label>
+                            <Label htmlFor="active" className="dark:text-slate-200">Anuncio Activo (Visible para todos)</Label>
                         </div>
                     </div>
                     <DialogFooter>

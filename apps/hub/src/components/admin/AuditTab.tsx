@@ -54,15 +54,15 @@ export function AuditTab() {
     const getActionBadge = (action: string) => {
         switch (action) {
             case 'create':
-                return <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-green-200">Crear</Badge>;
+                return <Badge className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">Crear</Badge>;
             case 'update':
-                return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200">Editar</Badge>;
+                return <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">Editar</Badge>;
             case 'delete':
-                return <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border-red-200">Eliminar</Badge>;
+                return <Badge className="bg-red-50 text-red-700 hover:bg-red-100 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">Eliminar</Badge>;
             case 'login':
-                return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-200">Acceso</Badge>;
+                return <Badge className="bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800">Acceso</Badge>;
             default:
-                return <Badge variant="outline">{action}</Badge>;
+                return <Badge variant="outline" className="dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">{action}</Badge>;
         }
     };
 
@@ -105,17 +105,17 @@ export function AuditTab() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Auditoría del Sistema</h2>
-                    <p className="text-muted-foreground">
+                    <h2 className="text-2xl font-bold tracking-tight dark:text-slate-100">Auditoría del Sistema</h2>
+                    <p className="text-muted-foreground dark:text-slate-400">
                         Registro inmutable de todas las acciones realizadas en la plataforma.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Select value={selectedAction} onValueChange={setSelectedAction}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-[180px] bg-gray-50 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200">
                             <SelectValue placeholder="Filtrar por acción" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="dark:bg-slate-950 dark:border-slate-700">
                             <SelectItem value="all">Todas las acciones</SelectItem>
                             <SelectItem value="create">Creaciones</SelectItem>
                             <SelectItem value="update">Ediciones</SelectItem>
@@ -129,16 +129,16 @@ export function AuditTab() {
                 </div>
             </div>
 
-            <Card>
+            <Card className="bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[180px]">Fecha</TableHead>
-                                <TableHead>Actor</TableHead>
-                                <TableHead>Acción</TableHead>
-                                <TableHead>Recurso</TableHead>
-                                <TableHead>Descripción</TableHead>
+                                <TableHead className="w-[180px] dark:text-slate-400">Fecha</TableHead>
+                                <TableHead className="dark:text-slate-400">Actor</TableHead>
+                                <TableHead className="dark:text-slate-400">Acción</TableHead>
+                                <TableHead className="dark:text-slate-400">Recurso</TableHead>
+                                <TableHead className="dark:text-slate-400">Descripción</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -155,27 +155,27 @@ export function AuditTab() {
                                         className="cursor-pointer hover:bg-muted/50"
                                         onClick={() => setSelectedLog(log)}
                                     >
-                                        <TableCell className="font-mono text-xs text-muted-foreground">
+                                        <TableCell className="font-mono text-xs text-muted-foreground dark:text-slate-400">
                                             {format(new Date(log.created), 'dd/MM/yyyy HH:mm:ss')}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center">
-                                                    <User className="h-3 w-3 text-slate-500" />
+                                                <div className="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                                    <User className="h-3 w-3 text-slate-500 dark:text-slate-400" />
                                                 </div>
-                                                <span className="text-sm font-medium">
+                                                <span className="text-sm font-medium dark:text-slate-200">
                                                     {log.expand?.actor?.name || log.expand?.actor?.email || 'Sistema'}
                                                 </span>
                                             </div>
                                         </TableCell>
                                         <TableCell>{getActionBadge(log.action)}</TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-2 text-sm">
+                                            <div className="flex items-center gap-2 text-sm dark:text-slate-300">
                                                 {getResourceIcon(log.resource)}
                                                 <span className="capitalize">{log.resource}</span>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-sm text-muted-foreground">
+                                        <TableCell className="text-sm text-muted-foreground dark:text-slate-400">
                                             {getReadableDescription(log)}
                                         </TableCell>
                                     </TableRow>
@@ -243,8 +243,8 @@ export function AuditTab() {
                             </div>
 
                             <div>
-                                <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">Cambios / Detalles (JSON)</label>
-                                <ScrollArea className="h-[300px] w-full rounded-md border bg-slate-50 dark:bg-slate-900 p-4">
+                                <label className="text-xs font-semibold text-muted-foreground dark:text-slate-400 uppercase mb-2 block">Cambios / Detalles (JSON)</label>
+                                <ScrollArea className="h-[300px] w-full rounded-md border border-gray-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-4">
                                     <pre className="text-xs font-mono text-slate-700 dark:text-slate-300">
                                         {JSON.stringify(selectedLog.details, null, 2)}
                                     </pre>

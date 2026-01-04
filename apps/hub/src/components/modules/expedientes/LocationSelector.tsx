@@ -24,6 +24,7 @@ import { toast } from "sonner"
 
 interface LocationSelectorProps {
     value?: string;
+    initialName?: string;
     onChange: (value: string) => void;
     className?: string;
 }
@@ -33,7 +34,7 @@ interface UbicacionOption {
     nombre: string;
 }
 
-export function LocationSelector({ value, onChange, className }: LocationSelectorProps) {
+export function LocationSelector({ value, initialName, onChange, className }: LocationSelectorProps) {
     const { currentTenant } = useWorkspace();
     const [open, setOpen] = React.useState(false);
     const [ubicaciones, setUbicaciones] = React.useState<UbicacionOption[]>([]);
@@ -104,7 +105,7 @@ export function LocationSelector({ value, onChange, className }: LocationSelecto
                 >
                     <span className="truncate">
                         {value
-                            ? selectedName || "Cargando..."
+                            ? selectedName || initialName || "Cargando..."
                             : "Seleccionar ubicación..."}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

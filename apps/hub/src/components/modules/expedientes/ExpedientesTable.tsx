@@ -59,6 +59,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function ExpedientesTable() {
     const router = useRouter();
@@ -240,7 +241,7 @@ export function ExpedientesTable() {
     return (
         <div className="space-y-4">
             {/* Header / Actions Bar */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-lg border shadow-sm">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
 
                 {selectedIds.length > 0 ? (
                     // Bulk Actions Mode
@@ -310,36 +311,41 @@ export function ExpedientesTable() {
             </div>
 
             {/* Table */}
-            <div className="rounded-md border bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+            <div className="rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-gray-50 dark:bg-slate-800/50">
+                        <TableRow className="bg-gray-50/50 dark:bg-slate-800/30 border-b border-gray-200 dark:border-slate-800">
                             <TableHead className="w-[50px]">
                                 <Checkbox
                                     checked={expedientes.length > 0 && selectedIds.length === expedientes.length}
                                     onCheckedChange={handleSelectAll}
                                 />
                             </TableHead>
-                            <TableHead>Expte N°</TableHead>
-                            <TableHead className="w-[30%]">Descripción</TableHead>
-                            <TableHead className="hidden lg:table-cell">Observaciones</TableHead>
-                            <TableHead>Prioridad</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead className="hidden md:table-cell">Ubicación</TableHead>
-                            <TableHead className="hidden md:table-cell">Último Mov.</TableHead>
+                            <TableHead className="text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">Expte N°</TableHead>
+                            <TableHead className="text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">Descripción</TableHead>
+                            <TableHead className="hidden lg:table-cell text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">Observaciones</TableHead>
+                            <TableHead className="text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">Prioridad</TableHead>
+                            <TableHead className="text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">Estado</TableHead>
+                            <TableHead className="hidden md:table-cell text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">Ubicación</TableHead>
+                            <TableHead className="hidden md:table-cell text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">Último Mov.</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBody className="text-slate-700 dark:text-slate-200">
                         {loading ? (
-                            <TableRow>
-                                <TableCell colSpan={8} className="h-24 text-center">
-                                    <div className="flex justify-center items-center gap-2">
-                                        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-                                        <span>Cargando expedientes...</span>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
+                            Array.from({ length: 8 }).map((_, i) => (
+                                <TableRow key={i} className="border-gray-100 dark:border-slate-800/50">
+                                    <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-full" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
+                                    <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
+                                </TableRow>
+                            ))
                         ) : expedientes.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
@@ -350,7 +356,7 @@ export function ExpedientesTable() {
                             expedientes.map((exp) => (
                                 <TableRow
                                     key={exp.id}
-                                    className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors border-gray-100 dark:border-slate-800/50 group"
                                     data-state={selectedIds.includes(exp.id) ? "selected" : undefined}
                                 >
                                     <TableCell>
@@ -406,8 +412,9 @@ export function ExpedientesTable() {
                                     <TableCell className="hidden md:table-cell text-sm" onClick={(e) => e.stopPropagation()}>
                                         <LocationSelector
                                             value={exp.ubicacion}
+                                            initialName={exp.expand?.ubicacion?.nombre}
                                             onChange={(newVal) => updateLocation(exp.id, newVal)}
-                                            className="h-8 border-transparent bg-transparent shadow-none hover:bg-gray-100 dark:hover:bg-slate-800 px-2 justify-start text-muted-foreground hover:text-foreground"
+                                            className="h-8 border-transparent bg-transparent shadow-none hover:bg-gray-100 dark:hover:bg-slate-800 px-2 justify-start text-muted-foreground hover:text-slate-200 transition-colors"
                                         />
                                     </TableCell>
                                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground" onClick={(e) => e.stopPropagation()}>
@@ -454,7 +461,7 @@ export function ExpedientesTable() {
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem
-                                                    className="text-red-600 focus:text-red-600"
+                                                    className="text-red-600 focus:text-red-400 dark:text-red-400 dark:hover:bg-red-900/20"
                                                     onClick={() => setDeleteId(exp.id)}
                                                 >
                                                     <Trash className="mr-2 h-4 w-4" /> Eliminar

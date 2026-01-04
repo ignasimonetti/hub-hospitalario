@@ -116,9 +116,13 @@ export function ExpedienteForm({ initialData, isEditing = false }: ExpedienteFor
                             name="descripcion"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Asunto / Descripción Corta</FormLabel>
+                                    <FormLabel className="text-slate-700 dark:text-slate-300">Asunto / Descripción Corta</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Ej: Solicitud de compra de insumos..." {...field} className="text-lg py-6" />
+                                        <Input
+                                            placeholder="Ej: Solicitud de compra de insumos..."
+                                            {...field}
+                                            className="text-lg py-7 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 shadow-sm transition-all focus:ring-2 focus:ring-blue-500/20"
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -131,12 +135,14 @@ export function ExpedienteForm({ initialData, isEditing = false }: ExpedienteFor
                             name="observacion"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Detalles y Observaciones</FormLabel>
+                                    <FormLabel className="text-slate-700 dark:text-slate-300">Detalles y Observaciones</FormLabel>
                                     <FormControl>
-                                        <RichTextEditor
-                                            content={field.value || ""}
-                                            onChange={field.onChange}
-                                        />
+                                        <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800 shadow-sm">
+                                            <RichTextEditor
+                                                content={field.value || ""}
+                                                onChange={field.onChange}
+                                            />
+                                        </div>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -146,8 +152,8 @@ export function ExpedienteForm({ initialData, isEditing = false }: ExpedienteFor
 
                     {/* Right Column: Metadata Card */}
                     <div className="space-y-6 flex flex-col">
-                        <div className="bg-gray-50 dark:bg-slate-800/50 p-6 rounded-lg border border-gray-100 dark:border-slate-800 space-y-6 relative z-10">
-                            <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wider mb-4">Información del Expediente</h3>
+                        <div className="bg-gray-50/50 dark:bg-slate-900/50 p-6 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-xl space-y-6 relative z-10 backdrop-blur-sm">
+                            <h3 className="font-bold text-xs text-slate-500 dark:text-slate-500 uppercase tracking-[0.1em] mb-4">Información del Registro</h3>
 
                             {/* Número de Expediente */}
                             <FormField
@@ -155,9 +161,13 @@ export function ExpedienteForm({ initialData, isEditing = false }: ExpedienteFor
                                 name="numero"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Número de Expediente</FormLabel>
+                                        <FormLabel className="text-slate-700 dark:text-slate-300">Número de Expediente</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Ej: EX-2025-..." {...field} className="font-mono bg-white dark:bg-slate-900" />
+                                            <Input
+                                                placeholder="Ej: EX-2025-..."
+                                                {...field}
+                                                className="font-mono bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -172,10 +182,10 @@ export function ExpedienteForm({ initialData, isEditing = false }: ExpedienteFor
                                     name="estado"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Estado</FormLabel>
+                                            <FormLabel className="text-slate-700 dark:text-slate-300">Estado</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <FormControl>
-                                                    <SelectTrigger className="bg-white dark:bg-slate-900">
+                                                    <SelectTrigger className="bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
                                                         <SelectValue placeholder="Estado" />
                                                     </SelectTrigger>
                                                 </FormControl>
@@ -197,10 +207,10 @@ export function ExpedienteForm({ initialData, isEditing = false }: ExpedienteFor
                                     name="prioridad"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Prioridad</FormLabel>
+                                            <FormLabel className="text-slate-700 dark:text-slate-300">Prioridad</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <FormControl>
-                                                    <SelectTrigger className="bg-white dark:bg-slate-900">
+                                                    <SelectTrigger className="bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
                                                         <SelectValue placeholder="Prioridad" />
                                                     </SelectTrigger>
                                                 </FormControl>
@@ -222,11 +232,12 @@ export function ExpedienteForm({ initialData, isEditing = false }: ExpedienteFor
                                 name="ubicacion"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Ubicación Actual</FormLabel>
+                                        <FormLabel className="text-slate-700 dark:text-slate-300">Ubicación Actual</FormLabel>
                                         <FormControl>
                                             <LocationSelector
                                                 value={field.value || ""}
                                                 onChange={field.onChange}
+                                                className="bg-white dark:bg-slate-950"
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -236,12 +247,22 @@ export function ExpedienteForm({ initialData, isEditing = false }: ExpedienteFor
 
                         </div>
 
-                        <div className="flex flex-col gap-3 pt-4 relative z-0">
-                            <Button type="submit" disabled={loading} size="lg" className="w-full">
+                        <div className="flex flex-col gap-3 pt-6 relative z-0">
+                            <Button
+                                type="submit"
+                                disabled={loading}
+                                size="lg"
+                                className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]"
+                            >
                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {isEditing ? "Guardar Cambios" : "Crear Expediente"}
                             </Button>
-                            <Button type="button" variant="ghost" onClick={() => router.back()} className="w-full">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => router.back()}
+                                className="w-full text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-800"
+                            >
                                 Cancelar
                             </Button>
                         </div>

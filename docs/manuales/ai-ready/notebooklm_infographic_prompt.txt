@@ -1,0 +1,20 @@
+Actúa como un Diseñador de Información Senior.
+Usa la fuente de conocimiento del Hub Hospitalario para estructurar el contenido de una **Infografía de "Onboarding" (Bienvenida)**.
+
+## Objetivo de la Infografía
+Un "One-Pager" (una sola hoja) que un médico o administrativo pueda ver y entender de un vistazo: "¿Qué es esto y qué puedo hacer aquí?".
+
+## Estructura Requerida
+Diseña el contenido para estos 4 bloques visuales:
+
+1.  **El Titular Central:** Un gancho fuerte sobre la Transformación Digital en Santiago del Estero.
+2.  **El Ecosistema (Círculo Central):**
+    *   Lista los 4 pilares: Expedientes, Suministros, Contenido, Ayuda.
+    *   *Prompt visual:* Sugiere iconos para cada uno.
+3.  **¿Quién eres tú en el Hub? (Barra Lateral):**
+    *   Explica brevemente la jerarquía de roles (Niveles del 1 al 10) de forma visual (ej: pirámide o escalera).
+4.  **Feature Destacada:** "Pensado para tu Guardia".
+    *   Destaca el Modo Oscuro y la interfaz amigable.
+
+## Salida
+Entrega el texto exacto para cada bloque y sugerencias de diseño (colores, disposición) basadas en la identidad "Slate/Hospitalario" descrita en el documento fuente.

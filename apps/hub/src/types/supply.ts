@@ -66,6 +66,8 @@ export interface SupplyProduct {
     sku: string;
     type: SupplyProductType;
     category: string; // Relation ID
+    stock_current?: number;
+    price_estimated?: number;
     unit: string;
     alert_threshold?: number;
     default_provider?: string; // Relation ID

@@ -89,12 +89,12 @@ export function RolesTab() {
             {/* Header & Actions */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Roles y Permisos</h2>
-                    <p className="text-muted-foreground">
+                    <h2 className="text-2xl font-bold tracking-tight dark:text-slate-100">Roles y Permisos</h2>
+                    <p className="text-muted-foreground dark:text-slate-400">
                         Gestiona los perfiles de acceso y sus capacidades en el sistema.
                     </p>
                 </div>
-                <Button onClick={handleCreateRole} className="w-full sm:w-auto">
+                <Button onClick={handleCreateRole} className="w-full sm:w-auto dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white">
                     <Plus className="mr-2 h-4 w-4" /> Nuevo Rol
                 </Button>
             </div>
@@ -102,10 +102,10 @@ export function RolesTab() {
             {/* Filters */}
             <div className="flex items-center gap-2">
                 <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground dark:text-slate-500" />
                     <Input
                         placeholder="Buscar roles..."
-                        className="pl-8"
+                        className="pl-8 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -113,17 +113,17 @@ export function RolesTab() {
             </div>
 
             {/* Roles Table */}
-            <Card>
+            <Card className="bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Rol</TableHead>
-                                <TableHead>Slug</TableHead>
-                                <TableHead className="hidden md:table-cell">Descripción</TableHead>
-                                <TableHead>Permisos</TableHead>
-                                <TableHead>Tipo</TableHead>
-                                <TableHead className="text-right">Acciones</TableHead>
+                                <TableHead className="dark:text-slate-400">Rol</TableHead>
+                                <TableHead className="dark:text-slate-400">Slug</TableHead>
+                                <TableHead className="hidden md:table-cell dark:text-slate-400">Descripción</TableHead>
+                                <TableHead className="dark:text-slate-400">Permisos</TableHead>
+                                <TableHead className="dark:text-slate-400">Tipo</TableHead>
+                                <TableHead className="text-right dark:text-slate-400">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -142,20 +142,20 @@ export function RolesTab() {
                             ) : (
                                 filteredRoles.map((role) => (
                                     <TableRow key={role.id}>
-                                        <TableCell className="font-medium">
+                                        <TableCell className="font-medium dark:text-slate-200">
                                             <div className="flex items-center gap-2">
-                                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                                <div className="h-8 w-8 rounded-full bg-primary/10 dark:bg-blue-900/30 flex items-center justify-center text-primary dark:text-blue-400">
                                                     <Shield className="h-4 w-4" />
                                                 </div>
                                                 {role.name}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
+                                            <code className="bg-gray-100 dark:bg-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded text-xs font-mono">
                                                 {role.slug}
                                             </code>
                                         </TableCell>
-                                        <TableCell className="hidden md:table-cell text-muted-foreground max-w-xs truncate">
+                                        <TableCell className="hidden md:table-cell text-muted-foreground dark:text-slate-400 max-w-xs truncate">
                                             {role.description || '-'}
                                         </TableCell>
                                         <TableCell>
@@ -177,7 +177,7 @@ export function RolesTab() {
                                                     return (
                                                         <>
                                                             {visibleResources.map(res => (
-                                                                <Badge key={res} variant="secondary" className="capitalize text-xs font-normal">
+                                                                <Badge key={res} variant="secondary" className="capitalize text-xs font-normal dark:bg-slate-800 dark:text-slate-200">
                                                                     {res === 'general' ? 'General' : res}
                                                                 </Badge>
                                                             ))}
@@ -186,7 +186,7 @@ export function RolesTab() {
                                                                 <TooltipProvider>
                                                                     <Tooltip>
                                                                         <TooltipTrigger asChild>
-                                                                            <Badge variant="outline" className="text-xs font-normal cursor-help">
+                                                                            <Badge variant="outline" className="text-xs font-normal cursor-help dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
                                                                                 +{remainingCount} más
                                                                             </Badge>
                                                                         </TooltipTrigger>
@@ -208,11 +208,11 @@ export function RolesTab() {
                                         </TableCell>
                                         <TableCell>
                                             {role.type === 'system' ? (
-                                                <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50">
+                                                <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
                                                     Sistema
                                                 </Badge>
                                             ) : (
-                                                <Badge variant="outline">Personalizado</Badge>
+                                                <Badge variant="outline" className="dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">Personalizado</Badge>
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
@@ -221,6 +221,7 @@ export function RolesTab() {
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleEditRole(role)}
+                                                    className="hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
@@ -229,7 +230,7 @@ export function RolesTab() {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        className="text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-900/30"
                                                         onClick={() => handleDeleteClick(role)}
                                                     >
                                                         <Trash2 className="h-4 w-4" />

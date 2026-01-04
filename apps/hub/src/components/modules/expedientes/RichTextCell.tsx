@@ -59,11 +59,11 @@ export function RichTextCell({ value, title = "Editar Contenido", onSave, placeh
                     className="group flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 p-1.5 -m-1.5 rounded transition-colors"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="flex-1 truncate text-xs text-muted-foreground max-w-[150px] md:max-w-[200px]">
+                    <div className="flex-1 truncate text-xs text-slate-500 dark:text-slate-400 max-w-[150px] md:max-w-[200px]">
                         {value ? (
                             <span>{getPreview(value)}</span>
                         ) : (
-                            <span className="italic opacity-50">{placeholder}</span>
+                            <span className="italic opacity-50 text-slate-400 dark:text-slate-500">{placeholder}</span>
                         )}
                     </div>
                     <ScrollText className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />

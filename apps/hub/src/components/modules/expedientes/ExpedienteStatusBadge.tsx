@@ -1,6 +1,6 @@
-
 import { Badge } from "@/components/ui/badge";
 import { ExpedienteEstado } from "@/types/expedientes";
+import { cn } from "@/lib/utils";
 
 interface ExpedienteStatusBadgeProps {
     status: ExpedienteEstado;
@@ -32,8 +32,16 @@ export function ExpedienteStatusBadge({ status }: ExpedienteStatusBadgeProps) {
             break;
     }
 
+    const dotColors: Record<ExpedienteEstado, string> = {
+        "En trámite": "bg-amber-500",
+        "Finalizado": "bg-emerald-500",
+        "Archivado": "bg-gray-400",
+        "Pendiente": "bg-blue-500"
+    };
+
     return (
-        <Badge variant={variant} className={className}>
+        <Badge variant={variant} className={cn("gap-1.5 px-2", className)}>
+            <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", dotColors[status])} />
             {status}
         </Badge>
     );

@@ -15,15 +15,15 @@ export default function AdminPage() {
         <div className="container mx-auto py-10 px-4">
             <div className="flex flex-col space-y-4 mb-8">
                 <div className="flex items-center gap-4">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard Administrativo</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Dashboard Administrativo</h1>
                 </div>
-                <p className="text-gray-500 dark:text-gray-400">
+                <p className="text-muted-foreground dark:text-slate-400">
                     Gestiona hospitales, usuarios, roles y auditoría del sistema desde un solo lugar.
                 </p>
             </div>
 
             <Tabs defaultValue="tenants" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto p-1">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto p-1 dark:bg-slate-800">
                     <TabsTrigger value="tenants" className="flex items-center gap-2 py-3">
                         <Building2 className="h-4 w-4" />
                         <span className="hidden md:inline">Hospitales</span>

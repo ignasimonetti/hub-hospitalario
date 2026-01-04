@@ -9,10 +9,12 @@ Este documento describe el esquema completo de la base de datos PocketBase utili
 1. [Información General](#información-general)
 2. [Colecciones del Sistema RBAC](#colecciones-del-sistema-rbac)
 3. [Colecciones del Módulo Blog](#colecciones-del-módulo-blog)
-4. [Colecciones Auxiliares](#colecciones-auxiliares)
-5. [Diagrama de Relaciones](#diagrama-de-relaciones)
-6. [Reglas de API](#reglas-de-api)
-7. [Notas de Integración](#notas-de-integración)
+4. [Colecciones del Módulo Expedientes](#colecciones-del-módulo-expedientes)
+5. [Colecciones del Módulo Suministros](#colecciones-del-módulo-suministros)
+6. [Colecciones Auxiliares](#colecciones-auxiliares)
+7. [Diagrama de Relaciones](#diagrama-de-relaciones)
+8. [Reglas de API](#reglas-de-api)
+9. [Notas de Integración](#notas-de-integración)
 
 ---
 
@@ -56,6 +58,8 @@ Colección principal de autenticación y perfiles de usuario.
 | `verified` | bool | ✅ | Email verificado (sistema) |
 | `emailVisibility` | bool | ❌ | Visibilidad del email |
 | `tokenKey` | text (30-60) | ✅ | Token de sesión (oculto) |
+| `is_super_admin` | bool | ❌ | Flag de superusuario maestro |
+| `assigned_sectors` | relation → `hub_sectors` | ❌ | Sectores asignados al usuario |
 
 **Reglas de API:**
 ```
@@ -287,6 +291,66 @@ Lugares físicos o áreas donde pueden estar los expedientes.
 | `nombre` | text | ✅ | Nombre del área u oficina |
 | `descripcion` | text | ❌ | Detalles adicionales |
 | `tenant` | relation → `hub_tenants` | ✅ | Organización |
+
+---
+
+### `hub_sectors`
+
+**ID:** `pbc_3077192343` | **Tipo:** `base`
+
+Maestro de sectores y unidades operativas del hospital. Colección transversal (Supply, RRHH).
+
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `id` | text (15) | ✅ | ID único |
+| `name` | text | ✅ | Nombre del sector (ej: "Guardia Central") |
+| `tenant` | relation → `hub_tenants` | ✅ | Organización |
+| `is_active` | bool | ✅ | Estado activo |
+| `is_stock_hub` | bool | ✅ | Indica si el sector tiene capacidad de stock |
+
+**Reglas de API:**
+```
+List/View: @request.auth.id != ""
+Create/Update/Delete: @request.auth.is_super_admin = true
+```
+
+---
+
+## 📦 Colecciones del Módulo Suministros
+
+### `supply_nodes`
+
+**ID:** `pbc_779419998` | **Tipo:** `base`
+
+Definición de puntos físicos de almacenamiento y depósitos.
+
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `id` | text (15) | ✅ | ID único |
+| `name` | text | ✅ | Nombre del depósito |
+| `type` | select | ✅ | `Central`, `Periferico`, `Especial` |
+| `is_active` | bool | ✅ | Estado operativo |
+| `tenants` | relation → `hub_tenants` | ✅ | Organización |
+
+**Reglas de API:**
+```
+List/View: @request.auth.id != ""
+Create/Update/Delete: @request.auth.is_super_admin = true
+```
+
+---
+
+### `supply_categories`
+
+**ID:** *(autogenerado)* | **Tipo:** `base`
+
+Categorías técnicas del catálogo de insumos.
+
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `id` | text (15) | ✅ | ID único |
+| `name` | text | ✅ | Nombre de la categoría |
+| `is_active` | bool | ✅ | Estado activo |
 
 ---
 

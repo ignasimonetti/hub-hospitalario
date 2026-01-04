@@ -15,14 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-
-// Mock Data for "Search" (until we connect the real catalog)
-const MOCK_PRODUCTS = [
-    { id: "1", name: "Amoxicilina 500mg", type: "Medicamento", stock: 420 },
-    { id: "2", name: "Guantes de Látex (L)", type: "Descartable", stock: 1500 },
-    { id: "3", name: "Solución Fisiológica 500ml", type: "Medicamento", stock: 80 }, // Low stock
-    { id: "4", name: "Jeringa 10ml", type: "Descartable", stock: 2000 },
-];
+import { searchProducts, createSupplyRequest } from "@/app/actions/supply";
+import { useEffect, useRef } from "react";
 
 export function SupplyRequestForm() {
     const router = useRouter();
@@ -36,19 +30,29 @@ export function SupplyRequestForm() {
     // Search State
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Search Logic (Mock)
-    const handleSearch = (term: string) => {
-        setSearchTerm(term);
-        if (term.length > 1) {
-            const results = MOCK_PRODUCTS.filter(p =>
-                p.name.toLowerCase().includes(term.toLowerCase())
-            );
-            setSearchResults(results);
+    // Search Logic (Real with Debounce)
+    useEffect(() => {
+        if (searchTerm.length > 1) {
+            setIsSearching(true);
+            if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+            searchTimeoutRef.current = setTimeout(async () => {
+                const results = await searchProducts(searchTerm);
+                setSearchResults(results);
+                setIsSearching(false);
+            }, 300); // 300ms debounce
         } else {
             setSearchResults([]);
+            setIsSearching(false);
         }
-    };
+
+        return () => {
+            if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+        };
+    }, [searchTerm]);
 
     const addItem = (product: any) => {
         if (items.find(i => i.product_id === product.id)) return;
@@ -57,7 +61,8 @@ export function SupplyRequestForm() {
             product_id: product.id,
             name: product.name,
             quantity_requested: 1,
-            stock_snapshot: product.stock
+            sku: product.sku,
+            unit: product.unit
         }]);
         setSearchTerm("");
         setSearchResults([]);
@@ -77,60 +82,76 @@ export function SupplyRequestForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (items.length === 0) return;
+
         setIsSubmitting(true);
 
-        // TODO: Connect to Server Action
-        console.log("Submitting:", { motive, priority, items });
+        const result = await createSupplyRequest({
+            requesting_sector: "Farmacia Central", // TODO: Get from user profile/context
+            motive,
+            priority,
+            items: items.map(i => ({
+                product_id: i.product_id,
+                name: i.name,
+                quantity: i.quantity_requested,
+                sku: i.sku,
+                unit: i.unit
+            }))
+        });
 
-        // Simulate delay
-        setTimeout(() => {
-            setIsSubmitting(false);
+        if (result.success) {
             router.push("/modules/supply/requests");
-        }, 1000);
+        } else {
+            alert("Error al crear la solicitud: " + result.error);
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
             {/* LEFT COLUMN: FORM */}
-            <div className="lg:col-span-8 flex flex-col gap-6 order-2 lg:order-1">
-                <form onSubmit={handleSubmit} className="bg-card rounded-xl p-6 shadow-sm border border-border flex flex-col gap-6">
+            <div className="lg:col-span-8 flex flex-col gap-8 order-2 lg:order-1">
+                <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-xl border border-gray-200 dark:border-slate-800 flex flex-col gap-8">
 
                     {/* Header Form */}
-                    <div className="flex items-center gap-2 pb-3 border-b border-border">
-                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                            <FileTextIcon className="w-5 h-5" />
+                    <div className="flex items-center gap-4 pb-6 border-b border-gray-100 dark:border-slate-800/50">
+                        <div className="p-3 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-xl">
+                            <FileTextIcon className="w-6 h-6" />
                         </div>
-                        <h2 className="text-lg font-bold text-foreground">Datos de la Solicitud</h2>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Datos de la Solicitud</h2>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium lowercase first-letter:uppercase">Complete los detalles para procesar el abastecimiento.</p>
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-foreground">Sector Solicitante</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-2.5">
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest">Sector Solicitante</label>
                             <Input
                                 value="Farmacia Central"
                                 readOnly
-                                className="bg-muted/50"
+                                className="bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-bold"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-foreground">Prioridad</label>
+                        <div className="space-y-2.5">
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest">Prioridad</label>
                             <select
-                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                className="flex h-10 w-full rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-1 text-sm shadow-sm transition-all focus:ring-2 focus:ring-blue-500/20 text-slate-900 dark:text-slate-100 outline-none font-medium"
                                 value={priority}
                                 onChange={(e) => setPriority(e.target.value)}
                             >
-                                <option value="normal">Normal</option>
-                                <option value="urgente">Urgente</option>
-                                <option value="baja">Baja</option>
+                                <option value="normal">🔵 Normal</option>
+                                <option value="urgente">🔴 Urgente</option>
+                                <option value="baja">⚪ Baja</option>
                             </select>
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-foreground">Justificación / Motivo</label>
+                    <div className="space-y-2.5">
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest">Justificación / Motivo</label>
                         <Textarea
                             placeholder="Describa brevemente la necesidad..."
-                            className="min-h-[100px]"
+                            className="min-h-[120px] rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-all focus:ring-2 focus:ring-blue-500/20"
                             value={motive}
                             onChange={(e) => setMotive(e.target.value)}
                             required
@@ -138,44 +159,50 @@ export function SupplyRequestForm() {
                     </div>
 
                     {/* Selected Items List */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-semibold text-foreground">Items Solicitados ({items.length})</h3>
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="h-5 w-1 rounded-full bg-blue-600"></div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-widest">Items Solicitados ({items.length})</h3>
                         </div>
 
                         {items.length === 0 ? (
-                            <div className="rounded-lg border border-dashed p-8 text-center bg-muted/20">
-                                <Package className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                                <p className="text-sm text-muted-foreground">Usa el buscador a la derecha para agregar productos.</p>
+                            <div className="rounded-2xl border-2 border-dashed border-gray-100 dark:border-slate-800/50 p-12 text-center bg-gray-50/50 dark:bg-slate-800/20 group">
+                                <Package className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700 mb-4 group-hover:scale-110 transition-transform" />
+                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium italic">Usa el buscador a la derecha para agregar productos al pedido.</p>
                             </div>
                         ) : (
-                            <div className="rounded-lg border border-border overflow-hidden">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-muted/50 text-muted-foreground font-medium border-b border-border">
+                            <div className="rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                                <table className="w-full text-sm text-left border-collapse">
+                                    <thead className="bg-gray-50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-500 font-bold uppercase text-[10px] tracking-widest border-b border-gray-100 dark:border-slate-800/50">
                                         <tr>
-                                            <th className="px-4 py-2">Producto</th>
-                                            <th className="px-4 py-2 w-32">Cantidad</th>
-                                            <th className="px-4 py-2 w-10"></th>
+                                            <th className="px-6 py-4">Producto</th>
+                                            <th className="px-6 py-4 w-40 text-center">Cantidad</th>
+                                            <th className="px-6 py-4 w-12"></th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-border bg-card">
+                                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800/50 bg-white dark:bg-slate-950/50">
                                         {items.map((item, idx) => (
-                                            <tr key={item.product_id} className="group">
-                                                <td className="px-4 py-2 font-medium">{item.name}</td>
-                                                <td className="px-4 py-2">
-                                                    <Input
-                                                        type="number"
-                                                        min={1}
-                                                        value={item.quantity_requested}
-                                                        onChange={(e) => updateQuantity(idx, parseInt(e.target.value) || 1)}
-                                                        className="h-8 w-24"
-                                                    />
+                                            <tr key={item.product_id} className="group hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-slate-900 dark:text-slate-100">{item.name}</div>
+                                                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">{item.sku}</div>
                                                 </td>
-                                                <td className="px-4 py-2 text-right">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center">
+                                                        <Input
+                                                            type="number"
+                                                            min={1}
+                                                            value={item.quantity_requested}
+                                                            onChange={(e) => updateQuantity(idx, parseInt(e.target.value) || 1)}
+                                                            className="h-10 w-24 text-center rounded-lg border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-bold"
+                                                        />
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
                                                     <button
                                                         type="button"
                                                         onClick={() => removeItem(idx)}
-                                                        className="text-muted-foreground hover:text-red-500 transition-colors"
+                                                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -190,11 +217,11 @@ export function SupplyRequestForm() {
 
                     <Button
                         type="submit"
-                        className="w-full mt-4"
+                        className="w-full mt-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-bold h-14 rounded-2xl shadow-lg shadow-blue-500/25 transition-all active:scale-[0.98]"
                         size="lg"
                         disabled={isSubmitting || items.length === 0}
                     >
-                        {isSubmitting ? "Guardando..." : "Crear Solicitud"}
+                        {isSubmitting ? "Procesando..." : "Enviar Solicitud de Pedido"}
                     </Button>
                 </form>
             </div>
@@ -202,45 +229,62 @@ export function SupplyRequestForm() {
             {/* RIGHT COLUMN: SEARCH & CATALOG */}
             <div className="lg:col-span-4 flex flex-col gap-6 order-1 lg:order-2">
                 {/* Search Box */}
-                <div className="bg-card rounded-xl shadow-sm border border-border p-4 sticky top-6">
-                    <div className="relative mb-4">
-                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Buscar productos..."
-                            className="pl-9"
-                            value={searchTerm}
-                            onChange={(e) => handleSearch(e.target.value)}
-                            autoFocus
-                        />
+                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-200 dark:border-slate-800 p-6 sticky top-8 transition-all">
+                    <div className="flex items-center gap-3 mb-6">
+                        <Search className="w-5 h-5 text-blue-600" />
+                        <h3 className="font-bold text-slate-900 dark:text-slate-100 tracking-tight text-lg">Buscador de Insumos</h3>
                     </div>
 
-                    <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                    <div className="relative mb-6">
+                        <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+                        <Input
+                            placeholder="Nombre del producto o SKU..."
+                            className="pl-10 h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-all focus:ring-2 focus:ring-blue-500/20"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            autoFocus
+                        />
+                        {isSearching && (
+                            <div className="absolute right-3.5 top-3.5 animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                        )}
+                    </div>
+
+                    <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
                         {searchResults.length > 0 ? (
                             searchResults.map(prod => (
-                                <div key={prod.id} className="group flex items-start gap-3 p-3 rounded-lg border border-border bg-background hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer" onClick={() => addItem(prod)}>
-                                    <div className="p-2 bg-muted rounded-md group-hover:bg-primary/10">
-                                        <Package className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+                                <div
+                                    key={prod.id}
+                                    className="group flex items-center gap-4 p-4 rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-blue-500/50 hover:shadow-lg transition-all cursor-pointer relative"
+                                    onClick={() => addItem(prod)}
+                                >
+                                    <div className="p-3 bg-gray-50 dark:bg-slate-900 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 text-slate-400">
+                                        <Package className="w-6 h-6 shrink-0" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-medium text-sm text-foreground truncate">{prod.name}</h4>
+                                        <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{prod.name}</h4>
                                         <div className="flex items-center justify-between mt-1">
-                                            <span className="text-xs text-muted-foreground">{prod.type}</span>
-                                            <span className={`text-xs font-bold ${prod.stock < 100 ? 'text-red-500' : 'text-green-600'}`}>
-                                                Stock: {prod.stock}
-                                            </span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{prod.unit || prod.type}</span>
+                                            <span className="text-[10px] font-mono text-slate-300 dark:text-slate-600 hidden group-hover:block">{prod.sku}</span>
                                         </div>
                                     </div>
-                                    <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100">
-                                        <Plus className="w-4 h-4" />
-                                    </Button>
+                                    <div className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Plus className="w-4 h-4 text-blue-600" />
+                                    </div>
                                 </div>
                             ))
-                        ) : searchTerm.length > 0 ? (
-                            <p className="text-sm text-center text-muted-foreground py-4">No se encontraron productos.</p>
+                        ) : searchTerm.length > 0 && !isSearching ? (
+                            <div className="text-center py-12">
+                                <AlertCircle className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                                <p className="text-sm font-bold text-slate-400">No se encontraron productos.</p>
+                                <p className="text-xs text-slate-400 mt-1">Prueba con otras palabras clave.</p>
+                            </div>
                         ) : (
-                            <div className="text-center py-8">
-                                <Search className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-                                <p className="text-xs text-muted-foreground">Escribe para buscar en el catálogo.</p>
+                            <div className="text-center py-12">
+                                <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 dark:border-slate-800">
+                                    <Search className="w-8 h-8 text-slate-300 dark:text-slate-700" />
+                                </div>
+                                <p className="text-sm font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest">Listo para buscar</p>
+                                <p className="text-[10px] text-slate-400 mt-2 px-6">Escribe el nombre del insumo o medicamento que necesitas.</p>
                             </div>
                         )}
                     </div>

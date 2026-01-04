@@ -1,0 +1,21 @@
+Actúa como un Director Creativo de EdTech.
+Toma el documento fuente "Hub Hospitalario: Fuente de Conocimiento" y las imágenes suministradas para generar el guion de un **Video Explicativo (Video Demo)**.
+
+## Objetivo del Video
+Presentar el Hub Hospitalario al personal del CISB como una herramienta aliada, no como "otra carga burocrática". Debe sentirse moderno, fluido y fácil.
+
+## Instrucciones de Personalización
+1.  **Sincronización Visual:** En la columna de "Imagen/Video", indica explícitamente qué captura de pantalla usar (ej: [Mostrar captura 'dashboard_dark_mode']).
+2.  **Narrativa:**
+    *   Empieza con empatía: "Sabemos que tu guardia es difícil..."
+    *   Presenta la solución: "...por eso creamos un entorno que te cuida." (Mencionar Modo Oscuro).
+    *   Cierra con empoderamiento: Innovación santiagueña para la salud pública.
+
+## Estructura del Guion Sugerida
+*   **0:00 - 0:15 | Intro:** El valor del tiempo en salud.
+*   **0:15 - 0:45 | Tour Visual:** Recorrido por el Dashboard y Sidebar (Usa las capturas `dashboard_main` y `dashboard_metrics`).
+*   **0:45 - 1:00 | Bienestar:** El Modo Oscuro en detalle (Usa captura `dashboard_dark_mode`).
+*   **1:00 - 1:30 | Módulos:** Breve mención de Expedientes y Ayuda (Usa captura `help_center`).
+*   **1:30 - 2:00 | Cierre:** La visión de futuro.
+
+Genera el guion en formato de tabla: [Tiempo] | [Visual] | [Audio/Locución].

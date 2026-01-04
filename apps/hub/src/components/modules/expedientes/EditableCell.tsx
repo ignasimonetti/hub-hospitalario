@@ -97,10 +97,10 @@ export function EditableCell({ value, onSave, className, inputClassName, isMono 
             }}
         >
             <span className={cn(
-                "truncate block w-full",
+                "truncate block w-full text-slate-900 dark:text-slate-200",
                 isMono && "font-mono"
             )}>
-                {value || <span className="text-muted-foreground italic text-xs">Sin descripción</span>}
+                {value || <span className="text-muted-foreground dark:text-slate-500 italic text-xs">Sin descripción</span>}
             </span>
             <PenIcon className="h-3 w-3 opacity-0 group-hover:opacity-30 absolute right-1 top-1/2 -translate-y-1/2" />
         </div>

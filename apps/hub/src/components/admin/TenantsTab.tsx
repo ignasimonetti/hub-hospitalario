@@ -116,28 +116,28 @@ export function TenantsTab() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Administración de Hospitales</h2>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Administración de Hospitales</h2>
+                    <p className="text-muted-foreground dark:text-slate-400 mt-1">
                         Gestiona los hospitales (tenants) registrados en la plataforma
                     </p>
                 </div>
-                <Button onClick={handleNewTenant}>
+                <Button onClick={handleNewTenant} className="dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white">
                     <Plus className="h-4 w-4 mr-2" />
                     Nuevo Hospital
                 </Button>
             </div>
 
             {/* Stats Card */}
-            <Card>
+            <Card className="bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
                 <CardContent className="p-6">
                     <div className="flex items-center">
-                        <Building2 className="h-8 w-8 text-blue-600" />
+                        <Building2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                         <div className="ml-4">
-                            <p className="text-2xl font-bold">{tenants.length}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Total Hospitales</p>
+                            <p className="text-2xl font-bold dark:text-slate-100">{tenants.length}</p>
+                            <p className="text-sm text-muted-foreground dark:text-slate-400">Total Hospitales</p>
                         </div>
                         <div className="ml-auto">
-                            <Badge variant="outline" className="text-green-600 border-green-600">
+                            <Badge variant="outline" className="text-green-600 border-green-600 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
                                 {tenants.filter(t => t.is_active).length} Activos
                             </Badge>
                         </div>
@@ -148,21 +148,21 @@ export function TenantsTab() {
             {/* Search */}
             <div className="flex items-center space-x-4">
                 <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-500 h-4 w-4" />
                     <Input
                         placeholder="Buscar hospitales..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400"
                     />
                 </div>
             </div>
 
             {/* Tenants Table */}
-            <Card>
+            <Card className="bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Building2 className="h-5 w-5" />
+                    <CardTitle className="flex items-center gap-2 dark:text-slate-100">
+                        <Building2 className="h-5 w-5 dark:text-slate-400" />
                         Lista de Hospitales
                     </CardTitle>
                 </CardHeader>
@@ -170,17 +170,17 @@ export function TenantsTab() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Hospital</TableHead>
-                                <TableHead>Slug</TableHead>
-                                <TableHead>Estado</TableHead>
-                                <TableHead>Fecha de Creación</TableHead>
-                                <TableHead>Acciones</TableHead>
+                                <TableHead className="dark:text-slate-400">Hospital</TableHead>
+                                <TableHead className="dark:text-slate-400">Slug</TableHead>
+                                <TableHead className="dark:text-slate-400">Estado</TableHead>
+                                <TableHead className="dark:text-slate-400">Fecha de Creación</TableHead>
+                                <TableHead className="dark:text-slate-400">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredTenants.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground dark:text-slate-400">
                                         {tenants.length === 0 ? "No hay hospitales registrados" : "No se encontraron hospitales"}
                                     </TableCell>
                                 </TableRow>
@@ -191,42 +191,43 @@ export function TenantsTab() {
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="w-10 h-10">
                                                     <AvatarImage src={getTenantLogoUrl(tenant)} alt={tenant.name} />
-                                                    <AvatarFallback className="bg-blue-600 text-white">
+                                                    <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white">
                                                         {tenant.name?.charAt(0).toUpperCase() || 'H'}
                                                     </AvatarFallback>
                                                 </Avatar>
-                                                <span className="font-medium">{tenant.name}</span>
+                                                <span className="font-medium dark:text-slate-200">{tenant.name}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <code className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                                            <code className="text-sm bg-gray-100 dark:bg-slate-800 dark:text-slate-200 px-2 py-1 rounded">
                                                 {tenant.slug}
                                             </code>
                                         </TableCell>
                                         <TableCell>
                                             {tenant.is_active ? (
-                                                <Badge variant="outline" className="text-green-600 border-green-600">Activo</Badge>
+                                                <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">Activo</Badge>
                                             ) : (
-                                                <Badge variant="outline" className="text-gray-600 border-gray-600">Inactivo</Badge>
+                                                <Badge variant="outline" className="bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">Inactivo</Badge>
                                             )}
                                         </TableCell>
-                                        <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                                        <TableCell className="text-sm text-muted-foreground dark:text-slate-400">
                                             {new Date(tenant.created).toLocaleDateString()}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
                                                 <Button
                                                     size="sm"
-                                                    variant="outline"
+                                                    variant="ghost"
                                                     onClick={() => handleEditTenant(tenant)}
+                                                    className="hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
                                                 <Button
                                                     size="sm"
-                                                    variant="outline"
+                                                    variant="ghost"
                                                     onClick={() => handleDeleteClick(tenant)}
-                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    className="text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-900/30"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>

@@ -84,6 +84,9 @@ export function usePermissions(tenantId?: string) {
 
   // Verificar si el usuario tiene un permiso específico
   const hasUserPermission = useCallback((permissionSlug: string) => {
+    // Acceso Universal para Super Admin
+    if (pocketbase.authStore.model?.is_super_admin) return true;
+
     return permissions.some(p => p.slug === permissionSlug)
   }, [permissions])
 

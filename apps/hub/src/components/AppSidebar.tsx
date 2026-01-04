@@ -16,12 +16,13 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     LifeBuoy,
-    FolderOpen
+    FolderOpen,
+    Package
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AppSidebarProps {
-    currentPage?: 'dashboard' | 'blog' | 'admin' | 'expedientes';
+    currentPage?: 'dashboard' | 'blog' | 'admin' | 'expedientes' | 'supply';
     isMobile?: boolean;
     onMobileClose?: () => void;
 }
@@ -80,6 +81,12 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
         (currentRole?.name?.toLowerCase() || '').includes('mesa de entrada');
 
     const canAccessExpedientes = isAdmin || isMesaEntrada;
+
+    // Check if user has supply module access
+    // Admin or any role starting with 'supply_' or containing 'suministros'
+    const isSupplyUser = (currentRole?.slug || '').startsWith('supply_') ||
+        (currentRole?.name?.toLowerCase() || '').includes('suministros');
+    const canAccessSupply = isAdmin || isSupplyUser;
 
     const getTenantLogoUrl = () => {
         if (currentTenant && currentTenant.logo) {
@@ -200,6 +207,21 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
                             >
                                 <FolderOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                                 {showContent && <span>Expedientes</span>}
+                            </button>
+                        )}
+
+                        {/* Supply Module */}
+                        {canAccessSupply && (
+                            <button
+                                className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'supply'
+                                    ? 'text-gray-900 dark:text-slate-100 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700'
+                                    : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
+                                    } transition-colors`}
+                                title={!showContent ? 'Suministros' : undefined}
+                                onClick={() => handleNavigation('/modules/supply')}
+                            >
+                                <Package className="h-4 w-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
+                                {showContent && <span>Suministros</span>}
                             </button>
                         )}
 

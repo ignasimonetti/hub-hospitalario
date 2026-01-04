@@ -60,6 +60,21 @@ const PERMISSIONS = [
     { slug: 'blog.publish', name: 'Publicar Artículo', description: 'Publicar artículos en el sitio web', resource: 'blog', action: 'publish' },
     { slug: 'blog.delete', name: 'Eliminar Artículo', description: 'Eliminar artículos del sistema', resource: 'blog', action: 'delete' },
     { slug: 'blog.archive', name: 'Archivar Artículo', description: 'Archivar artículos publicados', resource: 'blog', action: 'archive' },
+
+    // Supply Module - Requests
+    { slug: 'supply.requests.list', name: 'Listar Solicitudes', description: 'Ver lista de pedidos de suministros', resource: 'supply.requests', action: 'list' },
+    { slug: 'supply.requests.create', name: 'Crear Solicitud', description: 'Crear nuevos pedidos de suministros', resource: 'supply.requests', action: 'create' },
+    { slug: 'supply.requests.view', name: 'Ver Detalle Solicitud', description: 'Ver detalles técnicos de un pedido', resource: 'supply.requests', action: 'view' },
+    { slug: 'supply.requests.approve', name: 'Aprobar Solicitud', description: 'Autorizar o rechazar pedidos', resource: 'supply.requests', action: 'approve' },
+
+    // Supply Module - Inventory & Products
+    { slug: 'supply.inventory.view', name: 'Ver Inventario', description: 'Consultar stock y productos', resource: 'supply.inventory', action: 'view' },
+    { slug: 'supply.inventory.manage', name: 'Gestionar Movimientos', description: 'Registrar entradas y salidas de stock', resource: 'supply.inventory', action: 'manage' },
+    { slug: 'supply.products.manage', name: 'Gestionar Catálogo', description: 'Crear y editar productos en el catálogo', resource: 'supply.products', action: 'manage' },
+
+    // Supply Module - Providers & Purchases
+    { slug: 'supply.providers.manage', name: 'Gestionar Proveedores', description: 'Administrar registro de proveedores', resource: 'supply.providers', action: 'manage' },
+    { slug: 'supply.purchases.manage', name: 'Gestionar Compras', description: 'Administrar expedientes de compra y órdenes', resource: 'supply.purchases', action: 'manage' },
 ];
 
 async function seed() {

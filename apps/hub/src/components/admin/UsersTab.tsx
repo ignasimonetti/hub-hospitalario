@@ -175,12 +175,12 @@ export function UsersTab() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Administración de Usuarios</h2>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Administración de Usuarios</h2>
+                    <p className="text-muted-foreground dark:text-slate-400 mt-1">
                         Gestiona usuarios del sistema y asigna roles de acceso
                     </p>
                 </div>
-                <Button onClick={handleNewUser}>
+                <Button onClick={handleNewUser} className="dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white">
                     <Plus className="h-4 w-4 mr-2" />
                     Nuevo Usuario
                 </Button>
@@ -188,49 +188,49 @@ export function UsersTab() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
+                <Card className="bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
                     <CardContent className="p-6">
                         <div className="flex items-center">
-                            <Users className="h-8 w-8 text-blue-600" />
+                            <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                             <div className="ml-4">
-                                <p className="text-2xl font-bold">{users.length}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Total Usuarios</p>
+                                <p className="text-2xl font-bold dark:text-slate-100">{users.length}</p>
+                                <p className="text-sm text-muted-foreground dark:text-slate-400">Total Usuarios</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
                     <CardContent className="p-6">
                         <div className="flex items-center">
-                            <UserCheck className="h-8 w-8 text-green-600" />
+                            <UserCheck className="h-8 w-8 text-green-600 dark:text-green-400" />
                             <div className="ml-4">
-                                <p className="text-2xl font-bold">{verifiedUsers.length}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Emails Verificados</p>
+                                <p className="text-2xl font-bold dark:text-slate-100">{verifiedUsers.length}</p>
+                                <p className="text-sm text-muted-foreground dark:text-slate-400">Emails Verificados</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
                     <CardContent className="p-6">
                         <div className="flex items-center">
-                            <UserX className="h-8 w-8 text-red-600" />
+                            <UserX className="h-8 w-8 text-red-600 dark:text-red-400" />
                             <div className="ml-4">
-                                <p className="text-2xl font-bold">{inactiveUsers.length}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Sin Activar</p>
+                                <p className="text-2xl font-bold dark:text-slate-100">{inactiveUsers.length}</p>
+                                <p className="text-sm text-muted-foreground dark:text-slate-400">Sin Activar</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
                     <CardContent className="p-6">
                         <div className="flex items-center">
-                            <UserCog className="h-8 w-8 text-purple-600" />
+                            <UserCog className="h-8 w-8 text-purple-600 dark:text-purple-400" />
                             <div className="ml-4">
-                                <p className="text-2xl font-bold">{usersWithoutRoles.length}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Sin Roles</p>
+                                <p className="text-2xl font-bold dark:text-slate-100">{usersWithoutRoles.length}</p>
+                                <p className="text-sm text-muted-foreground dark:text-slate-400">Sin Roles</p>
                             </div>
                         </div>
                     </CardContent>
@@ -240,21 +240,21 @@ export function UsersTab() {
             {/* Search */}
             <div className="flex items-center space-x-4">
                 <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-500 h-4 w-4" />
                     <Input
                         placeholder="Buscar usuarios..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400"
                     />
                 </div>
             </div>
 
             {/* Users Table */}
-            <Card>
+            <Card className="bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" />
+                    <CardTitle className="flex items-center gap-2 dark:text-slate-100">
+                        <Users className="h-5 w-5 dark:text-slate-400" />
                         Lista de Usuarios
                     </CardTitle>
                 </CardHeader>
@@ -262,17 +262,17 @@ export function UsersTab() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Usuario</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Roles</TableHead>
-                                <TableHead>Estado</TableHead>
-                                <TableHead>Acciones</TableHead>
+                                <TableHead className="dark:text-slate-400">Usuario</TableHead>
+                                <TableHead className="dark:text-slate-400">Email</TableHead>
+                                <TableHead className="dark:text-slate-400">Roles</TableHead>
+                                <TableHead className="dark:text-slate-400">Estado</TableHead>
+                                <TableHead className="dark:text-slate-400">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredUsers.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground dark:text-slate-400">
                                         {users.length === 0 ? "No hay usuarios registrados" : "No se encontraron usuarios"}
                                     </TableCell>
                                 </TableRow>
@@ -283,18 +283,18 @@ export function UsersTab() {
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="w-10 h-10">
                                                     <AvatarImage src={getUserAvatarUrl(user)} alt={getFullName(user)} />
-                                                    <AvatarFallback className="bg-blue-600 text-white">
+                                                    <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white">
                                                         {getInitials(user)}
                                                     </AvatarFallback>
                                                 </Avatar>
-                                                <span className="font-medium">{getFullName(user)}</span>
+                                                <span className="font-medium dark:text-slate-200">{getFullName(user)}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <span>{user.email}</span>
+                                                <span className="dark:text-slate-300">{user.email}</span>
                                                 {user.verified && (
-                                                    <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
+                                                    <Badge variant="outline" className="text-green-600 border-green-600 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 text-xs">
                                                         ✓
                                                     </Badge>
                                                 )}
@@ -304,12 +304,12 @@ export function UsersTab() {
                                             <div className="flex gap-1 flex-wrap">
                                                 {user.expand?.hub_user_roles_via_user && user.expand.hub_user_roles_via_user.length > 0 ? (
                                                     user.expand.hub_user_roles_via_user.map((userRole: any, index: number) => (
-                                                        <Badge key={index} variant="outline" className="text-xs">
+                                                        <Badge key={index} variant="outline" className="text-xs dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
                                                             {userRole.expand?.role?.name || "Sin nombre"}
                                                         </Badge>
                                                     ))
                                                 ) : (
-                                                    <Badge variant="outline" className="text-gray-600 border-gray-600 text-xs text-nowrap">
+                                                    <Badge variant="outline" className="bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 text-xs text-nowrap">
                                                         Sin rol
                                                     </Badge>
                                                 )}
@@ -318,20 +318,20 @@ export function UsersTab() {
                                         <TableCell>
                                             <div className="flex flex-wrap gap-1 min-w-[120px]">
                                                 {user.active === false ? (
-                                                    <Badge variant="outline" className="text-red-600 border-red-600 bg-red-50 dark:bg-red-900/10">
+                                                    <Badge variant="outline" className="bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
                                                         🔒 Inactivo
                                                     </Badge>
                                                 ) : (
-                                                    <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50 dark:bg-green-900/10">
+                                                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
                                                         🟢 Activo
                                                     </Badge>
                                                 )}
                                                 {user.verified ? (
-                                                    <Badge variant="outline" className="text-green-600 border-green-600">
+                                                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
                                                         ✓ Email Verificado
                                                     </Badge>
                                                 ) : (
-                                                    <Badge variant="outline" className="text-blue-600 border-blue-600">
+                                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
                                                         Email Pendiente
                                                     </Badge>
                                                 )}
@@ -371,16 +371,17 @@ export function UsersTab() {
                                                 </Button>
                                                 <Button
                                                     size="sm"
-                                                    variant="outline"
+                                                    variant="ghost"
                                                     onClick={() => handleEditUser(user)}
+                                                    className="hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
                                                 <Button
                                                     size="sm"
-                                                    variant="outline"
+                                                    variant="ghost"
                                                     onClick={() => handleDeleteClick(user)}
-                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    className="text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-900/30"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>

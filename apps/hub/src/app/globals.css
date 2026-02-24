@@ -56,8 +56,8 @@
     /* slate-950 */
     --popover-foreground: 210 40% 98%;
     --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47% 11%;
-    /* slate-900 para contraste */
+    --primary-foreground: 210 40% 98%;
+    /* slate-50 para mejor contraste */
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;

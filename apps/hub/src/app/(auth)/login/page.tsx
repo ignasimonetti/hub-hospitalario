@@ -133,7 +133,7 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="flex flex-col">
             <Button
-              className="w-full text-base py-5 shadow-sm hover:shadow-md transition-all"
+              className="w-full text-base py-5 shadow-sm hover:shadow-md transition-all text-white dark:text-white"
               onClick={handleLogin}
               disabled={isLoading}
             >

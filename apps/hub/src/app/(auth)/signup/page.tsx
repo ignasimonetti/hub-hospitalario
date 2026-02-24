@@ -134,7 +134,7 @@ export default function SignupPage() {
 
       if (!response.ok) {
         let errorMessage = "Error al crear la cuenta";
-        
+
         if (data.error) {
           if (data.error.includes("User already registered")) {
             errorMessage = "Ya existe un usuario con este email";
@@ -144,7 +144,7 @@ export default function SignupPage() {
             errorMessage = data.error;
           }
         }
-        
+
         setError(errorMessage);
         return;
       }
@@ -164,7 +164,7 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-slate-950">
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl text-green-600">¡Cuenta Creada!</CardTitle>
@@ -178,7 +178,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-slate-950">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Crear Usuario</CardTitle>
@@ -294,20 +294,19 @@ export default function SignupPage() {
               <div className="text-sm text-red-600">{fieldErrors.confirmPassword}</div>
             )}
           </div>
-          
+
           {/* Mostrar validación de contraseñas en tiempo real */}
           {confirmPassword && !fieldErrors.confirmPassword && (
-            <div className={`text-sm p-2 rounded ${
-              password === confirmPassword && password.length >= 6
+            <div className={`text-sm p-2 rounded ${password === confirmPassword && password.length >= 6
                 ? "text-green-600 bg-green-50"
                 : "text-red-600 bg-red-50"
-            }`}>
+              }`}>
               {password === confirmPassword && password.length >= 6
                 ? "✓ Las contraseñas coinciden y son válidas"
                 : "Las contraseñas no coinciden o son muy cortas"}
             </div>
           )}
-          
+
           {error && (
             <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200">
               ⚠️ {error}

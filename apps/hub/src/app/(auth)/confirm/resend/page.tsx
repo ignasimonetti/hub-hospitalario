@@ -15,7 +15,7 @@ export default function ResendEmailPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!email) {
       setStatus('error')
       setMessage('Por favor ingresa tu email')
@@ -53,7 +53,7 @@ export default function ResendEmailPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
@@ -85,10 +85,9 @@ export default function ResendEmailPage() {
 
             {status !== 'idle' && (
               <div className={
-                `flex items-center gap-2 p-3 rounded border ${
-                  status === 'success' ? 'border-green-200 bg-green-50 text-green-800' :
+                `flex items-center gap-2 p-3 rounded border ${status === 'success' ? 'border-green-200 bg-green-50 text-green-800' :
                   status === 'error' ? 'border-red-200 bg-red-50 text-red-800' :
-                  'border-blue-200 bg-blue-50 text-blue-800'
+                    'border-blue-200 bg-blue-50 text-blue-800'
                 }`
               }>
                 {status === 'success' && <CheckCircle className="h-4 w-4" />}

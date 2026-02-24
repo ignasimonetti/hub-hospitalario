@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
 
       if (!response.ok) {
         let errorMessage = "Error al enviar el email de recuperación";
-        
+
         if (data.error) {
           if (data.error.includes("User not found")) {
             errorMessage = "No encontramos una cuenta con este email";
@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
             errorMessage = data.error;
           }
         }
-        
+
         setError(errorMessage);
         return;
       }
@@ -75,7 +75,7 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-slate-950">
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl text-green-600">¡Email Enviado!</CardTitle>
@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-slate-950">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Recuperar Contraseña</CardTitle>
@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
               disabled={isLoading}
             />
           </div>
-          
+
           {error && (
             <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200">
               ⚠️ {error}

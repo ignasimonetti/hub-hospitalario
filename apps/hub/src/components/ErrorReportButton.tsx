@@ -18,7 +18,11 @@ import { useNotifications } from '@/hooks/use-notifications';
 import { Bug, Send } from 'lucide-react';
 import { pocketbase } from '@/lib/auth';
 
-export function ErrorReportButton() {
+interface ErrorReportButtonProps {
+    collapsed?: boolean;
+}
+
+export function ErrorReportButton({ collapsed = false }: ErrorReportButtonProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [description, setDescription] = useState('');
     const [file, setFile] = useState<File | null>(null);
@@ -102,10 +106,11 @@ export function ErrorReportButton() {
                 <Button
                     variant="outline"
                     size="sm"
-                    className="w-full justify-start h-9 gap-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700"
+                    className={`w-full ${collapsed ? 'justify-center px-0' : 'justify-start gap-2'} h-9 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700`}
+                    title={collapsed ? 'Reportar problema' : undefined}
                 >
                     <Bug className="h-4 w-4" />
-                    <span>Reportar problema</span>
+                    {!collapsed && <span>Reportar problema</span>}
                 </Button>
             </DialogTrigger>
 

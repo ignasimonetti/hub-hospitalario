@@ -267,8 +267,8 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
                 </div>
 
                 {/* Error Report Button - Fixed at bottom */}
-                <div className="p-4 border-t border-gray-200 dark:border-slate-700">
-                    <ErrorReportButton />
+                <div className={`${!showContent ? 'p-2' : 'p-4'} border-t border-gray-200 dark:border-slate-700 transition-all`}>
+                    <ErrorReportButton collapsed={!showContent} />
                 </div>
             </div>
 

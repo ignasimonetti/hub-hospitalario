@@ -6,9 +6,13 @@ import { sendEmailConfirmation } from '../../../../lib/resend'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, first_name, last_name } = await request.json()
+    const body = await request.json()
+    const email = body.email
+    const password = body.password
+    const firstName = body.first_name || body.firstName || body.name
+    const lastName = body.last_name || body.lastName
 
-    if (!email || !password || !first_name || !last_name) {
+    if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
         { error: 'Email, contraseña, nombre y apellido son obligatorios' },
         { status: 400 }
@@ -24,9 +28,9 @@ export async function POST(request: NextRequest) {
       const userData = await pbAdmin.collection('auth_users').create({
         email,
         password,
-        passwordConfirm: password,
-        firstName: first_name,
-        lastName: last_name
+        passwordConfirm: body.passwordConfirm || password,
+        firstName: firstName,
+        lastName: lastName
       });
 
       data = { user: userData };

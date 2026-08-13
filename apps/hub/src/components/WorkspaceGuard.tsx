@@ -24,7 +24,7 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
   // Corregir la lógica de isPublicPage: '/' debe ser una coincidencia exacta
-  const isPublicPage = pathname === '/' || ['/login', '/signup', '/confirm', '/forgot-password', '/verify'].some(p => pathname.startsWith(p));
+  const isPublicPage = pathname === '/' || ['/login', '/signup', '/confirm', '/forgot-password', '/reset-password', '/verify'].some(p => pathname.startsWith(p));
 
   useEffect(() => {
     // 1. No hacer nada en páginas públicas

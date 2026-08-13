@@ -83,7 +83,7 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
             Seleccionar Espacio de Trabajo
           </h1>
           <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 mt-1 max-w-md">
-            Selecciona la institución a la que deseas acceder para iniciar tu jornada laboral.
+            Selecciona la institución a la que deseas acceder
           </p>
         </div>
 
@@ -122,18 +122,18 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
                         )}
                       </div>
                       
-                      {/* Logo institucional dentro de la tarjeta */}
-                      <div className="shrink-0 p-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/80 flex items-center justify-center">
+                      {/* Logo institucional oficial dentro de la tarjeta */}
+                      <div className="shrink-0 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/80 flex items-center justify-center shadow-sm">
                         {isCISB ? (
                           <Image
                             src="/assets/cisb.png"
-                            alt="CISB Logo"
-                            width={54}
-                            height={28}
-                            className="h-7 w-auto object-contain"
+                            alt="Centro Integral de Salud Banda"
+                            width={80}
+                            height={40}
+                            className="h-9 w-auto max-w-[90px] object-contain"
                           />
                         ) : (
-                          <Building2 className="w-6 h-6 text-sky-600 dark:text-sky-400" />
+                          <Building2 className="w-7 h-7 text-sky-600 dark:text-sky-400" />
                         )}
                       </div>
                     </div>

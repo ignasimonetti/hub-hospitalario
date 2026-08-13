@@ -15,6 +15,14 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Hub Hospitalario",
   description: "Plataforma SaaS integral para la gestión hospitalaria",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/favicon.svg",
+    apple: "/assets/cisb.png",
+  },
 };
 
 export default function RootLayout({

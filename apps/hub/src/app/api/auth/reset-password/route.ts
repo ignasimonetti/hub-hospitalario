@@ -91,11 +91,15 @@ export async function POST(request: NextRequest) {
         }
       } catch (updateErr: any) {
         console.error('[reset-password] Error updating user password:', updateErr?.message || updateErr);
+        return NextResponse.json(
+          { error: `Error al actualizar en PocketBase: ${updateErr?.message || 'Permiso o datos inválidos'}` },
+          { status: 400 }
+        );
       }
     }
 
     return NextResponse.json(
-      { error: 'No se pudo actualizar la contraseña en PocketBase. Es necesario configurar POCKETBASE_ADMIN_EMAIL y POCKETBASE_ADMIN_PASSWORD en .env.local' },
+      { error: 'No se encontró un usuario válido asociado a este enlace de recuperación.' },
       { status: 400 }
     );
 

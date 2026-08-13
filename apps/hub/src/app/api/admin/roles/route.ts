@@ -15,7 +15,7 @@ export async function GET() {
     } catch (error: any) {
         console.error('Error fetching roles:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to fetch roles' },
+            { error: error.message || 'Error al obtener los roles' },
             { status: 500 }
         );
     }

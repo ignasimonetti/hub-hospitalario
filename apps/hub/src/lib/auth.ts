@@ -34,6 +34,8 @@ syncCookie();
 // Re-exportar la instancia de pocketbase para que otros módulos en 'apps/hub' puedan usarla
 export { pocketbase }
 
+import { translateError } from '@/lib/error-translator';
+
 /**
  * Iniciar sesión de usuario con email y contraseña
  */
@@ -47,7 +49,7 @@ export async function signInWithEmail(email: string, password: string) {
   } catch (error: any) {
     return {
       data: null,
-      error: { message: error.message }
+      error: { message: translateError(error.message, "Error al iniciar sesión") }
     }
   }
 }
@@ -84,7 +86,7 @@ export async function signUp(email: string, password: string, options: any = {})
       return {
         data: null,
         error: {
-          message: 'Error de permisos. Verifica que la colección auth_users tenga habilitado el registro público en "Authentication rule" (debe estar vacío, no "Set superusers only").'
+          message: 'Error de permisos. El registro de usuarios no está habilitado en este momento.'
         }
       }
     }
@@ -93,7 +95,7 @@ export async function signUp(email: string, password: string, options: any = {})
       return {
         data: null,
         error: {
-          message: 'Colección auth_users no encontrada. Verifica que exista en tu PocketBase.'
+          message: 'Servicio de registro no disponible. Contacta al administrador.'
         }
       }
     }
@@ -102,12 +104,12 @@ export async function signUp(email: string, password: string, options: any = {})
       return {
         data: null,
         error: {
-          message: 'Ya existe un usuario con este email.'
+          message: 'Ya existe un usuario registrado con este correo electrónico.'
         }
       }
     }
 
-    return { data: null, error: { message: err.message } }
+    return { data: null, error: { message: translateError(err.message, 'Error al crear la cuenta') } }
   }
 }
 
@@ -126,7 +128,7 @@ export async function signOut() {
     await pocketbase.authStore.clear()
     return { error: null }
   } catch (error: any) {
-    return { error: { message: error.message } }
+    return { error: { message: translateError(error.message, 'Error al cerrar sesión') } }
   }
 }
 
@@ -155,7 +157,7 @@ export async function confirmEmail(token: string) {
     }
   } catch (err: any) {
     console.error('Error confirmando email:', err)
-    return { data: null, error: { message: err.message } }
+    return { data: null, error: { message: translateError(err.message, 'Error al confirmar el correo electrónico') } }
   }
 }
 
@@ -169,7 +171,7 @@ export async function resetPassword(email: string) {
   } catch (error: any) {
     return {
       data: null,
-      error: { message: error.message }
+      error: { message: translateError(error.message, 'Error al solicitar restablecimiento de contraseña') }
     }
   }
 }
@@ -182,7 +184,7 @@ export async function updatePassword(newPassword: string) {
     if (!pocketbase.authStore.model) {
       return {
         data: null,
-        error: { message: 'No user authenticated' }
+        error: { message: 'No hay un usuario autenticado' }
       }
     }
 
@@ -195,7 +197,7 @@ export async function updatePassword(newPassword: string) {
   } catch (error: any) {
     return {
       data: null,
-      error: { message: error.message }
+      error: { message: translateError(error.message, 'Error al actualizar la contraseña') }
     }
   }
 }

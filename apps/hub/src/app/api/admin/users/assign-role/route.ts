@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
         const { userId, roleId } = await request.json();
 
         if (!userId || !roleId) {
-            return NextResponse.json({ error: 'Missing userId or roleId' }, { status: 400 });
+            return NextResponse.json({ error: 'Falta el ID de usuario o el ID de rol' }, { status: 400 });
         }
 
         const pb = await createAdminClient();
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
         console.error('Error assigning role:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to assign role' },
+            { error: error.message || 'Error al asignar el rol' },
             { status: 500 }
         );
     }

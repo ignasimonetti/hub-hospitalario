@@ -44,16 +44,24 @@ export default function LoginPage() {
 
     if (error) {
       let errorMessage = "Error al iniciar sesión";
+      const rawError = error.message?.toLowerCase() || "";
 
-      if (error.message?.includes("Invalid login credentials")) {
+      if (
+        rawError.includes("failed to authenticate") ||
+        rawError.includes("invalid login credentials") ||
+        rawError.includes("something went wrong while processing your request") ||
+        rawError.includes("invalid record")
+      ) {
         errorMessage = "Email o contraseña incorrectos";
-      } else if (error.message?.includes("Email not confirmed")) {
-        errorMessage = "Debes confirmar tu email antes de iniciar sesión";
-      } else if (error.message?.includes("User not found")) {
-        errorMessage = "No existe una cuenta con este email";
-      } else if (error.message?.includes("Too many requests")) {
-        errorMessage = "Demasiados intentos. Intenta más tarde";
-      } else if (error.message) {
+      } else if (rawError.includes("email not confirmed") || rawError.includes("not verified")) {
+        errorMessage = "Debes confirmar tu correo electrónico antes de iniciar sesión";
+      } else if (rawError.includes("user not found") || rawError.includes("record does not exist")) {
+        errorMessage = "No existe una cuenta registrada con este correo";
+      } else if (rawError.includes("too many requests")) {
+        errorMessage = "Demasiados intentos fallidos. Intenta nuevamente más tarde";
+      } else if (rawError.includes("failed to fetch") || rawError.includes("networkerror")) {
+        errorMessage = "No se pudo conectar con el servidor. Revisa tu conexión a internet";
+      } else if (error.message && typeof error.message === 'string' && !error.message.includes("http")) {
         errorMessage = error.message;
       }
 

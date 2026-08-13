@@ -122,18 +122,18 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
                         )}
                       </div>
                       
-                      {/* Logo institucional oficial dentro de la tarjeta */}
-                      <div className="shrink-0 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/80 flex items-center justify-center shadow-sm">
+                      {/* Logo institucional oficial dentro de la tarjeta - Tamaño Generoso */}
+                      <div className="shrink-0 p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shadow-sm">
                         {isCISB ? (
                           <Image
                             src="/assets/cisb.png"
                             alt="Centro Integral de Salud Banda"
-                            width={80}
-                            height={40}
-                            className="h-9 w-auto max-w-[90px] object-contain"
+                            width={140}
+                            height={60}
+                            className="h-12 md:h-14 w-auto max-w-[130px] md:max-w-[150px] object-contain"
                           />
                         ) : (
-                          <Building2 className="w-7 h-7 text-sky-600 dark:text-sky-400" />
+                          <Building2 className="w-8 h-8 text-sky-600 dark:text-sky-400" />
                         )}
                       </div>
                     </div>

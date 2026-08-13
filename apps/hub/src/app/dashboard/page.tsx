@@ -46,14 +46,22 @@ export default function DashboardPage() {
       fetch("/api/auth/profile")
         .then((res) => res.json())
         .then((data) => {
-          const name =
-            data.firstName ||
-            data.first_name ||
-            data.name ||
+          const profileUser = data.user || data;
+          const rawName =
+            profileUser.firstName ||
+            profileUser.first_name ||
+            profileUser.name ||
+            currentUser.firstName ||
+            currentUser.first_name ||
+            currentUser.name ||
             "";
-          if (name) {
-            const first = name.split(" ")[0];
-            setFirstName(first.charAt(0).toUpperCase() + first.slice(1).toLowerCase());
+          if (rawName) {
+            // Si viene un mail por error o fallback, no tomar el mail
+            const cleanName = rawName.includes("@") ? rawName.split("@")[0] : rawName;
+            const first = cleanName.split(" ")[0].replace(/[0-9]/g, '');
+            if (first) {
+              setFirstName(first.charAt(0).toUpperCase() + first.slice(1).toLowerCase());
+            }
           }
         })
         .catch((err) => console.error("Failed to load profile:", err));

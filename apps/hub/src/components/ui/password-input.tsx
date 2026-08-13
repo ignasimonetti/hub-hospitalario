@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 interface PasswordInputProps {
   id: string;
-  label: string;
+  label?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -39,14 +39,13 @@ export function PasswordInput({
     setShowPassword(!showPassword);
   };
 
-  // Validación de coincidencia de contraseñas
   const passwordsMatch = confirmValue !== undefined ? value === confirmValue : true;
   const hasMismatch = confirmValue !== undefined && value && confirmValue && !passwordsMatch;
 
   return (
-    <div className={cn("grid gap-2", className)}>
-      <div className="relative">
-        <Label htmlFor={id}>{label}</Label>
+    <div className={cn("space-y-1.5", className)}>
+      {label && <Label htmlFor={id}>{label}</Label>}
+      <div className="relative flex items-center">
         <Input
           id={id}
           type={showPassword ? "text" : "password"}
@@ -63,10 +62,7 @@ export function PasswordInput({
         <button
           type="button"
           onClick={togglePasswordVisibility}
-          className={cn(
-            "absolute right-3 top-8 h-4 w-4 text-gray-500 hover:text-gray-700",
-            "focus:outline-none focus:text-gray-700 transition-colors"
-          )}
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none transition-colors"
           tabIndex={-1}
         >
           {showPassword ? (
@@ -77,9 +73,8 @@ export function PasswordInput({
         </button>
       </div>
 
-      {/* Mostrar confirmación de contraseña */}
       {showConfirm && (
-        <div className="relative">
+        <div className="relative flex items-center mt-2">
           <Input
             id={`${id}-confirm`}
             type={showPassword ? "text" : "password"}
@@ -93,26 +88,23 @@ export function PasswordInput({
               hasMismatch && "border-red-500 focus:border-red-500"
             )}
           />
-          <div className="absolute right-3 top-8 h-4 w-4" />
         </div>
       )}
 
-      {/* Mostrar errores */}
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+        <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
           {error}
         </div>
       )}
       
       {hasMismatch && (
-        <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+        <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
           Las contraseñas no coinciden
         </div>
       )}
 
-      {/* Mostrar mensaje de coincidencia exitosa */}
       {showConfirm && confirmValue && passwordsMatch && value && (
-        <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
+        <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
           ✓ Las contraseñas coinciden
         </div>
       )}
@@ -120,10 +112,9 @@ export function PasswordInput({
   );
 }
 
-// Componente específico para campos simples sin confirmación
 interface SimplePasswordInputProps {
   id: string;
-  label: string;
+  label?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;

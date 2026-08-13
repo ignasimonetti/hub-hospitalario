@@ -155,8 +155,8 @@ export default function LoginPage() {
         </Card>
       </motion.div>
 
-      {/* Logotipos Institucionales Oficiales Destacados */}
-      <div className="flex items-center justify-center space-x-12 z-10 mt-4 opacity-90 hover:opacity-100 transition-opacity">
+      {/* Logotipos Institucionales Oficiales Destacados - Responsive */}
+      <div className="flex flex-wrap items-center justify-center gap-6 md:gap-12 z-10 mt-4 px-4 opacity-90 hover:opacity-100 transition-opacity max-w-full">
         {logos.map((logo, index) => (
           <motion.div
             key={index}
@@ -169,7 +169,7 @@ export default function LoginPage() {
               alt={logo.alt}
               width={logo.width}
               height={logo.height}
-              className="object-contain h-20 max-w-[200px] w-auto drop-shadow-sm transition-transform duration-300 hover:scale-105"
+              className="object-contain h-14 md:h-20 max-w-[140px] md:max-w-[200px] w-auto drop-shadow-sm transition-transform duration-300 hover:scale-105"
             />
           </motion.div>
         ))}

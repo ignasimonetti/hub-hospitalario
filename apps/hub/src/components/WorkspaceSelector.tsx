@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { MapPin, Phone, ArrowRight } from "lucide-react";
+import { MapPin, Phone, ArrowRight, Building2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,23 +77,8 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
         transition={{ duration: 0.5 }}
         className="w-full max-w-4xl relative z-10"
       >
-        {/* Header with CISB Logo */}
-        <div className="text-center mb-10 flex flex-col items-center">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
-            className="mb-4"
-          >
-            <Image
-              src="/assets/cisb.png"
-              alt="CISB Logo"
-              width={160}
-              height={50}
-              className="h-14 w-auto object-contain dark:brightness-110"
-              priority
-            />
-          </motion.div>
+        {/* Header (sin el logo superior para no ser repetitivo) */}
+        <div className="text-center mb-8 flex flex-col items-center">
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Seleccionar Espacio de Trabajo
           </h1>
@@ -102,11 +87,12 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
           </p>
         </div>
 
-        {/* Workspace Cards */}
+        {/* Workspace Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Object.entries(tenantRoles).map(([tenantId, workspaceData]: [string, any], index) => {
             const { tenant, roles } = workspaceData;
             const isSelected = selectedWorkspace === tenantId;
+            const isCISB = tenant.name?.toLowerCase().includes("banda") || tenant.name?.toLowerCase().includes("cisb") || tenant.code?.toLowerCase().includes("cisb");
 
             return (
               <motion.div
@@ -124,15 +110,30 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
                   onClick={() => handleWorkspaceSelect(tenantId)}
                 >
                   <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                        <CardTitle className="text-base md:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1 leading-snug">
                           {tenant.name}
                         </CardTitle>
                         {tenant.code && (
                           <CardDescription className="text-xs text-sky-600 dark:text-sky-400 font-medium tracking-wide uppercase">
                             {tenant.code}
                           </CardDescription>
+                        )}
+                      </div>
+                      
+                      {/* Logo institucional dentro de la tarjeta */}
+                      <div className="shrink-0 p-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/80 flex items-center justify-center">
+                        {isCISB ? (
+                          <Image
+                            src="/assets/cisb.png"
+                            alt="CISB Logo"
+                            width={54}
+                            height={28}
+                            className="h-7 w-auto object-contain"
+                          />
+                        ) : (
+                          <Building2 className="w-6 h-6 text-sky-600 dark:text-sky-400" />
                         )}
                       </div>
                     </div>
@@ -174,19 +175,15 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
                       </div>
                     )}
 
-                    {/* Action Button */}
+                    {/* Action Button: "Seleccionar" con estilo coherente sky-600 */}
                     <Button
-                      className={`w-full mt-2 transition-all ${
-                        isSelected
-                          ? 'bg-sky-600 hover:bg-sky-700 text-white'
-                          : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-sky-600 dark:hover:bg-sky-500 dark:hover:text-white'
-                      }`}
+                      className={`w-full mt-2 transition-colors font-medium text-sm py-2 bg-sky-600 hover:bg-sky-700 text-white shadow-sm`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleWorkspaceSelect(tenantId);
                       }}
                     >
-                      <span>Ingresar</span>
+                      <span>Seleccionar</span>
                       <ArrowRight className="w-4 h-4 ml-1.5" />
                     </Button>
                   </CardContent>

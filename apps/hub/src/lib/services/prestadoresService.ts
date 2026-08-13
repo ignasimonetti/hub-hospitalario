@@ -11,12 +11,17 @@ export async function getPrestadorPerfil(): Promise<PrestadorPerfil | null> {
 
     const record = await pocketbase
       .collection('prestadores_perfiles')
-      .getFirstListItem<PrestadorPerfil>(`user = "${user.id}"`);
+      .getFirstListItem<PrestadorPerfil>(`user = "${user.id}"`, {
+        requestKey: null, // Desactiva la autocancelación por re-render de React
+      });
 
     return record;
   } catch (error: any) {
     if (error?.status === 404) {
       return null; // Aún no tiene perfil cargado
+    }
+    if (error?.isAbort || error?.message?.includes('autocancelled')) {
+      return null; // Cancelación benigna por desmontaje de componente
     }
     console.error('Error fetching prestador perfil:', error);
     return null;
@@ -38,15 +43,22 @@ export async function savePrestadorPerfil(
     if (existing) {
       const updated = await pocketbase
         .collection('prestadores_perfiles')
-        .update<PrestadorPerfil>(existing.id, data);
+        .update<PrestadorPerfil>(existing.id, data, {
+          requestKey: null,
+        });
       return updated;
     } else {
       const created = await pocketbase
         .collection('prestadores_perfiles')
-        .create<PrestadorPerfil>({
-          ...data,
-          user: user.id,
-        });
+        .create<PrestadorPerfil>(
+          {
+            ...data,
+            user: user.id,
+          },
+          {
+            requestKey: null,
+          }
+        );
       return created;
     }
   } catch (error: any) {
@@ -74,10 +86,14 @@ export async function getMisPrestaciones(tenantId?: string): Promise<PrestacionP
         filter,
         sort: '-created',
         expand: 'tenant,user',
+        requestKey: null, // Desactiva la autocancelación por re-render
       });
 
     return records;
   } catch (error: any) {
+    if (error?.isAbort || error?.message?.includes('autocancelled')) {
+      return [];
+    }
     console.error('Error fetching presentaciones:', error);
     return [];
   }

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { resetPassword, pocketbase } from '../../../../lib/auth'
+import { resetPassword } from '../../../../lib/auth'
+import { createAdminClient } from '../../../../lib/pocketbase-admin'
 import { sendPasswordResetEmail } from '../../../../lib/resend'
 
 const generateEmailConfirmationToken = (userId: string, email: string) => {
-  return `token-${userId}-${Date.now()}`
+  const b64Email = Buffer.from(email).toString('base64url')
+  return `token-${userId}-${b64Email}-${Date.now()}`
 }
 
 export async function POST(request: NextRequest) {
@@ -19,21 +21,27 @@ export async function POST(request: NextRequest) {
 
     console.log('Password reset request for email:', email)
 
-    // Search for user in PocketBase users collection
-    const user = await pocketbase.collection('auth_users').getList(1, 1, {
-      filter: `email = "${email}"`
-    })
+    // Usar Admin Client para bypass de reglas de PocketBase al buscar usuario
+    let pbAdmin;
+    let userItems: any[] = [];
+    try {
+      pbAdmin = await createAdminClient();
+      const userRes = await pbAdmin.collection('auth_users').getList(1, 1, {
+        filter: `email = "${email}"`
+      });
+      userItems = userRes.items;
+    } catch (pbAdminErr) {
+      console.warn('[forgot-password] Admin client fetch failed, falling back to public query:', pbAdminErr);
+    }
 
     let userId = null
     let firstName = ''
 
-    if (user.items.length > 0) {
-      userId = user.items[0].id
-      firstName = user.items[0].first_name || ''
+    if (userItems.length > 0) {
+      userId = userItems[0].id
+      firstName = userItems[0].firstName || userItems[0].first_name || ''
       console.log('Found user with ID:', userId)
     } else {
-      // For security, we don't reveal if user exists or not
-      // but we still process the request to prevent enumeration
       console.log('User not found, but processing request for security')
     }
 
@@ -46,22 +54,21 @@ export async function POST(request: NextRequest) {
     // Send password reset email using Resend
     try {
       await sendPasswordResetEmail(email, resetUrl, firstName)
-      console.log('Password reset email sent successfully')
+      console.log('Password reset email sent successfully via Resend')
     } catch (emailError) {
-      console.error('Error sending password reset email:', emailError)
+      console.error('Error sending password reset email via Resend:', emailError)
       return NextResponse.json(
         { error: 'Error al enviar el email de recuperación' },
         { status: 500 }
       )
     }
 
-    // Also trigger PocketBase password reset for additional security
-    if (user.items.length > 0) {
+    // Also trigger PocketBase password reset if admin client is available
+    if (userItems.length > 0) {
       try {
         await resetPassword(email)
       } catch (pbError) {
         console.error('PocketBase password reset error:', pbError)
-        // Don't fail the request if PocketBase reset fails
       }
     }
 

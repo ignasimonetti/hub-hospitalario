@@ -284,7 +284,7 @@ export default function SignupPage() {
                 <PasswordInput
                   id="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(val) => setPassword(val)}
                   className={fieldErrors.password ? "border-red-500" : ""}
                 />
                 {fieldErrors.password && (
@@ -299,7 +299,7 @@ export default function SignupPage() {
                 <PasswordInput
                   id="confirmPassword"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(val) => setConfirmPassword(val)}
                   className={fieldErrors.confirmPassword ? "border-red-500" : ""}
                 />
                 {fieldErrors.confirmPassword && (

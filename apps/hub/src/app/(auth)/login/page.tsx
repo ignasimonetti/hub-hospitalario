@@ -28,7 +28,6 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
 
-    // Validación básica antes del envío
     if (!email || !password) {
       setError("Por favor completa todos los campos");
       setIsLoading(false);
@@ -44,7 +43,6 @@ export default function LoginPage() {
     const { error } = await signInWithEmail(email, password);
 
     if (error) {
-      // Interpretar errores de Supabase
       let errorMessage = "Error al iniciar sesión";
 
       if (error.message?.includes("Invalid login credentials")) {
@@ -61,9 +59,6 @@ export default function LoginPage() {
 
       setError(errorMessage);
     } else {
-      // Login exitoso - redirigir al dashboard
-      console.log("Login successful!");
-      // Resetear el temporizador de sesión para evitar logout inmediato por sesión antigua
       localStorage.setItem('session_start', Date.now().toString());
       window.location.href = "/dashboard";
     }
@@ -72,15 +67,15 @@ export default function LoginPage() {
   };
 
   const logos = [
-    { src: "/assets/cisb.png", alt: "Logo CISB", width: 150, height: 50 },
-    { src: "/assets/ministerio.png", alt: "Logo Ministerio", width: 150, height: 50 },
-    { src: "/assets/sde.png", alt: "Logo SDE", width: 150, height: 50 },
+    { src: "/assets/cisb.png", alt: "Logo CISB", width: 220, height: 75 },
+    { src: "/assets/ministerio.png", alt: "Logo Ministerio", width: 220, height: 75 },
+    { src: "/assets/sde.png", alt: "Logo SDE", width: 220, height: 75 },
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-950 dark:to-slate-900 p-4">
-      {/* Background Decorative Elements (Optional for Premium Feel) */}
-      <div className="absolute inset-0 bg-grid-slate-200 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-800/20 dark:[mask-image:linear-gradient(0deg,rgba(255,255,255,0.1),rgba(255,255,255,0.5))] pointer-events-none" />
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 p-4 relative overflow-hidden">
+      {/* Glow ambiental de fondo */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-sky-200/40 dark:bg-sky-900/20 blur-[120px] rounded-full pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -88,63 +83,71 @@ export default function LoginPage() {
         transition={{ duration: 0.3 }}
         className="w-full max-w-sm z-10"
       >
-        <Card className="w-full mb-8 shadow-2xl border-0 ring-1 ring-gray-200 dark:ring-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-2xl text-center font-bold text-gray-900 dark:text-slate-100">Login</CardTitle>
-            <CardDescription className="text-center dark:text-slate-400">
-              Ingresa tu email y contraseña para acceder a la intranet.
+        <Card className="w-full mb-10 border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-xl rounded-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              Hub Hospitalario
+            </CardTitle>
+            <CardDescription className="text-slate-500 dark:text-slate-400">
+              Ingresa tu correo y contraseña institucional
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="usuario@hospital.com"
+                placeholder="usuario@cisb.gob.ar"
                 required
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  if (error) setError(""); // Limpiar error al escribir
+                  if (error) setError("");
                 }}
                 disabled={isLoading}
-                className="bg-white dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-400"
+                className="bg-white dark:bg-slate-950 dark:text-white"
               />
             </div>
-            <SimplePasswordInput
-              id="password"
-              label="Contraseña"
-              value={password}
-              onChange={(value) => {
-                setPassword(value);
-                if (error) setError(""); // Limpiar error al escribir
-              }}
-              placeholder="Ingresa tu contraseña"
-              required
-              disabled={isLoading}
-            />
+            <div className="grid gap-2">
+              <Label htmlFor="password" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                Contraseña
+              </Label>
+              <SimplePasswordInput
+                id="password"
+                value={password}
+                onChange={(value) => {
+                  setPassword(value);
+                  if (error) setError("");
+                }}
+                placeholder="Ingresa tu contraseña"
+                required
+                disabled={isLoading}
+              />
+            </div>
 
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 p-3 rounded-lg border border-red-200 dark:border-red-800/50 flex items-center gap-2">
+              <div className="text-xs text-red-600 bg-red-50 dark:bg-red-950/50 p-3 rounded-lg border border-red-200 dark:border-red-800 flex items-center gap-2">
                 <span>⚠️</span> {error}
               </div>
             )}
           </CardContent>
-          <CardFooter className="flex flex-col">
+          <CardFooter className="flex flex-col space-y-4">
             <Button
-              className="w-full text-base py-5 shadow-sm hover:shadow-md transition-all text-slate-900 dark:text-white"
+              className="w-full bg-sky-600 hover:bg-sky-700 text-white font-medium py-2.5 shadow-sm transition-colors"
               onClick={handleLogin}
               disabled={isLoading}
             >
               {isLoading ? "Iniciando sesión..." : "Ingresar"}
             </Button>
-            <div className="mt-6 text-center text-sm space-x-2">
-              <Link href="/signup" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline font-medium transition-colors">
+            <div className="flex items-center justify-center space-x-2 text-xs">
+              <Link href="/signup" className="text-sky-600 hover:text-sky-700 dark:text-sky-400 font-semibold hover:underline">
                 Registrarse
               </Link>
-              <span className="text-gray-300 dark:text-slate-700">|</span>
-              <Link href="/forgot-password" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:underline font-medium transition-colors">
+              <span className="text-slate-300 dark:text-slate-700">•</span>
+              <Link href="/forgot-password" className="text-slate-500 hover:text-slate-700 dark:text-slate-400 hover:underline">
                 Olvidé mi contraseña
               </Link>
             </div>
@@ -152,20 +155,21 @@ export default function LoginPage() {
         </Card>
       </motion.div>
 
-      <div className="flex items-center space-x-8 z-10 opacity-80 hover:opacity-100 transition-opacity">
+      {/* Logotipos Institucionales Oficiales Destacados */}
+      <div className="flex items-center justify-center space-x-12 z-10 mt-4 opacity-90 hover:opacity-100 transition-opacity">
         {logos.map((logo, index) => (
           <motion.div
             key={index}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 + (index * 0.1), duration: 0.5 }}
+            transition={{ delay: 0.3 + (index * 0.1), duration: 0.4 }}
           >
             <Image
               src={logo.src}
               alt={logo.alt}
               width={logo.width}
               height={logo.height}
-              className="object-contain h-20 w-auto grayscaleHover transition-all duration-300 dark:invert dark:hue-rotate-180"
+              className="object-contain h-20 max-w-[200px] w-auto drop-shadow-sm transition-transform duration-300 hover:scale-105"
             />
           </motion.div>
         ))}

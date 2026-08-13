@@ -17,12 +17,13 @@ import {
     PanelLeftOpen,
     LifeBuoy,
     FolderOpen,
-    Package
+    Package,
+    Stethoscope
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AppSidebarProps {
-    currentPage?: 'dashboard' | 'blog' | 'admin' | 'expedientes' | 'supply';
+    currentPage?: 'dashboard' | 'blog' | 'admin' | 'expedientes' | 'supply' | 'prestadores';
     isMobile?: boolean;
     onMobileClose?: () => void;
 }
@@ -224,6 +225,19 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
                                 {showContent && <span>Suministros</span>}
                             </button>
                         )}
+
+                        {/* Portal de Prestadores */}
+                        <button
+                            className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'prestadores'
+                                ? 'text-gray-900 dark:text-slate-100 bg-sky-50 dark:bg-sky-900/30 rounded-lg border border-sky-200 dark:border-sky-700'
+                                : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
+                                } transition-colors`}
+                            title={!showContent ? 'Portal de Prestadores' : undefined}
+                            onClick={() => handleNavigation('/modules/prestadores')}
+                        >
+                            <Stethoscope className="h-4 w-4 text-sky-600 dark:text-sky-400 flex-shrink-0" />
+                            {showContent && <span>Portal de Prestadores</span>}
+                        </button>
 
                         {/* Admin Section */}
                         {isAdmin && (

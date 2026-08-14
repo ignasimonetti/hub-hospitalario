@@ -58,7 +58,8 @@ import {
   Plus,
   Trash2,
   Building2,
-  Stethoscope,
+  Activity,
+  CalendarClock,
   Clock,
   UserCheck,
   ClipboardList,
@@ -554,9 +555,9 @@ export function ModalNuevaPrestacion({
                   }`}
                 >
                   {serviceType === "guardia" ? (
-                    <Stethoscope className="w-5 h-5" />
+                    <Activity className="w-5 h-5" />
                   ) : (
-                    <Clock className="w-5 h-5" />
+                    <CalendarClock className="w-5 h-5" />
                   )}
                 </div>
                 <div>

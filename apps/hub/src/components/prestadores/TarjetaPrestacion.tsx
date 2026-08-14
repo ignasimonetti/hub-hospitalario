@@ -14,7 +14,8 @@ import {
   ChevronRight,
   AlertCircle,
   Clock,
-  Stethoscope,
+  Activity,
+  CalendarClock,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -77,9 +78,9 @@ export function TarjetaPrestacion({ prestacion, onClick }: TarjetaPrestacionProp
                 }`}
               >
                 {isGuardia ? (
-                  <Stethoscope className="w-5 h-5" />
+                  <Activity className="w-5 h-5" />
                 ) : isEH ? (
-                  <Clock className="w-5 h-5" />
+                  <CalendarClock className="w-5 h-5" />
                 ) : (
                   <FileText className="w-5 h-5" />
                 )}

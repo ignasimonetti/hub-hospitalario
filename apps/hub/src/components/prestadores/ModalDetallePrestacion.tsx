@@ -31,7 +31,8 @@ import {
   Building2,
   CheckCircle2,
   Edit3,
-  Stethoscope,
+  Activity,
+  CalendarClock,
   ClipboardList,
 } from "lucide-react";
 
@@ -113,9 +114,9 @@ export function ModalDetallePrestacion({
                 }`}
               >
                 {prestacion.service_type === "guardia" ? (
-                  <Stethoscope className="w-5 h-5" />
+                  <Activity className="w-5 h-5" />
                 ) : (
-                  <Clock className="w-5 h-5" />
+                  <CalendarClock className="w-5 h-5" />
                 )}
               </div>
               <div>

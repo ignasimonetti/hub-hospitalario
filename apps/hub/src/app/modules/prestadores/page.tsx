@@ -374,7 +374,7 @@ export default function PrestadoresPage() {
                 </p>
                 <Button
                   size="sm"
-                  onClick={() => setModalNuevaOpen(true)}
+                  onClick={() => setModalSelectorOpen(true)}
                   className="bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs rounded-xl shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5 mr-1.5" /> Crear Presentación

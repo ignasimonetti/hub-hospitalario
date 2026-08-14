@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       // @ts-ignore
       const userId = data.user.id;
       const confirmationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/confirm?token=${userId}`;
-      await sendEmailConfirmation(email, confirmationUrl, first_name, last_name);
+      await sendEmailConfirmation(email, confirmationUrl, firstName, lastName);
       console.log('Confirmation email sent successfully');
     } catch (emailError) {
       console.error('Error sending confirmation email:', emailError);

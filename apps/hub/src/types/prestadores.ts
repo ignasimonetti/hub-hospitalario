@@ -68,6 +68,8 @@ export interface DetalleFacturaItem {
   number: string;
   date: string;
   amount: number;
+  service_days_type?: TipoDiasPrestacion;
+  service_days_detail?: string;
   file_name?: string;
 }
 

@@ -71,6 +71,8 @@ interface FacturaFormItem {
   number: string;
   date: string;
   amount: string;
+  service_days_type: TipoDiasPrestacion;
+  service_days_detail: string;
   file: File | null;
 }
 
@@ -109,13 +111,15 @@ export function ModalNuevaPrestacion({
     observadaParaReenviar ? observadaParaReenviar.period_year : currentYear
   );
 
-  // Lista de Facturas (soporta múltiples facturas para respetar el tope de $800.000)
+  // Lista de Facturas (cada comprobante es autocontenido: número, fecha, monto, días y PDF)
   const [facturas, setFacturas] = useState<FacturaFormItem[]>([
     {
       id: "fac-1",
       number: observadaParaReenviar ? observadaParaReenviar.invoice_number : "",
       date: observadaParaReenviar ? observadaParaReenviar.invoice_date.split("T")[0] : "",
       amount: observadaParaReenviar ? String(observadaParaReenviar.invoice_amount) : "",
+      service_days_type: observadaParaReenviar ? observadaParaReenviar.service_days_type : "mes_completo",
+      service_days_detail: observadaParaReenviar ? observadaParaReenviar.service_days_detail || "" : "",
       file: null,
     },
   ]);
@@ -126,17 +130,11 @@ export function ModalNuevaPrestacion({
   const [hospitalService, setHospitalService] = useState<SectorServicio>(
     (observadaParaReenviar?.hospital_service as SectorServicio) || "clinica_medica"
   );
-  const [serviceDaysType, setServiceDaysType] = useState<TipoDiasPrestacion>(
-    observadaParaReenviar ? observadaParaReenviar.service_days_type : "mes_completo"
-  );
-  const [serviceDaysDetail, setServiceDaysDetail] = useState(
-    observadaParaReenviar ? observadaParaReenviar.service_days_detail || "" : ""
-  );
   const [conductaDueDate, setConductaDueDate] = useState(
     observadaParaReenviar ? observadaParaReenviar.conducta_fiscal_due_date.split("T")[0] : ""
   );
 
-  // Archivos PDF fijos
+  // Archivos PDF complementarios
   const [fileConducta, setFileConducta] = useState<File | null>(null);
   const [fileProof, setFileProof] = useState<File | null>(null);
 
@@ -152,6 +150,8 @@ export function ModalNuevaPrestacion({
         number: "",
         date: facturas[0]?.date || new Date().toISOString().split("T")[0],
         amount: "",
+        service_days_type: "mes_completo",
+        service_days_detail: "",
         file: null,
       },
     ]);
@@ -165,7 +165,7 @@ export function ModalNuevaPrestacion({
   const handleUpdateFactura = (
     id: string,
     field: keyof FacturaFormItem,
-    value: string | File | null
+    value: string | File | null | TipoDiasPrestacion
   ) => {
     setFacturas((prev) =>
       prev.map((f) => (f.id === id ? { ...f, [field]: value } : f))
@@ -229,37 +229,42 @@ export function ModalNuevaPrestacion({
   const handlePromptConfirm = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validar cada factura
+    // Validar cada factura individual
     for (let i = 0; i < facturas.length; i++) {
       const fac = facturas[i];
       const facNum = i + 1;
 
       if (!fac.number.trim()) {
-        toast.error(`Ingresa el número para la Factura #${facNum}`);
+        toast.error(`Ingresa el número para el Comprobante #${facNum}`);
         return;
       }
       if (!fac.date) {
-        toast.error(`Ingresa la fecha de emisión para la Factura #${facNum}`);
+        toast.error(`Ingresa la fecha de emisión para el Comprobante #${facNum}`);
         return;
       }
 
       const numAmount = parseFloat(fac.amount);
       if (isNaN(numAmount) || numAmount <= 0) {
-        toast.error(`Ingresa un monto válido mayor a 0 para la Factura #${facNum}`);
+        toast.error(`Ingresa un monto válido mayor a 0 para el Comprobante #${facNum}`);
         return;
       }
 
       if (numAmount > MAX_INVOICE_AMOUNT) {
         toast.error(
-          `La Factura #${facNum} (${formatMoney(numAmount)}) supera el límite normativo de ${formatMoney(
+          `El Comprobante #${facNum} (${formatMoney(numAmount)}) supera el límite normativo de ${formatMoney(
             MAX_INVOICE_AMOUNT
           )}. Reduce el importe y agrega otra factura con el botón '+ Agregar otra factura'.`
         );
         return;
       }
 
+      if (fac.service_days_type !== "mes_completo" && !fac.service_days_detail.trim()) {
+        toast.error(`Por favor especifica los días trabajados para el Comprobante #${facNum}`);
+        return;
+      }
+
       if (!observadaParaReenviar && !fac.file) {
-        toast.error(`Debes adjuntar el archivo PDF de la Factura #${facNum}`);
+        toast.error(`Debes adjuntar el archivo PDF del Comprobante #${facNum}`);
         return;
       }
     }
@@ -269,7 +274,7 @@ export function ModalNuevaPrestacion({
       return;
     }
 
-    // Validar archivos fijos
+    // Validar archivos fijos complementarios
     if (!observadaParaReenviar) {
       if (!fileConducta) {
         toast.error("Debes adjuntar el PDF de la Conducta Fiscal");
@@ -279,12 +284,6 @@ export function ModalNuevaPrestacion({
         toast.error("Debes adjuntar la Constancia/Planilla de Prestación");
         return;
       }
-    }
-
-    // Validar detalle de días si no es mes completo
-    if (serviceDaysType !== "mes_completo" && !serviceDaysDetail.trim()) {
-      toast.error("Por favor especifica los días o el rango de fechas trabajadas");
-      return;
     }
 
     // Abrir diálogo de confirmación
@@ -298,6 +297,28 @@ export function ModalNuevaPrestacion({
     const invoiceNumbers = facturas.map((f) => f.number.trim()).join(", ");
     const primaryDate = facturas[0]?.date || new Date().toISOString().split("T")[0];
 
+    const detail = facturas.map((f) => ({
+      number: f.number.trim(),
+      date: f.date,
+      amount: parseFloat(f.amount) || 0,
+      service_days_type: f.service_days_type,
+      service_days_detail:
+        f.service_days_type === "mes_completo"
+          ? `Mes completo (${MESES.find((m) => m.value === periodMonth)?.label} ${periodYear})`
+          : f.service_days_detail.trim(),
+      file_name: f.file?.name || "",
+    }));
+
+    const combinedDaysDetail = facturas
+      .map((f, i) => {
+        const desc =
+          f.service_days_type === "mes_completo"
+            ? "Mes completo"
+            : f.service_days_detail.trim();
+        return facturas.length > 1 ? `[Fac ${f.number || i + 1}]: ${desc}` : desc;
+      })
+      .join(" | ");
+
     const formData = new FormData();
     formData.append("tenant", tenantId);
     formData.append("period_month", String(periodMonth));
@@ -307,13 +328,8 @@ export function ModalNuevaPrestacion({
     formData.append("invoice_amount", String(totalInvoiceAmount));
     formData.append("service_type", serviceType);
     formData.append("hospital_service", hospitalService);
-    formData.append("service_days_type", serviceDaysType);
-    formData.append(
-      "service_days_detail",
-      serviceDaysType === "mes_completo"
-        ? `Mes completo (${MESES.find((m) => m.value === periodMonth)?.label} ${periodYear})`
-        : serviceDaysDetail.trim()
-    );
+    formData.append("service_days_type", facturas[0]?.service_days_type || "mes_completo");
+    formData.append("service_days_detail", combinedDaysDetail);
     formData.append("conducta_fiscal_due_date", conductaDueDate);
 
     // Adjuntar primera factura al campo principal
@@ -321,13 +337,6 @@ export function ModalNuevaPrestacion({
       formData.append("file_invoice", facturas[0].file);
     }
 
-    // Guardar detalle estructurado de todas las facturas
-    const detail = facturas.map((f) => ({
-      number: f.number.trim(),
-      date: f.date,
-      amount: parseFloat(f.amount) || 0,
-      file_name: f.file?.name || "",
-    }));
     formData.append("invoices_detail", JSON.stringify(detail));
 
     if (fileConducta) formData.append("file_conducta_fiscal", fileConducta);
@@ -372,7 +381,7 @@ export function ModalNuevaPrestacion({
           <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
             {observadaParaReenviar
               ? "Reemplaza los documentos observados y reenvía tu liquidación para revisión."
-              : "Completa los datos de tu comprobante y adjunta los 3 archivos PDF requeridos."}
+              : "Completa los datos de tus comprobantes y adjunta los archivos PDF requeridos."}
           </DialogDescription>
         </DialogHeader>
 
@@ -471,77 +480,21 @@ export function ModalNuevaPrestacion({
                 </Select>
               </div>
             </div>
-
-            {/* Selector Ágil de Días de Prestación */}
-            <div className="space-y-2 pt-1">
-              <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                Días Trabajados
-              </Label>
-              <div className="grid grid-cols-3 gap-1.5 bg-slate-200/60 dark:bg-slate-900 p-1 rounded-lg">
-                <button
-                  type="button"
-                  onClick={() => setServiceDaysType("mes_completo")}
-                  className={`py-1.5 px-2 text-xs font-medium rounded-md transition-all ${
-                    serviceDaysType === "mes_completo"
-                      ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
-                  }`}
-                >
-                  Mes Completo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setServiceDaysType("rango_fechas")}
-                  className={`py-1.5 px-2 text-xs font-medium rounded-md transition-all ${
-                    serviceDaysType === "rango_fechas"
-                      ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
-                  }`}
-                >
-                  Rango de Fechas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setServiceDaysType("dias_especificos")}
-                  className={`py-1.5 px-2 text-xs font-medium rounded-md transition-all ${
-                    serviceDaysType === "dias_especificos"
-                      ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
-                  }`}
-                >
-                  Días Puntuales
-                </button>
-              </div>
-
-              {serviceDaysType !== "mes_completo" && (
-                <Input
-                  placeholder={
-                    serviceDaysType === "rango_fechas"
-                      ? "Ej. Desde el 05/07 hasta el 20/07"
-                      : "Ej. Guardias 24hs: 04, 11, 18 y 25 de Julio"
-                  }
-                  value={serviceDaysDetail}
-                  onChange={(e) => setServiceDaysDetail(e.target.value)}
-                  className="h-9 text-xs bg-white dark:bg-slate-900"
-                />
-              )}
-            </div>
           </div>
 
-          {/* Bloque 2: Datos de la Factura AFIP */}
-          {/* Bloque 2: Facturación AFIP (Tope máx: $800.000 por comprobante) */}
+          {/* Bloque 2: Facturación (Tope máx: $800.000 por comprobante) */}
           <div className="p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-600" /> Facturación AFIP
+                <DollarSign className="w-3.5 h-3.5 text-emerald-600" /> Facturación
               </h4>
               <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
                 Tope máx: {formatMoney(MAX_INVOICE_AMOUNT)} por factura
               </span>
             </div>
 
-            {/* Listado de Facturas (Repeater) */}
-            <div className="space-y-3">
+            {/* Listado de Facturas (Repeater Autocontenido) */}
+            <div className="space-y-3.5">
               {facturas.map((fac, index) => {
                 const facNum = index + 1;
                 const parsedAmt = parseFloat(fac.amount);
@@ -550,8 +503,9 @@ export function ModalNuevaPrestacion({
                 return (
                   <div
                     key={fac.id}
-                    className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5 relative shadow-sm"
+                    className="p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3 relative shadow-sm"
                   >
+                    {/* Encabezado del Comprobante */}
                     <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                         <FileText className="w-3.5 h-3.5 text-sky-600" /> Comprobante #{facNum}
@@ -565,11 +519,12 @@ export function ModalNuevaPrestacion({
                           onClick={() => handleRemoveFactura(fac.id)}
                           className="h-7 px-2 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50"
                         >
-                          <Trash2 className="w-3 h-3 mr-1" /> Quitar
+                          <Trash2 className="w-3 h-3 mr-1" /> Quitar comprobante
                         </Button>
                       )}
                     </div>
 
+                    {/* Fila 1: N° Factura, Fecha y Monto */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                       <div className="space-y-1">
                         <Label className="text-xs text-slate-600 dark:text-slate-400">
@@ -627,8 +582,64 @@ export function ModalNuevaPrestacion({
                       </div>
                     )}
 
-                    {/* Archivo PDF de esta factura */}
-                    <div className="space-y-1 pt-1">
+                    {/* Fila 2: Días Trabajados en esta Factura Puntual */}
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-950/60 rounded-lg border border-slate-200/70 dark:border-slate-800/70 space-y-2">
+                      <Label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                        <span>Días trabajados cubiertos por este comprobante <span className="text-rose-500">*</span></span>
+                      </Label>
+
+                      <div className="grid grid-cols-3 gap-1.5 bg-slate-200/60 dark:bg-slate-900 p-1 rounded-md">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateFactura(fac.id, "service_days_type", "mes_completo")}
+                          className={`py-1 px-2 text-[11px] font-medium rounded transition-all ${
+                            fac.service_days_type === "mes_completo"
+                              ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm"
+                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                          }`}
+                        >
+                          Mes Completo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateFactura(fac.id, "service_days_type", "rango_fechas")}
+                          className={`py-1 px-2 text-[11px] font-medium rounded transition-all ${
+                            fac.service_days_type === "rango_fechas"
+                              ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm"
+                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                          }`}
+                        >
+                          Rango de Fechas
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateFactura(fac.id, "service_days_type", "dias_especificos")}
+                          className={`py-1 px-2 text-[11px] font-medium rounded transition-all ${
+                            fac.service_days_type === "dias_especificos"
+                              ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm"
+                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                          }`}
+                        >
+                          Días Puntuales
+                        </button>
+                      </div>
+
+                      {fac.service_days_type !== "mes_completo" && (
+                        <Input
+                          placeholder={
+                            fac.service_days_type === "rango_fechas"
+                              ? "Ej. Guardia UTI desde el 01/08 hasta el 15/08"
+                              : "Ej. Guardias UTI 24hs: días 01, 17 y 25 de Agosto"
+                          }
+                          value={fac.service_days_detail}
+                          onChange={(e) => handleUpdateFactura(fac.id, "service_days_detail", e.target.value)}
+                          className="h-8 text-xs bg-white dark:bg-slate-900"
+                        />
+                      )}
+                    </div>
+
+                    {/* Fila 3: Archivo PDF de esta factura */}
+                    <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                           PDF de la Factura #{facNum} <span className="text-rose-500">*</span>
@@ -674,16 +685,16 @@ export function ModalNuevaPrestacion({
             </div>
           </div>
 
-          {/* Bloque 3: Documentación Fiscal y Asistencial (PDFs) */}
+          {/* Bloque 3: Documentación Digital Complementaria (PDFs) */}
           <div className="p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
             <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
               <Paperclip className="w-3.5 h-3.5 text-sky-600" /> Documentación Digital Complementaria
             </h4>
 
-            {/* 1. Conducta Fiscal PDF + Fecha Vto */}
+            {/* Fila 1: Conducta Fiscal PDF + Fecha Vencimiento (Perfectamente alineados con h-5) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div className="space-y-1">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between h-5">
                   <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                     Conducta Fiscal (PDF) <span className="text-rose-500">*</span>
                   </Label>
@@ -702,9 +713,11 @@ export function ModalNuevaPrestacion({
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                  Vencimiento Conducta <span className="text-rose-500">*</span>
-                </Label>
+                <div className="flex items-center justify-between h-5">
+                  <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Vencimiento Conducta <span className="text-rose-500">*</span>
+                  </Label>
+                </div>
                 <Input
                   type="date"
                   value={conductaDueDate}
@@ -715,9 +728,9 @@ export function ModalNuevaPrestacion({
               </div>
             </div>
 
-            {/* 2. Constancia de Prestación / Planilla Papel */}
+            {/* Fila 2: Constancia de Prestación / Planilla Papel */}
             <div className="space-y-1 pt-1">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between h-5">
                 <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                   Constancia de Prestación / Planilla (PDF) <span className="text-rose-500">*</span>
                 </Label>
@@ -809,15 +822,20 @@ export function ModalNuevaPrestacion({
             </span>
           </div>
 
-          {/* Desglose de Facturas */}
-          <div className="py-1 border-b border-slate-200/60 dark:border-slate-800/60 space-y-1">
+          {/* Desglose de Facturas con Días Trabajados */}
+          <div className="py-1 border-b border-slate-200/60 dark:border-slate-800/60 space-y-1.5">
             <span className="text-slate-500 dark:text-slate-400 font-medium block">
               Comprobantes adjuntos ({facturas.length}):
             </span>
             {facturas.map((f, idx) => (
-              <div key={f.id} className="flex justify-between items-center text-[11px] pl-2 text-slate-700 dark:text-slate-300">
-                <span>• Factura {f.number || `#${idx + 1}`}:</span>
-                <span className="font-semibold">{formatMoney(parseFloat(f.amount) || 0)}</span>
+              <div key={f.id} className="p-1.5 bg-white/70 dark:bg-slate-900/70 rounded-lg border border-slate-200/60 dark:border-slate-800 text-[11px] space-y-0.5">
+                <div className="flex justify-between items-center font-semibold text-slate-800 dark:text-slate-200">
+                  <span>• Factura {f.number || `#${idx + 1}`}:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">{formatMoney(parseFloat(f.amount) || 0)}</span>
+                </div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+                  Días: {f.service_days_type === "mes_completo" ? "Mes completo" : f.service_days_detail || "Días especificados"}
+                </div>
               </div>
             ))}
           </div>

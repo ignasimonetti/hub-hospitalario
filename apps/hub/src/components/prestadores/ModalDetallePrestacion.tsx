@@ -14,6 +14,8 @@ import {
   PrestacionPresentacion,
   ESTADOS_PRESTACION_CONFIG,
   TIPOS_PRESTACION_MAP,
+  SECTORES_SERVICIO_MAP,
+  SectorServicio,
 } from "@/types/prestadores";
 import { getPrestacionFileUrl } from "@/lib/services/prestadoresService";
 import {
@@ -148,6 +150,16 @@ export function ModalDetallePrestacion({
                 {TIPOS_PRESTACION_MAP[prestacion.service_type]}
               </span>
             </div>
+
+            {prestacion.hospital_service && (
+              <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500">Servicio / Sector:</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {SECTORES_SERVICIO_MAP[prestacion.hospital_service as SectorServicio] ||
+                    prestacion.hospital_service}
+                </span>
+              </div>
+            )}
 
             <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
               <span className="text-slate-500">Días Trabajados:</span>

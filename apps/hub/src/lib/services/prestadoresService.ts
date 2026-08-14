@@ -80,16 +80,31 @@ export async function getMisPrestaciones(tenantId?: string): Promise<PrestacionP
       filter += ` && tenant = "${tenantId}"`;
     }
 
-    const records = await pocketbase
-      .collection('prestaciones_presentaciones')
-      .getFullList<PrestacionPresentacion>({
-        filter,
-        sort: '-created',
-        expand: 'tenant,user',
-        requestKey: null, // Desactiva la autocancelación por re-render
-      });
+    try {
+      const records = await pocketbase
+        .collection('prestaciones_presentaciones')
+        .getFullList<PrestacionPresentacion>({
+          filter,
+          sort: '-created',
+          requestKey: null, // Desactiva la autocancelación por re-render
+        });
 
-    return records;
+      return records;
+    } catch (innerErr: any) {
+      if (innerErr?.isAbort || innerErr?.message?.includes('autocancelled')) return [];
+      if (innerErr?.status === 404) return [];
+
+      // Si falla por el filtro de tenant, reintentar solo por usuario
+      const records = await pocketbase
+        .collection('prestaciones_presentaciones')
+        .getFullList<PrestacionPresentacion>({
+          filter: `user = "${user.id}"`,
+          sort: '-created',
+          requestKey: null,
+        });
+
+      return records;
+    }
   } catch (error: any) {
     if (error?.isAbort || error?.message?.includes('autocancelled')) {
       return [];

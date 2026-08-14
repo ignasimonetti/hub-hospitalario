@@ -21,7 +21,7 @@ export function AnnouncementBanner() {
                 // Fetch the latest active announcement
                 const record = await pocketbase.collection('hub_announcements').getFirstListItem<Announcement>(
                     'active = true',
-                    { sort: '-updated' }
+                    { sort: '-updated', requestKey: null }
                 );
 
                 if (record) {

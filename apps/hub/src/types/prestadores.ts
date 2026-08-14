@@ -19,11 +19,29 @@ export type ProfesionPrestador =
 export type CondicionFiscal = 'monotributo' | 'responsable_inscripto' | 'exento';
 
 export type TipoPrestacion =
-  | 'guardia'
+  | 'guardia_ordinaria'
+  | 'guardia_critica'
   | 'consultorio'
-  | 'certificacion_servicio'
-  | 'horas_planta'
-  | 'cirugias'
+  | 'coordinacion'
+  | 'fortalecimiento'
+  | 'ufmi'
+  | 'ufi'
+  | 'otro';
+
+export type SectorServicio =
+  | 'clinica_medica'
+  | 'pediatria'
+  | 'uti_adultos'
+  | 'utin_neonatologia'
+  | 'guardia_emergencias'
+  | 'cirugia_quirofano'
+  | 'traumatologia'
+  | 'cardiologia'
+  | 'ginecologia_obstetricia'
+  | 'salud_mental'
+  | 'imagenes'
+  | 'laboratorio'
+  | 'kinesiologia'
   | 'otro';
 
 export type TipoDiasPrestacion = 'mes_completo' | 'rango_fechas' | 'dias_especificos';
@@ -44,6 +62,15 @@ export interface PrestadorPerfil {
   updated: string;
 }
 
+export const MAX_INVOICE_AMOUNT = 800000; // Tope máximo por comprobante individual ($800.000)
+
+export interface DetalleFacturaItem {
+  number: string;
+  date: string;
+  amount: number;
+  file_name?: string;
+}
+
 export interface PrestacionPresentacion {
   id: string;
   user: string;
@@ -53,7 +80,9 @@ export interface PrestacionPresentacion {
   invoice_number: string;
   invoice_date: string;
   invoice_amount: number;
+  invoices_detail?: DetalleFacturaItem[];
   service_type: TipoPrestacion;
+  hospital_service?: SectorServicio | string;
   service_days_type: TipoDiasPrestacion;
   service_days_detail?: string;
   conducta_fiscal_due_date: string;
@@ -104,12 +133,31 @@ export const CONDICIONES_FISCALES_MAP: Record<CondicionFiscal, string> = {
 };
 
 export const TIPOS_PRESTACION_MAP: Record<TipoPrestacion, string> = {
-  guardia: 'Guardia Médica / Activa',
+  guardia_ordinaria: 'Guardia Ordinaria',
+  guardia_critica: 'Guardia Crítica',
   consultorio: 'Consultorios Externos',
-  certificacion_servicio: 'Certificación de Servicios',
-  horas_planta: 'Horas de Planta / Sala',
-  cirugias: 'Módulo Quirúrgico / Cirugías',
-  otro: 'Otra Prestación Asistencial',
+  coordinacion: 'Coordinación',
+  fortalecimiento: 'Fortalecimiento',
+  ufmi: 'UFMI',
+  ufi: 'UFI',
+  otro: 'Otra Prestación',
+};
+
+export const SECTORES_SERVICIO_MAP: Record<SectorServicio, string> = {
+  clinica_medica: 'Clínica Médica / Sala',
+  pediatria: 'Pediatría',
+  uti_adultos: 'Terapia Intensiva Adultos (UTI)',
+  utin_neonatologia: 'Terapia Intensiva Pediátrica / Neonatología (UTIN)',
+  guardia_emergencias: 'Guardia de Emergencias',
+  cirugia_quirofano: 'Cirugía General / Quirófano',
+  traumatologia: 'Traumatología y Ortopedia',
+  cardiologia: 'Cardiología',
+  ginecologia_obstetricia: 'Ginecología y Obstetricia',
+  salud_mental: 'Salud Mental / Psicología',
+  imagenes: 'Diagnóstico por Imágenes',
+  laboratorio: 'Laboratorio / Bioquímica',
+  kinesiologia: 'Kinesiología y Rehabilitación',
+  otro: 'Otro Sector / Servicio',
 };
 
 export const ESTADOS_PRESTACION_CONFIG: Record<

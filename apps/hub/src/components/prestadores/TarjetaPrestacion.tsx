@@ -4,6 +4,8 @@ import {
   PrestacionPresentacion,
   ESTADOS_PRESTACION_CONFIG,
   TIPOS_PRESTACION_MAP,
+  SECTORES_SERVICIO_MAP,
+  SectorServicio,
 } from "@/types/prestadores";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Calendar, ChevronRight, AlertCircle, Clock } from "lucide-react";
@@ -66,6 +68,11 @@ export function TarjetaPrestacion({ prestacion, onClick }: TarjetaPrestacionProp
                 <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                   <Calendar className="w-3 h-3 text-slate-400" />
                   {mesNombre} {prestacion.period_year} • {TIPOS_PRESTACION_MAP[prestacion.service_type]}
+                  {prestacion.hospital_service &&
+                    ` • ${
+                      SECTORES_SERVICIO_MAP[prestacion.hospital_service as SectorServicio] ||
+                      prestacion.hospital_service
+                    }`}
                 </p>
               </div>
             </div>

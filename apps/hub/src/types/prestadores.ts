@@ -19,6 +19,8 @@ export type ProfesionPrestador =
 export type CondicionFiscal = 'monotributo' | 'responsable_inscripto' | 'exento';
 
 export type TipoPrestacion =
+  | 'guardia'
+  | 'extension_horaria'
   | 'guardia_ordinaria'
   | 'guardia_critica'
   | 'consultorio'
@@ -62,7 +64,40 @@ export interface PrestadorPerfil {
   updated: string;
 }
 
-export const MAX_INVOICE_AMOUNT = 800000; // Tope máximo por comprobante individual ($800.000)
+export const MAX_INVOICE_AMOUNT = 800000; // Tope máximo por comprobante / trámite ($800.000)
+
+export interface RenglonGuardiaDigital {
+  id: string;
+  fecha: string;
+  hora_entrada: string;
+  hora_salida: string;
+  tipo: 'normal' | 'critica';
+  valor?: number;
+}
+
+export interface RenglonExtensionHorariaDigital {
+  id: string;
+  fecha: string;
+  horario_programado: string;
+  horas_cumplidas: number;
+  valor?: number;
+}
+
+export interface FormularioGuardiaData {
+  tipo_formulario: 'guardia';
+  reemplazo_de?: string;
+  observaciones?: string;
+  renglones: RenglonGuardiaDigital[];
+}
+
+export interface FormularioExtensionHorariaData {
+  tipo_formulario: 'extension_horaria';
+  cargo_especialidad?: string;
+  observaciones?: string;
+  renglones: RenglonExtensionHorariaDigital[];
+}
+
+export type FormularioDigitalData = FormularioGuardiaData | FormularioExtensionHorariaData;
 
 export interface DetalleFacturaItem {
   number: string;
@@ -77,6 +112,7 @@ export interface PrestacionPresentacion {
   id: string;
   user: string;
   tenant: string;
+  form_number?: string; // Ej: "G-0001" o "EH-0001"
   period_month: number;
   period_year: number;
   invoice_number: string;
@@ -87,10 +123,11 @@ export interface PrestacionPresentacion {
   hospital_service?: SectorServicio | string;
   service_days_type: TipoDiasPrestacion;
   service_days_detail?: string;
+  digital_form_data?: FormularioDigitalData | string;
   conducta_fiscal_due_date: string;
   file_invoice: string;
   file_conducta_fiscal: string;
-  file_service_proof: string;
+  file_service_proof?: string;
   status: EstadoPrestacion;
   treasury_observation?: string;
   submitted_at?: string;
@@ -135,6 +172,8 @@ export const CONDICIONES_FISCALES_MAP: Record<CondicionFiscal, string> = {
 };
 
 export const TIPOS_PRESTACION_MAP: Record<TipoPrestacion, string> = {
+  guardia: 'Guardias Médicas (Formulario G)',
+  extension_horaria: 'Extensión Horaria (Formulario EH)',
   guardia_ordinaria: 'Guardia Ordinaria',
   guardia_critica: 'Guardia Crítica',
   consultorio: 'Consultorios Externos',

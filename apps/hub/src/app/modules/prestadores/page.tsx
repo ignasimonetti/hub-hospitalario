@@ -13,6 +13,7 @@ import {
   getMisPrestaciones,
 } from "@/lib/services/prestadoresService";
 import { ModalPerfilPrestador } from "@/components/prestadores/ModalPerfilPrestador";
+import { ModalSeleccionarTipoTramite } from "@/components/prestadores/ModalSeleccionarTipoTramite";
 import { ModalNuevaPrestacion } from "@/components/prestadores/ModalNuevaPrestacion";
 import { ModalDetallePrestacion } from "@/components/prestadores/ModalDetallePrestacion";
 import { TarjetaPrestacion } from "@/components/prestadores/TarjetaPrestacion";
@@ -47,6 +48,8 @@ export default function PrestadoresPage() {
 
   // Modales
   const [modalPerfilOpen, setModalPerfilOpen] = useState(false);
+  const [modalSelectorOpen, setModalSelectorOpen] = useState(false);
+  const [tipoTramiteSeleccionado, setTipoTramiteSeleccionado] = useState<"guardia" | "extension_horaria">("guardia");
   const [modalNuevaOpen, setModalNuevaOpen] = useState(false);
   const [prestacionSeleccionada, setPrestacionSeleccionada] =
     useState<PrestacionPresentacion | null>(null);
@@ -201,7 +204,7 @@ export default function PrestadoresPage() {
 
           <Button
             size="sm"
-            onClick={() => setModalNuevaOpen(true)}
+            onClick={() => setModalSelectorOpen(true)}
             className="h-8 px-3 bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs rounded-xl shadow-sm"
           >
             <Plus className="w-3.5 h-3.5 mr-1" /> Facturar
@@ -236,7 +239,7 @@ export default function PrestadoresPage() {
 
               <Button
                 size="sm"
-                onClick={() => setModalNuevaOpen(true)}
+                onClick={() => setModalSelectorOpen(true)}
                 className="hidden md:flex h-9 bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs rounded-xl shadow-sm"
               >
                 <Plus className="w-4 h-4 mr-1.5" /> Nueva Presentación
@@ -401,6 +404,15 @@ export default function PrestadoresPage() {
         isOnboarding={!perfil}
       />
 
+      <ModalSeleccionarTipoTramite
+        open={modalSelectorOpen}
+        onOpenChange={setModalSelectorOpen}
+        onSelectTipo={(tipo) => {
+          setTipoTramiteSeleccionado(tipo);
+          setModalNuevaOpen(true);
+        }}
+      />
+
       {perfil && (
         <ModalNuevaPrestacion
           open={modalNuevaOpen || !!observadaParaEditar}
@@ -411,6 +423,7 @@ export default function PrestadoresPage() {
           perfil={perfil}
           tenantId={currentTenant?.id || ""}
           observadaParaReenviar={observadaParaEditar}
+          tipoInicial={tipoTramiteSeleccionado}
           onCreated={(nueva) => {
             setPrestaciones((prev) => {
               const filtradas = prev.filter((p) => p.id !== nueva.id);

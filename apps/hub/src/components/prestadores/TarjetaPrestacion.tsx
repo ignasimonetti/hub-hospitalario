@@ -8,7 +8,14 @@ import {
   SectorServicio,
 } from "@/types/prestadores";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Calendar, ChevronRight, AlertCircle, Clock } from "lucide-react";
+import {
+  FileText,
+  Calendar,
+  ChevronRight,
+  AlertCircle,
+  Clock,
+  Stethoscope,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 interface TarjetaPrestacionProps {
@@ -24,6 +31,8 @@ const MESES = [
 export function TarjetaPrestacion({ prestacion, onClick }: TarjetaPrestacionProps) {
   const estadoCfg = ESTADOS_PRESTACION_CONFIG[prestacion.status];
   const mesNombre = MESES[prestacion.period_month - 1] || `Mes ${prestacion.period_month}`;
+  const isGuardia = prestacion.service_type === "guardia";
+  const isEH = prestacion.service_type === "extension_horaria";
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
@@ -58,21 +67,51 @@ export function TarjetaPrestacion({ prestacion, onClick }: TarjetaPrestacionProp
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5" />
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  isGuardia
+                    ? "bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400"
+                    : isEH
+                    ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                }`}
+              >
+                {isGuardia ? (
+                  <Stethoscope className="w-5 h-5" />
+                ) : isEH ? (
+                  <Clock className="w-5 h-5" />
+                ) : (
+                  <FileText className="w-5 h-5" />
+                )}
               </div>
               <div className="min-w-0">
-                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                  Factura {prestacion.invoice_number}
-                </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                  <Calendar className="w-3 h-3 text-slate-400" />
-                  {mesNombre} {prestacion.period_year} • {TIPOS_PRESTACION_MAP[prestacion.service_type]}
-                  {prestacion.hospital_service &&
-                    ` • ${
-                      SECTORES_SERVICIO_MAP[prestacion.hospital_service as SectorServicio] ||
-                      prestacion.hospital_service
-                    }`}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                    {prestacion.form_number
+                      ? `${prestacion.form_number} • Factura ${prestacion.invoice_number}`
+                      : `Factura ${prestacion.invoice_number}`}
+                  </h4>
+                  {isGuardia && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300">
+                      Guardias
+                    </span>
+                  )}
+                  {isEH && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">
+                      Extensión Horaria
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 truncate mt-0.5">
+                  <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                  <span>
+                    {mesNombre} {prestacion.period_year}
+                    {prestacion.hospital_service &&
+                      ` • ${
+                        SECTORES_SERVICIO_MAP[prestacion.hospital_service as SectorServicio] ||
+                        prestacion.hospital_service
+                      }`}
+                  </span>
                 </p>
               </div>
             </div>

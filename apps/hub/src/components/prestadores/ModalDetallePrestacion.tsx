@@ -232,7 +232,7 @@ export function ModalDetallePrestacion({
                                     : "bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300"
                                 }`}
                               >
-                                {g.tipo === "critica" ? "Crítica" : "Normal"}
+                                {g.tipo === "critica" ? "Crítica" : "Ordinaria"}
                               </span>
                             </td>
                           </tr>

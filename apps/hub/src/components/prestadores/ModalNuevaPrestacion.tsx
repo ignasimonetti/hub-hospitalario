@@ -468,7 +468,7 @@ export function ModalNuevaPrestacion({
         renglones: renglonesGuardia,
       };
       summaryDaysDetail = renglonesGuardia
-        .map((g) => `${g.fecha.split("-").slice(1).reverse().join("/")} (${g.hora_entrada}-${g.hora_salida} ${g.tipo === "critica" ? "Crítica" : "Normal"})`)
+        .map((g) => `${g.fecha.split("-").slice(1).reverse().join("/")} (${g.hora_entrada}-${g.hora_salida} ${g.tipo === "critica" ? "Crítica" : "Ordinaria"})`)
         .join(", ");
     } else {
       digitalFormData = {
@@ -779,10 +779,10 @@ export function ModalNuevaPrestacion({
                             </SelectTrigger>
                             <SelectContent className="dark:bg-slate-900">
                               <SelectItem value="normal" className="text-xs">
-                                Normal (Ordinaria)
+                                Ordinaria
                               </SelectItem>
                               <SelectItem value="critica" className="text-xs">
-                                Crítica (UTI / Shock)
+                                Crítica
                               </SelectItem>
                             </SelectContent>
                           </Select>

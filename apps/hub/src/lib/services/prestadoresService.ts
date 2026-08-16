@@ -29,10 +29,10 @@ export async function getPrestadorPerfil(): Promise<PrestadorPerfil | null> {
 }
 
 /**
- * Guarda o actualiza el perfil de prestador
+ * Guarda o actualiza el perfil de prestador (acepta objeto parcial o FormData para adjuntar archivos)
  */
 export async function savePrestadorPerfil(
-  data: Partial<Omit<PrestadorPerfil, 'id' | 'created' | 'updated' | 'user'>>
+  data: Partial<Omit<PrestadorPerfil, 'id' | 'created' | 'updated' | 'user'>> | FormData
 ): Promise<PrestadorPerfil> {
   const user = pocketbase.authStore.model;
   if (!user) throw new Error('Usuario no autenticado');
@@ -40,26 +40,47 @@ export async function savePrestadorPerfil(
   try {
     const existing = await getPrestadorPerfil();
 
-    if (existing) {
-      const updated = await pocketbase
-        .collection('prestadores_perfiles')
-        .update<PrestadorPerfil>(existing.id, data, {
-          requestKey: null,
-        });
-      return updated;
-    } else {
-      const created = await pocketbase
-        .collection('prestadores_perfiles')
-        .create<PrestadorPerfil>(
-          {
-            ...data,
-            user: user.id,
-          },
-          {
+    if (data instanceof FormData) {
+      if (!data.has('user')) {
+        data.append('user', user.id);
+      }
+      if (existing) {
+        const updated = await pocketbase
+          .collection('prestadores_perfiles')
+          .update<PrestadorPerfil>(existing.id, data, {
             requestKey: null,
-          }
-        );
-      return created;
+          });
+        return updated;
+      } else {
+        const created = await pocketbase
+          .collection('prestadores_perfiles')
+          .create<PrestadorPerfil>(data, {
+            requestKey: null,
+          });
+        return created;
+      }
+    } else {
+      if (existing) {
+        const updated = await pocketbase
+          .collection('prestadores_perfiles')
+          .update<PrestadorPerfil>(existing.id, data, {
+            requestKey: null,
+          });
+        return updated;
+      } else {
+        const created = await pocketbase
+          .collection('prestadores_perfiles')
+          .create<PrestadorPerfil>(
+            {
+              ...data,
+              user: user.id,
+            },
+            {
+              requestKey: null,
+            }
+          );
+        return created;
+      }
     }
   } catch (error: any) {
     console.error('Error saving prestador perfil:', error);
@@ -209,10 +230,21 @@ export async function resubmitPrestacion(
 }
 
 /**
- * Obtiene la URL completa para previsualizar/descargar un archivo de PocketBase
+ * Obtiene la URL completa para previsualizar/descargar un archivo de PocketBase (Presentación)
  */
 export function getPrestacionFileUrl(
   record: PrestacionPresentacion,
+  filename: string
+): string {
+  if (!filename) return '';
+  return pocketbase.files.getURL(record, filename);
+}
+
+/**
+ * Obtiene la URL completa para previsualizar/descargar un archivo de PocketBase (Perfil)
+ */
+export function getPerfilFileUrl(
+  record: PrestadorPerfil,
   filename: string
 ): string {
   if (!filename) return '';

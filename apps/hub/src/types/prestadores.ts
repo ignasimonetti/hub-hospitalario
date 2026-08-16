@@ -60,6 +60,8 @@ export interface PrestadorPerfil {
   tax_condition: CondicionFiscal;
   cbu_alias?: string;
   phone?: string;
+  file_conducta_fiscal?: string;
+  conducta_fiscal_due_date?: string;
   created: string;
   updated: string;
 }

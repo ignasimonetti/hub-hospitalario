@@ -38,14 +38,17 @@ import {
   TIPOS_PRESTACION_MAP,
   SECTORES_SERVICIO_MAP,
   PrestacionPresentacion,
-  MAX_INVOICE_AMOUNT,
   RenglonGuardiaDigital,
   RenglonExtensionHorariaDigital,
   FormularioDigitalData,
   ConfiguracionModuloPrestadores,
   DEFAULT_CONFIGURACION_PRESTADORES,
 } from "@/types/prestadores";
-import { submitPrestacion, resubmitPrestacion, getNextFormNumber } from "@/lib/services/prestadoresService";
+import {
+  submitPrestacion,
+  resubmitPrestacion,
+  getNextFormNumber,
+} from "@/lib/services/prestadoresService";
 import { getPrestadoresConfig } from "@/lib/services/parametersService";
 import { toast } from "sonner";
 import {
@@ -67,7 +70,9 @@ import {
   UserCheck,
   ClipboardList,
   Calculator,
-  Hash,
+  ShieldCheck,
+  ShieldAlert,
+  ExternalLink,
 } from "lucide-react";
 
 interface ModalNuevaPrestacionProps {
@@ -77,16 +82,9 @@ interface ModalNuevaPrestacionProps {
   tenantId: string;
   tenantCode?: string;
   onCreated: (prestacion: PrestacionPresentacion) => void;
+  onOpenPerfil?: () => void;
   observadaParaReenviar?: PrestacionPresentacion | null;
   tipoInicial?: "guardia" | "extension_horaria";
-}
-
-interface FacturaFormItem {
-  id: string;
-  number: string;
-  date: string;
-  amount: string;
-  file: File | null;
 }
 
 const MESES = [
@@ -111,6 +109,7 @@ export function ModalNuevaPrestacion({
   tenantId,
   tenantCode = "CISB",
   onCreated,
+  onOpenPerfil,
   observadaParaReenviar = null,
   tipoInicial = "guardia",
 }: ModalNuevaPrestacionProps) {
@@ -125,36 +124,16 @@ export function ModalNuevaPrestacion({
       : tipoInicial
   );
 
-  // Número de trámite serializado oficial
-  const [formNumber, setFormNumber] = useState<string>(
-    observadaParaReenviar?.form_number || ""
-  );
-
-  // Sincronizar tipoInicial si cambia al abrir el modal y calcular serie correlativa
+  // Sincronizar tipoInicial si cambia al abrir el modal
   useEffect(() => {
     if (open) {
-      if (observadaParaReenviar?.form_number) {
-        setFormNumber(observadaParaReenviar.form_number);
+      if (observadaParaReenviar) {
         setServiceType(observadaParaReenviar.service_type as TipoPrestacion);
       } else {
-        const targetType = tipoInicial;
-        setServiceType(targetType);
-        getNextFormNumber(targetType === "guardia" ? "guardia" : "extension_horaria", tenantCode).then(
-          (num) => setFormNumber(num)
-        );
+        setServiceType(tipoInicial);
       }
     }
-  }, [open, tipoInicial, observadaParaReenviar, tenantCode]);
-
-  // Si el usuario cambia manualmente de tipo de trámite dentro del modal, actualizar la serie
-  const handleServiceTypeChange = (newType: TipoPrestacion) => {
-    setServiceType(newType);
-    if (!observadaParaReenviar) {
-      getNextFormNumber(newType === "guardia" ? "guardia" : "extension_horaria", tenantCode).then(
-        (num) => setFormNumber(num)
-      );
-    }
-  };
+  }, [open, tipoInicial, observadaParaReenviar]);
 
   // Período y Sector
   const [periodMonth, setPeriodMonth] = useState<number>(
@@ -206,25 +185,60 @@ export function ModalNuevaPrestacion({
   // Observaciones comunes
   const [observaciones, setObservaciones] = useState<string>("");
 
-  // Facturas AFIP
-  const [facturas, setFacturas] = useState<FacturaFormItem[]>([
-    {
-      id: "fac-1",
-      number: observadaParaReenviar ? observadaParaReenviar.invoice_number : "",
-      date: observadaParaReenviar ? observadaParaReenviar.invoice_date.split("T")[0] : "",
-      amount: observadaParaReenviar ? String(observadaParaReenviar.invoice_amount) : "",
-      file: null,
-    },
-  ]);
-
-  // Conducta Fiscal
-  const [conductaDueDate, setConductaDueDate] = useState<string>(
-    observadaParaReenviar ? observadaParaReenviar.conducta_fiscal_due_date.split("T")[0] : ""
+  // Factura Única (Nuevo paradigma: 1 Formulario = 1 Factura)
+  const [invoiceNumber, setInvoiceNumber] = useState<string>(
+    observadaParaReenviar ? observadaParaReenviar.invoice_number : ""
   );
-  const [fileConducta, setFileConducta] = useState<File | null>(null);
+  const [invoiceDate, setInvoiceDate] = useState<string>(
+    observadaParaReenviar ? observadaParaReenviar.invoice_date.split("T")[0] : ""
+  );
+  const [invoiceAmount, setInvoiceAmount] = useState<string>(
+    observadaParaReenviar ? String(observadaParaReenviar.invoice_amount) : ""
+  );
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Validación de Conducta Fiscal desde el Perfil
+  const estadoConducta = useMemo(() => {
+    if (!perfil.conducta_fiscal_due_date) {
+      return {
+        valida: false,
+        mensaje: "No has configurado la fecha de vencimiento de tu Conducta Fiscal.",
+        detalle: "Actualiza tu perfil para adjuntar la constancia.",
+      };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(`${perfil.conducta_fiscal_due_date.split("T")[0]}T00:00:00`);
+
+    if (isNaN(dueDate.getTime())) {
+      return {
+        valida: false,
+        mensaje: "Fecha de vencimiento de Conducta Fiscal no válida.",
+        detalle: "Actualiza tu perfil de prestador.",
+      };
+    }
+
+    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return {
+        valida: false,
+        vencida: true,
+        mensaje: `Tu Conducta Fiscal está VENCIDA (${dueDate.toLocaleDateString("es-AR")}).`,
+        detalle: "Debes actualizar la constancia en tu perfil para poder presentar liquidaciones.",
+      };
+    }
+
+    return {
+      valida: true,
+      mensaje: `Conducta Fiscal vigente hasta el ${dueDate.toLocaleDateString("es-AR")}`,
+      detalle: diffDays <= 7 ? `⚠️ Vence en ${diffDays} días` : "Documentación tributaria al día",
+    };
+  }, [perfil.conducta_fiscal_due_date]);
 
   // Inicializar estado si es una corrección observada con digital_form_data
   useEffect(() => {
@@ -280,7 +294,7 @@ export function ModalNuevaPrestacion({
   const handleUpdateRenglonGuardia = (
     id: string,
     field: keyof RenglonGuardiaDigital,
-    value: string
+    value: any
   ) => {
     setRenglonesGuardia((prev) =>
       prev.map((r) => (r.id === id ? { ...r, [field]: value } : r))
@@ -289,8 +303,8 @@ export function ModalNuevaPrestacion({
 
   // Handlers para renglones de Extensión Horaria
   const handleAddRenglonEH = () => {
-    if (renglonesEH.length >= 15) {
-      toast.error("El formulario oficial admite hasta 15 registros por planilla.");
+    if (renglonesEH.length >= 25) {
+      toast.error("El formulario oficial admite hasta 25 registros por planilla.");
       return;
     }
     setRenglonesEH((prev) => [
@@ -319,39 +333,7 @@ export function ModalNuevaPrestacion({
     );
   };
 
-  // Handlers para Facturas
-  const handleAddFactura = () => {
-    setFacturas((prev) => [
-      ...prev,
-      {
-        id: `fac-${Date.now()}`,
-        number: "",
-        date: facturas[0]?.date || new Date().toISOString().split("T")[0],
-        amount: "",
-        file: null,
-      },
-    ]);
-  };
-
-  const handleRemoveFactura = (id: string) => {
-    if (facturas.length <= 1) return;
-    setFacturas((prev) => prev.filter((f) => f.id !== id));
-  };
-
-  const handleUpdateFactura = (
-    id: string,
-    field: keyof FacturaFormItem,
-    value: string | File | null
-  ) => {
-    setFacturas((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, [field]: value } : f))
-    );
-  };
-
-  const handleInvoiceFileChange = (
-    id: string,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleInvoiceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.type !== "application/pdf") {
@@ -364,24 +346,7 @@ export function ModalNuevaPrestacion({
         e.target.value = "";
         return;
       }
-      handleUpdateFactura(id, "file", file);
-    }
-  };
-
-  const handleConductaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.type !== "application/pdf") {
-        toast.error("Solo se permiten archivos en formato PDF");
-        e.target.value = "";
-        return;
-      }
-      if (file.size > 15 * 1024 * 1024) {
-        toast.error("El archivo supera el límite máximo de 15MB");
-        e.target.value = "";
-        return;
-      }
-      setFileConducta(file);
+      setInvoiceFile(file);
     }
   };
 
@@ -409,10 +374,7 @@ export function ModalNuevaPrestacion({
     }
   }, [serviceType, renglonesGuardia, totalHorasEH, config]);
 
-  const totalInvoiceAmount = facturas.reduce((sum, f) => {
-    const val = parseFloat(f.amount);
-    return sum + (isNaN(val) || val <= 0 ? 0 : val);
-  }, 0);
+  const numInvoiceAmount = parseFloat(invoiceAmount) || 0;
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
@@ -425,6 +387,12 @@ export function ModalNuevaPrestacion({
   // Validación y confirmación
   const handlePromptConfirm = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 0. Validar Conducta Fiscal
+    if (!estadoConducta.valida) {
+      toast.error(estadoConducta.mensaje);
+      return;
+    }
 
     // 1. Validar Asistencia Digital
     if (serviceType === "guardia") {
@@ -461,48 +429,21 @@ export function ModalNuevaPrestacion({
       }
     }
 
-    // 2. Validar Facturas y Tope configurable
-    for (let i = 0; i < facturas.length; i++) {
-      const fac = facturas[i];
-      const facNum = i + 1;
-
-      if (!fac.number.trim()) {
-        toast.error(`Ingresa el número para el Comprobante #${facNum}`);
-        return;
-      }
-      if (!fac.date) {
-        toast.error(`Ingresa la fecha de emisión para el Comprobante #${facNum}`);
-        return;
-      }
-
-      const numAmount = parseFloat(fac.amount);
-      if (isNaN(numAmount) || numAmount <= 0) {
-        toast.error(`Ingresa un monto válido mayor a 0 para el Comprobante #${facNum}`);
-        return;
-      }
-
-      if (numAmount > config.tope_maximo_factura) {
-        toast.error(
-          `El Comprobante #${facNum} (${formatMoney(numAmount)}) supera el límite normativo de ${formatMoney(
-            config.tope_maximo_factura
-          )}.`
-        );
-        return;
-      }
-
-      if (!observadaParaReenviar && !fac.file) {
-        toast.error(`Debes adjuntar el archivo PDF del Comprobante #${facNum}`);
-        return;
-      }
-    }
-
-    // 3. Validar Conducta Fiscal
-    if (!conductaDueDate) {
-      toast.error("Ingresa la fecha de vencimiento de tu conducta fiscal");
+    // 2. Validar Factura Única
+    if (!invoiceNumber.trim()) {
+      toast.error("Ingresa el número de tu comprobante fiscal");
       return;
     }
-    if (!observadaParaReenviar && !fileConducta) {
-      toast.error("Debes adjuntar el PDF de la Conducta Fiscal");
+    if (!invoiceDate) {
+      toast.error("Ingresa la fecha de emisión de la factura");
+      return;
+    }
+    if (numInvoiceAmount <= 0) {
+      toast.error("Ingresa un importe válido mayor a $0");
+      return;
+    }
+    if (!observadaParaReenviar && !invoiceFile) {
+      toast.error("Debes adjuntar el archivo PDF de la Factura");
       return;
     }
 
@@ -512,9 +453,6 @@ export function ModalNuevaPrestacion({
   const handleExecuteSubmit = async () => {
     setShowConfirmDialog(false);
     setIsSubmitting(true);
-
-    const invoiceNumbers = facturas.map((f) => f.number.trim()).join(", ");
-    const primaryDate = facturas[0]?.date || new Date().toISOString().split("T")[0];
 
     // Preparar objeto de formulario digital oficial
     let digitalFormData: FormularioDigitalData;
@@ -542,51 +480,44 @@ export function ModalNuevaPrestacion({
         .join(", ");
     }
 
-    const finalFormNumber =
-      formNumber ||
-      observadaParaReenviar?.form_number ||
-      `${tenantCode}-${serviceType === "guardia" ? "G" : "EH"}-${new Date().getFullYear()}-00001`;
-
-    const detail = facturas.map((f) => ({
-      number: f.number.trim(),
-      date: f.date,
-      amount: parseFloat(f.amount) || 0,
-      file_name: f.file?.name || "",
-    }));
-
-    const formData = new FormData();
-    formData.append("tenant", tenantId);
-    formData.append("period_month", String(periodMonth));
-    formData.append("period_year", String(periodYear));
-    formData.append("form_number", finalFormNumber);
-    formData.append("invoice_number", invoiceNumbers);
-    formData.append("invoice_date", primaryDate);
-    formData.append("invoice_amount", String(totalInvoiceAmount));
-    formData.append("service_type", serviceType);
-    formData.append("hospital_service", hospitalService);
-    formData.append("service_days_type", "dias_especificos");
-    formData.append("service_days_detail", summaryDaysDetail);
-    formData.append("digital_form_data", JSON.stringify(digitalFormData));
-    formData.append("conducta_fiscal_due_date", conductaDueDate);
-
-    // Primera factura al campo principal
-    if (facturas[0]?.file) {
-      formData.append("file_invoice", facturas[0].file);
-    }
-    formData.append("invoices_detail", JSON.stringify(detail));
-
-    if (fileConducta) {
-      formData.append("file_conducta_fiscal", fileConducta);
-    }
-
     try {
+      // Generar serie oficial en el momento exacto del submit
+      const generatedFormNumber =
+        observadaParaReenviar?.form_number ||
+        (await getNextFormNumber(
+          serviceType === "guardia" ? "guardia" : "extension_horaria",
+          tenantCode
+        ));
+
+      const formData = new FormData();
+      formData.append("tenant", tenantId);
+      formData.append("period_month", String(periodMonth));
+      formData.append("period_year", String(periodYear));
+      formData.append("form_number", generatedFormNumber);
+      formData.append("invoice_number", invoiceNumber.trim());
+      formData.append("invoice_date", invoiceDate);
+      formData.append("invoice_amount", String(numInvoiceAmount));
+      formData.append("service_type", serviceType);
+      formData.append("hospital_service", hospitalService);
+      formData.append("service_days_type", "dias_especificos");
+      formData.append("service_days_detail", summaryDaysDetail);
+      formData.append("digital_form_data", JSON.stringify(digitalFormData));
+      formData.append(
+        "conducta_fiscal_due_date",
+        perfil.conducta_fiscal_due_date || new Date().toISOString()
+      );
+
+      if (invoiceFile) {
+        formData.append("file_invoice", invoiceFile);
+      }
+
       let result: PrestacionPresentacion;
       if (observadaParaReenviar) {
         result = await resubmitPrestacion(observadaParaReenviar.id, formData);
         toast.success("Corrección reenviada a Tesorería exitosamente");
       } else {
         result = await submitPrestacion(formData);
-        toast.success("Formulario y liquidación remitidos a Tesorería con éxito");
+        toast.success(`Trámite ${generatedFormNumber} remitido a Tesorería con éxito`);
       }
 
       onCreated(result);
@@ -636,12 +567,16 @@ export function ModalNuevaPrestacion({
 
               {/* Badges de Serie y Tipo */}
               <div className="flex items-center gap-2 self-start sm:self-auto">
-                {formNumber && (
+                {observadaParaReenviar?.form_number ? (
                   <div className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700 flex items-center gap-1.5 shadow-xs">
                     <span className="text-[10px] uppercase font-semibold text-slate-400">Nº Serie:</span>
                     <span className="font-mono text-[11px] font-bold text-slate-800 dark:text-slate-200 tracking-wider">
-                      {formNumber}
+                      {observadaParaReenviar.form_number}
                     </span>
+                  </div>
+                ) : (
+                  <div className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800/80 text-[10px] font-mono text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700">
+                    Serie: {tenantCode}-{serviceType === "guardia" ? "G" : "EH"}-{currentYear}-AUTO
                   </div>
                 )}
                 <span
@@ -670,6 +605,42 @@ export function ModalNuevaPrestacion({
           )}
 
           <form onSubmit={handlePromptConfirm} className="space-y-4 py-2 text-left">
+            {/* ESTADO DINÁMICO DE CONDUCTA FISCAL */}
+            <div
+              className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs ${
+                estadoConducta.valida
+                  ? "bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-200"
+                  : "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                {estadoConducta.valida ? (
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                ) : (
+                  <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                )}
+                <div>
+                  <span className="font-bold block">{estadoConducta.mensaje}</span>
+                  <span className="text-[11px] opacity-85">{estadoConducta.detalle}</span>
+                </div>
+              </div>
+
+              {!estadoConducta.valida && onOpenPerfil && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    onOpenChange(false);
+                    onOpenPerfil();
+                  }}
+                  className="h-7 text-xs bg-white dark:bg-slate-900 border-rose-300 text-rose-700 hover:bg-rose-50 shrink-0"
+                >
+                  Actualizar Perfil <ExternalLink className="w-3 h-3 ml-1" />
+                </Button>
+              )}
+            </div>
+
             {/* SECCIÓN 1: DETALLE DE PRESENTACIÓN */}
             <div className="p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
               <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
@@ -684,7 +655,7 @@ export function ModalNuevaPrestacion({
                     onValueChange={(val) => setPeriodMonth(Number(val))}
                   >
                     <SelectTrigger className="h-9 text-xs bg-white dark:bg-slate-900">
-                      <SelectValue />
+                      <SelectValue placeholder="Mes" />
                     </SelectTrigger>
                     <SelectContent className="dark:bg-slate-900">
                       {MESES.map((m) => (
@@ -702,148 +673,129 @@ export function ModalNuevaPrestacion({
                     type="number"
                     value={periodYear}
                     onChange={(e) => setPeriodYear(Number(e.target.value))}
-                    min={2024}
-                    max={2030}
                     className="h-9 text-xs bg-white dark:bg-slate-900"
+                    min={2020}
+                    max={2030}
+                    required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="space-y-1">
-                  <Label className="text-xs text-slate-600 dark:text-slate-400">
-                    Servicio / Sector Hospitalario <span className="text-rose-500">*</span>
-                  </Label>
-                  <Select
-                    value={hospitalService}
-                    onValueChange={(val: SectorServicio) => setHospitalService(val)}
-                  >
-                    <SelectTrigger className="h-9 text-xs bg-white dark:bg-slate-900">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-slate-900 max-h-56">
-                      {Object.entries(SECTORES_SERVICIO_MAP).map(([key, label]) => (
-                        <SelectItem key={key} value={key} className="text-xs">
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {serviceType === "guardia" ? (
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-600 dark:text-slate-400">
-                      En reemplazo de (opcional)
-                    </Label>
-                    <Input
-                      placeholder="Nombre del colega a quien cubrió"
-                      value={reemplazoDe}
-                      onChange={(e) => setReemplazoDe(e.target.value)}
-                      className="h-9 text-xs bg-white dark:bg-slate-900"
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-600 dark:text-slate-400">
-                      Cargo / Especialidad
-                    </Label>
-                    <Input
-                      placeholder="Ej. Médico Pediatra / Kinesiólogo"
-                      value={cargoEspecialidad}
-                      onChange={(e) => setCargoEspecialidad(e.target.value)}
-                      className="h-9 text-xs bg-white dark:bg-slate-900"
-                    />
-                  </div>
-                )}
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-600 dark:text-slate-400">
+                  Servicio / Sector Hospitalario
+                </Label>
+                <Select
+                  value={hospitalService}
+                  onValueChange={(val: SectorServicio) => setHospitalService(val)}
+                >
+                  <SelectTrigger className="h-9 text-xs bg-white dark:bg-slate-900">
+                    <SelectValue placeholder="Selecciona el servicio" />
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-slate-900">
+                    {Object.entries(SECTORES_SERVICIO_MAP).map(([key, label]) => (
+                      <SelectItem key={key} value={key} className="text-xs">
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+
+              {/* Campo específico según formulario */}
+              {serviceType === "guardia" ? (
+                <div className="space-y-1 pt-1">
+                  <Label className="text-xs text-slate-600 dark:text-slate-400">
+                    En Reemplazo De (Opcional)
+                  </Label>
+                  <Input
+                    placeholder="Ej. Dr. Juan Pérez (si corresponde)"
+                    value={reemplazoDe}
+                    onChange={(e) => setReemplazoDe(e.target.value)}
+                    className="h-9 text-xs bg-white dark:bg-slate-900"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-1 pt-1">
+                  <Label className="text-xs text-slate-600 dark:text-slate-400">
+                    Cargo / Función / Especialidad
+                  </Label>
+                  <Input
+                    placeholder="Ej. Médico Consultorios Externos / Cirujano Asistencial"
+                    value={cargoEspecialidad}
+                    onChange={(e) => setCargoEspecialidad(e.target.value)}
+                    className="h-9 text-xs bg-white dark:bg-slate-900"
+                  />
+                </div>
+              )}
             </div>
 
-            {/* SECCIÓN 2: CERTIFICACIÓN DE ASISTENCIA (GRILLA DIGITAL NATIVA) */}
+            {/* SECCIÓN 2: PLANILLA DE ASISTENCIA Y CÁLCULO DE ARANCELES */}
             <div className="p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                  <ClipboardList className="w-3.5 h-3.5 text-sky-600" /> 2. Certificación de Asistencia
+                  <ClipboardList className="w-3.5 h-3.5 text-sky-600" />
+                  2. Planilla de Asistencia Digital ({serviceType === "guardia" ? "Guardias" : "Extensión Horaria"})
                 </h4>
-                {serviceType === "extension_horaria" && (
-                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                    Total: {totalHorasEH} hs cumplidas
-                  </span>
-                )}
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={serviceType === "guardia" ? handleAddRenglonGuardia : handleAddRenglonEH}
+                  className="h-7 text-xs bg-white dark:bg-slate-900 border-sky-300 text-sky-700 dark:text-sky-300 hover:bg-sky-50"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  {serviceType === "guardia" ? "Agregar Guardia" : "Agregar Registro"}
+                </Button>
               </div>
 
-              {/* Formulario G: Grilla de Guardias */}
-              {serviceType === "guardia" && (
-                <div className="space-y-2.5">
-                  {renglonesGuardia.map((renglon, index) => (
+              {/* Renglones Formulario G */}
+              {serviceType === "guardia" ? (
+                <div className="space-y-2">
+                  {renglonesGuardia.map((r, index) => (
                     <div
-                      key={renglon.id}
-                      className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm"
+                      key={r.id}
+                      className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center gap-2 text-xs"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                          Guardia #{index + 1}
-                        </span>
-                        {renglonesGuardia.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveRenglonGuardia(renglon.id)}
-                            className="h-6 px-1.5 text-[11px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" /> Quitar
-                          </Button>
-                        )}
-                      </div>
+                      <span className="font-bold text-slate-500 dark:text-slate-400 w-5 shrink-0">
+                        #{index + 1}
+                      </span>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-[11px] text-slate-500">Fecha</Label>
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-slate-400 sm:hidden">Fecha</Label>
                           <Input
                             type="date"
-                            value={renglon.fecha}
-                            onChange={(e) =>
-                              handleUpdateRenglonGuardia(renglon.id, "fecha", e.target.value)
-                            }
+                            value={r.fecha}
+                            onChange={(e) => handleUpdateRenglonGuardia(r.id, "fecha", e.target.value)}
                             className="h-8 text-xs bg-slate-50 dark:bg-slate-950"
                             required
                           />
                         </div>
 
-                        <div className="space-y-1">
-                          <Label className="text-[11px] text-slate-500">Hora Entrada</Label>
+                        <div className="flex items-center gap-1">
                           <Input
                             type="time"
-                            value={renglon.hora_entrada}
-                            onChange={(e) =>
-                              handleUpdateRenglonGuardia(renglon.id, "hora_entrada", e.target.value)
-                            }
-                            className="h-8 text-xs bg-slate-50 dark:bg-slate-950"
-                            required
+                            value={r.hora_entrada}
+                            onChange={(e) => handleUpdateRenglonGuardia(r.id, "hora_entrada", e.target.value)}
+                            className="h-8 text-xs bg-slate-50 dark:bg-slate-950 px-1"
+                            title="Hora Entrada"
                           />
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className="text-[11px] text-slate-500">Hora Salida</Label>
+                          <span className="text-slate-400">a</span>
                           <Input
                             type="time"
-                            value={renglon.hora_salida}
-                            onChange={(e) =>
-                              handleUpdateRenglonGuardia(renglon.id, "hora_salida", e.target.value)
-                            }
-                            className="h-8 text-xs bg-slate-50 dark:bg-slate-950"
-                            required
+                            value={r.hora_salida}
+                            onChange={(e) => handleUpdateRenglonGuardia(r.id, "hora_salida", e.target.value)}
+                            className="h-8 text-xs bg-slate-50 dark:bg-slate-950 px-1"
+                            title="Hora Salida"
                           />
                         </div>
 
-                        <div className="space-y-1">
-                          <Label className="text-[11px] text-slate-500">Tipo de Guardia</Label>
+                        <div>
                           <Select
-                            value={renglon.tipo}
-                            onValueChange={(val: "normal" | "critica") =>
-                              handleUpdateRenglonGuardia(renglon.id, "tipo", val)
-                            }
+                            value={r.tipo}
+                            onValueChange={(val: "normal" | "critica") => handleUpdateRenglonGuardia(r.id, "tipo", val)}
                           >
                             <SelectTrigger className="h-8 text-xs bg-slate-50 dark:bg-slate-950">
                               <SelectValue />
@@ -859,328 +811,197 @@ export function ModalNuevaPrestacion({
                           </Select>
                         </div>
                       </div>
+
+                      {renglonesGuardia.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveRenglonGuardia(r.id)}
+                          className="h-8 w-8 text-rose-500 hover:text-rose-700 hover:bg-rose-50 shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                     </div>
                   ))}
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddRenglonGuardia}
-                    className="h-8 text-xs border-dashed border-sky-400 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/50 w-full"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1.5" /> Agregar otra guardia a la planilla
-                  </Button>
                 </div>
-              )}
-
-              {/* Formulario EH: Grilla de Extensión Horaria */}
-              {serviceType === "extension_horaria" && (
-                <div className="space-y-2.5">
-                  {renglonesEH.map((renglon, index) => (
+              ) : (
+                /* Renglones Formulario EH */
+                <div className="space-y-2">
+                  {renglonesEH.map((r, index) => (
                     <div
-                      key={renglon.id}
-                      className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm"
+                      key={r.id}
+                      className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center gap-2 text-xs"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                          Día #{index + 1}
-                        </span>
-                        {renglonesEH.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveRenglonEH(renglon.id)}
-                            className="h-6 px-1.5 text-[11px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" /> Quitar
-                          </Button>
-                        )}
-                      </div>
+                      <span className="font-bold text-slate-500 dark:text-slate-400 w-5 shrink-0">
+                        #{index + 1}
+                      </span>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-[11px] text-slate-500">Fecha</Label>
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-slate-400 sm:hidden">Fecha</Label>
                           <Input
                             type="date"
-                            value={renglon.fecha}
-                            onChange={(e) =>
-                              handleUpdateRenglonEH(renglon.id, "fecha", e.target.value)
-                            }
+                            value={r.fecha}
+                            onChange={(e) => handleUpdateRenglonEH(r.id, "fecha", e.target.value)}
                             className="h-8 text-xs bg-slate-50 dark:bg-slate-950"
                             required
                           />
                         </div>
 
-                        <div className="space-y-1">
-                          <Label className="text-[11px] text-slate-500">Horario Programado</Label>
+                        <div>
                           <Input
                             placeholder="Ej. 14:00 a 18:00"
-                            value={renglon.horario_programado}
-                            onChange={(e) =>
-                              handleUpdateRenglonEH(renglon.id, "horario_programado", e.target.value)
-                            }
+                            value={r.horario_programado}
+                            onChange={(e) => handleUpdateRenglonEH(r.id, "horario_programado", e.target.value)}
                             className="h-8 text-xs bg-slate-50 dark:bg-slate-950"
-                            required
                           />
                         </div>
 
-                        <div className="space-y-1">
-                          <Label className="text-[11px] text-slate-500">Hs. Cumplidas</Label>
+                        <div className="flex items-center gap-1.5">
                           <Input
                             type="number"
-                            step="0.5"
-                            min="0.5"
-                            placeholder="Ej. 4"
-                            value={renglon.horas_cumplidas}
-                            onChange={(e) =>
-                              handleUpdateRenglonEH(
-                                renglon.id,
-                                "horas_cumplidas",
-                                parseFloat(e.target.value) || 0
-                              )
-                            }
-                            className="h-8 text-xs font-semibold bg-slate-50 dark:bg-slate-950"
+                            min="1"
+                            max="24"
+                            value={r.horas_cumplidas}
+                            onChange={(e) => handleUpdateRenglonEH(r.id, "horas_cumplidas", Number(e.target.value) || 0)}
+                            className="h-8 text-xs font-bold bg-slate-50 dark:bg-slate-950 w-20"
                             required
                           />
+                          <span className="text-[11px] text-slate-500">horas</span>
                         </div>
                       </div>
+
+                      {renglonesEH.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveRenglonEH(r.id)}
+                          className="h-8 w-8 text-rose-500 hover:text-rose-700 hover:bg-rose-50 shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                     </div>
                   ))}
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddRenglonEH}
-                    className="h-8 text-xs border-dashed border-emerald-400 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 w-full"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1.5" /> Agregar otro día a la planilla
-                  </Button>
                 </div>
               )}
 
-              {/* Observaciones Generales */}
+              {/* Observaciones */}
               <div className="space-y-1 pt-1">
                 <Label className="text-xs text-slate-600 dark:text-slate-400">
-                  Observaciones (opcional)
+                  Observaciones de la planilla (Opcional)
                 </Label>
                 <Textarea
-                  placeholder="Detalles complementarios para Tesorería o Dirección..."
+                  placeholder="Información adicional o justificaciones..."
                   value={observaciones}
                   onChange={(e) => setObservaciones(e.target.value)}
-                  rows={2}
-                  className="text-xs bg-white dark:bg-slate-900"
+                  className="text-xs bg-white dark:bg-slate-900 min-h-[50px]"
                 />
               </div>
             </div>
 
-            {/* SECCIÓN 3: FACTURACIÓN AFIP */}
+            {/* SECCIÓN 3: FACTURACIÓN AFIP (1 FACTURA = 1 FORMULARIO) */}
             <div className="p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                  <DollarSign className="w-3.5 h-3.5 text-emerald-600" /> 3. Facturación
+                  <FileText className="w-3.5 h-3.5 text-sky-600" />
+                  3. Factura Electrónica AFIP / ARCA
                 </h4>
-                <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
-                  Tope máx: {formatMoney(config.tope_maximo_factura)} por trámite
-                </span>
               </div>
 
-              {/* Banner con monto calculado automáticamente según aranceles vigentes */}
+              {/* Banner de Total Calculado con botón Copiar */}
               {montoSugerido > 0 && (
-                <div className="p-2.5 bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 rounded-xl flex items-center justify-between text-xs text-sky-900 dark:text-sky-200 shadow-sm">
+                <div className="p-3 bg-gradient-to-r from-sky-50 to-indigo-50 dark:from-sky-950/40 dark:to-indigo-950/40 border border-sky-200/80 dark:border-sky-800/80 rounded-xl flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <Calculator className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                    <span>Total estimado según aranceles vigentes:</span>
+                    <Calculator className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                    <div>
+                      <span className="text-slate-600 dark:text-slate-300">
+                        Total calculado s/ aranceles vigentes:
+                      </span>
+                      <p className="text-sm font-extrabold text-sky-700 dark:text-sky-300">
+                        {formatMoney(montoSugerido)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-sm text-sky-700 dark:text-sky-300">
-                      {formatMoney(montoSugerido)}
-                    </span>
-                    {facturas.length === 1 && !facturas[0].amount && (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleUpdateFactura(facturas[0].id, "amount", String(montoSugerido))}
-                        className="h-6 text-[11px] px-2 bg-sky-200/70 hover:bg-sky-300 text-sky-800 dark:bg-sky-900 dark:text-sky-200"
-                      >
-                        Copiar a Factura
-                      </Button>
-                    )}
-                  </div>
+
+                  {!invoiceAmount && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setInvoiceAmount(String(montoSugerido))}
+                      className="h-7 text-xs px-2.5 bg-sky-200/80 hover:bg-sky-300 text-sky-800 dark:bg-sky-900 dark:text-sky-200 font-semibold"
+                    >
+                      Copiar a Factura
+                    </Button>
+                  )}
                 </div>
               )}
 
-              <div className="space-y-3">
-                {facturas.map((fac, index) => {
-                  const facNum = index + 1;
-                  const parsedAmt = parseFloat(fac.amount);
-                  const isOverLimit = !isNaN(parsedAmt) && parsedAmt > config.tope_maximo_factura;
-
-                  return (
-                    <div
-                      key={fac.id}
-                      className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5 relative shadow-sm"
-                    >
-                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-sky-600" /> Factura AFIP #{facNum}
-                        </span>
-
-                        {facturas.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveFactura(fac.id)}
-                            className="h-6 px-1.5 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50"
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" /> Quitar
-                          </Button>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                        <div className="space-y-1">
-                          <Label className="text-xs text-slate-600 dark:text-slate-400">
-                            N° de Factura <span className="text-rose-500">*</span>
-                          </Label>
-                          <Input
-                            placeholder="00001-00001234"
-                            value={fac.number}
-                            onChange={(e) => handleUpdateFactura(fac.id, "number", e.target.value)}
-                            className="h-9 text-xs bg-slate-50 dark:bg-slate-950"
-                            required
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className="text-xs text-slate-600 dark:text-slate-400">
-                            Fecha Emisión <span className="text-rose-500">*</span>
-                          </Label>
-                          <Input
-                            type="date"
-                            value={fac.date}
-                            onChange={(e) => handleUpdateFactura(fac.id, "date", e.target.value)}
-                            className="h-9 text-xs bg-slate-50 dark:bg-slate-950"
-                            required
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className="text-xs text-slate-600 dark:text-slate-400">
-                            Monto ($) <span className="text-rose-500">*</span>
-                          </Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="Ej. 450000"
-                            value={fac.amount}
-                            onChange={(e) => handleUpdateFactura(fac.id, "amount", e.target.value)}
-                            className={`h-9 text-xs font-semibold bg-slate-50 dark:bg-slate-950 ${
-                              isOverLimit
-                                ? "border-rose-500 focus-visible:ring-rose-500 text-rose-600 dark:text-rose-400"
-                                : ""
-                            }`}
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      {isOverLimit && (
-                        <div className="p-2 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-lg flex items-start gap-2 text-[11px] text-rose-700 dark:text-rose-300">
-                          <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                          <div>
-                            <strong>Tope superado:</strong> El monto individual no puede exceder {formatMoney(config.tope_maximo_factura)}. Por favor reduce este importe y presiona <strong>"+ Agregar otra factura"</strong> para distribuir el saldo.
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="space-y-1 pt-1">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            PDF de la Factura #{facNum} <span className="text-rose-500">*</span>
-                          </Label>
-                          {fac.file && (
-                            <span className="text-[11px] text-emerald-600 flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> {fac.file.name}
-                            </span>
-                          )}
-                        </div>
-                        <Input
-                          type="file"
-                          accept="application/pdf"
-                          onChange={(e) => handleInvoiceFileChange(fac.id, e)}
-                          className="h-9 text-xs bg-slate-50 dark:bg-slate-950 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100"
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddFactura}
-                  className="h-8 text-xs border-dashed border-sky-400 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/50"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1.5" /> Agregar otra factura
-                </Button>
-
-                <div className="text-right">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 mr-2">
-                    Total ({facturas.length} {facturas.length === 1 ? "factura" : "facturas"}):
-                  </span>
-                  <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
-                    {formatMoney(totalInvoiceAmount)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* SECCIÓN 4: CONDUCTA FISCAL (PDF + FECHA VTO) */}
-            <div className="p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
-              <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                <Paperclip className="w-3.5 h-3.5 text-sky-600" /> 4. Conducta Fiscal
-              </h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between h-5">
-                    <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Conducta Fiscal (PDF) <span className="text-rose-500">*</span>
+              {/* Formulario de Factura Única */}
+              <div className="p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3 shadow-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-600 dark:text-slate-400">
+                      N° de Factura <span className="text-rose-500">*</span>
                     </Label>
-                    {fileConducta && (
+                    <Input
+                      placeholder="00001-00001234"
+                      value={invoiceNumber}
+                      onChange={(e) => setInvoiceNumber(e.target.value)}
+                      className="h-9 text-xs bg-slate-50 dark:bg-slate-950"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-600 dark:text-slate-400">
+                      Fecha Emisión <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input
+                      type="date"
+                      value={invoiceDate}
+                      onChange={(e) => setInvoiceDate(e.target.value)}
+                      className="h-9 text-xs bg-slate-50 dark:bg-slate-950"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-600 dark:text-slate-400">
+                      Monto ($) <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Ej. 450000"
+                      value={invoiceAmount}
+                      onChange={(e) => setInvoiceAmount(e.target.value)}
+                      className="h-9 text-xs font-semibold bg-slate-50 dark:bg-slate-950"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      PDF de la Factura <span className="text-rose-500">*</span>
+                    </Label>
+                    {invoiceFile && (
                       <span className="text-[11px] text-emerald-600 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Listo
+                        <CheckCircle2 className="w-3 h-3" /> {invoiceFile.name}
                       </span>
                     )}
                   </div>
                   <Input
                     type="file"
                     accept="application/pdf"
-                    onChange={handleConductaFileChange}
-                    className="h-9 text-xs bg-white dark:bg-slate-900 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between h-5">
-                    <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Vencimiento Conducta <span className="text-rose-500">*</span>
-                    </Label>
-                  </div>
-                  <Input
-                    type="date"
-                    value={conductaDueDate}
-                    onChange={(e) => setConductaDueDate(e.target.value)}
-                    className="h-9 text-xs bg-white dark:bg-slate-900"
-                    required
+                    onChange={handleInvoiceFileChange}
+                    className="h-9 text-xs bg-slate-50 dark:bg-slate-950 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer"
                   />
                 </div>
               </div>
@@ -1198,7 +1019,7 @@ export function ModalNuevaPrestacion({
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !estadoConducta.valida}
                 className={`w-full sm:w-auto text-white font-medium shadow-sm transition-colors ${
                   serviceType === "guardia"
                     ? "bg-sky-600 hover:bg-sky-700"
@@ -1272,31 +1093,23 @@ export function ModalNuevaPrestacion({
               </span>
             </div>
 
-            <div className="py-1 border-b border-slate-200/60 dark:border-slate-800/60 space-y-1">
-              <span className="text-slate-500 dark:text-slate-400 font-medium block">
-                Comprobantes adjuntos ({facturas.length}):
+            <div className="flex justify-between items-center py-0.5 border-b border-slate-200/60 dark:border-slate-800/60">
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Factura Comprobante:</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">
+                N° {invoiceNumber}
               </span>
-              {facturas.map((f, idx) => (
-                <div
-                  key={f.id}
-                  className="flex justify-between items-center text-[11px] pl-2 text-slate-700 dark:text-slate-300"
-                >
-                  <span>• Factura {f.number || `#${idx + 1}`}:</span>
-                  <span className="font-semibold">{formatMoney(parseFloat(f.amount) || 0)}</span>
-                </div>
-              ))}
             </div>
 
             <div className="flex justify-between items-center pt-1">
-              <span className="text-slate-700 dark:text-slate-300 font-bold">Monto Total a Liquidar:</span>
+              <span className="text-slate-700 dark:text-slate-300 font-bold">Monto Total Facturado:</span>
               <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
-                {formatMoney(totalInvoiceAmount)}
+                {formatMoney(numInvoiceAmount)}
               </span>
             </div>
           </div>
 
           <p className="text-[11px] text-slate-400 dark:text-slate-500 italic">
-            * Al confirmar, el formulario digital y las facturas ingresarán a la bandeja de Tesorería para su autorización y liquidación.
+            * Al confirmar, se generará el número de trámite oficial correlativo y la planilla ingresará a la bandeja de Tesorería.
           </p>
 
           <AlertDialogFooter className="pt-3 flex flex-col-reverse sm:flex-row gap-2">

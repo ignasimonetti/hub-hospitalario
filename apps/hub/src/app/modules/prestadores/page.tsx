@@ -423,6 +423,7 @@ export default function PrestadoresPage() {
           perfil={perfil}
           tenantId={currentTenant?.id || ""}
           tenantCode={currentTenant?.code || "CISB"}
+          onOpenPerfil={() => setModalPerfilOpen(true)}
           observadaParaReenviar={observadaParaEditar}
           tipoInicial={tipoTramiteSeleccionado}
           onCreated={(nueva) => {

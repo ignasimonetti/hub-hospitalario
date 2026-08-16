@@ -56,6 +56,10 @@ export function ModalPerfilPrestador({
   );
   const [cbuAlias, setCbuAlias] = useState(perfilActual?.cbu_alias || "");
   const [phone, setPhone] = useState(perfilActual?.phone || "");
+  const [conductaDueDate, setConductaDueDate] = useState(
+    perfilActual?.conducta_fiscal_due_date ? perfilActual.conducta_fiscal_due_date.split("T")[0] : ""
+  );
+  const [fileConducta, setFileConducta] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -74,15 +78,18 @@ export function ModalPerfilPrestador({
 
     setIsSaving(true);
     try {
-      const saved = await savePrestadorPerfil({
-        cuit: cleanCuit,
-        profession,
-        specialty: specialty.trim() || undefined,
-        license_number: licenseNumber.trim(),
-        tax_condition: taxCondition,
-        cbu_alias: cbuAlias.trim() || undefined,
-        phone: phone.trim() || undefined,
-      });
+      const formData = new FormData();
+      formData.append("cuit", cleanCuit);
+      formData.append("profession", profession);
+      if (specialty.trim()) formData.append("specialty", specialty.trim());
+      formData.append("license_number", licenseNumber.trim());
+      formData.append("tax_condition", taxCondition);
+      if (cbuAlias.trim()) formData.append("cbu_alias", cbuAlias.trim());
+      if (phone.trim()) formData.append("phone", phone.trim());
+      if (conductaDueDate) formData.append("conducta_fiscal_due_date", conductaDueDate);
+      if (fileConducta) formData.append("file_conducta_fiscal", fileConducta);
+
+      const saved = await savePrestadorPerfil(formData);
 
       toast.success("Perfil de prestador guardado exitosamente");
       onSaved(saved);
@@ -96,7 +103,7 @@ export function ModalPerfilPrestador({
 
   return (
     <Dialog open={open} onOpenChange={isOnboarding ? undefined : onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[540px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-6 rounded-2xl max-h-[92vh] overflow-y-auto">
         <DialogHeader className="space-y-2 text-left">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center">
@@ -111,7 +118,7 @@ export function ModalPerfilPrestador({
           <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
             {isOnboarding
               ? "Completa estos datos por única vez. Se utilizarán automáticamente en todas tus presentaciones de honorarios."
-              : "Mantén actualizados tus datos de facturación y cobro para Tesorería."}
+              : "Mantén actualizados tus datos de facturación, conducta fiscal y cobro para Tesorería."}
           </DialogDescription>
         </DialogHeader>
 
@@ -205,6 +212,52 @@ export function ModalPerfilPrestador({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* SECCIÓN CONDUCTA FISCAL (DGR / RENTAS) */}
+          <div className="p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                Conducta Fiscal / Rentas DGR
+              </Label>
+              {perfilActual?.file_conducta_fiscal && (
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                  PDF Cargado
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="conducta_date" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                  Fecha de Vencimiento
+                </Label>
+                <Input
+                  id="conducta_date"
+                  type="date"
+                  value={conductaDueDate}
+                  onChange={(e) => setConductaDueDate(e.target.value)}
+                  className="h-9 text-xs bg-white dark:bg-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="file_conducta" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                  {perfilActual?.file_conducta_fiscal ? "Reemplazar Constancia (PDF)" : "Adjuntar Constancia (PDF)"}
+                </Label>
+                <Input
+                  id="file_conducta"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => setFileConducta(e.target.files?.[0] || null)}
+                  className="h-9 text-xs bg-white dark:bg-slate-900 dark:text-white file:text-xs file:font-semibold file:bg-sky-50 dark:file:bg-sky-950 file:text-sky-700 dark:file:text-sky-300 file:border-0 file:rounded-md file:mr-2 cursor-pointer"
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400">
+              Se utilizará de forma automática en todos tus formularios mientras se encuentre vigente.
+            </p>
           </div>
 
           {/* CBU / Alias & Teléfono */}

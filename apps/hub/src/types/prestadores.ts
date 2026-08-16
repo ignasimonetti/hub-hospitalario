@@ -66,6 +66,27 @@ export interface PrestadorPerfil {
 
 export const MAX_INVOICE_AMOUNT = 800000; // Tope máximo por comprobante / trámite ($800.000)
 
+export interface ConfiguracionModuloPrestadores {
+  valor_guardia_ordinaria_habil: number;
+  valor_guardia_ordinaria_inhabil: number;
+  valor_guardia_critica_habil: number;
+  valor_guardia_critica_inhabil: number;
+  valor_hora_extension: number;
+  tope_maximo_factura: number;
+  sectores_habilitados?: string[];
+  updated_at?: string;
+  updated_by?: string;
+}
+
+export const DEFAULT_CONFIGURACION_PRESTADORES: ConfiguracionModuloPrestadores = {
+  valor_guardia_ordinaria_habil: 95000,
+  valor_guardia_ordinaria_inhabil: 115000,
+  valor_guardia_critica_habil: 130000,
+  valor_guardia_critica_inhabil: 160000,
+  valor_hora_extension: 18500,
+  tope_maximo_factura: 800000,
+};
+
 export interface RenglonGuardiaDigital {
   id: string;
   fecha: string;

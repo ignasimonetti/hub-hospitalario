@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -42,8 +42,11 @@ import {
   RenglonGuardiaDigital,
   RenglonExtensionHorariaDigital,
   FormularioDigitalData,
+  ConfiguracionModuloPrestadores,
+  DEFAULT_CONFIGURACION_PRESTADORES,
 } from "@/types/prestadores";
 import { submitPrestacion, resubmitPrestacion } from "@/lib/services/prestadoresService";
+import { getPrestadoresConfig } from "@/lib/services/parametersService";
 import { toast } from "sonner";
 import {
   FileText,
@@ -63,6 +66,7 @@ import {
   Clock,
   UserCheck,
   ClipboardList,
+  Calculator,
 } from "lucide-react";
 
 interface ModalNuevaPrestacionProps {
@@ -135,6 +139,17 @@ export function ModalNuevaPrestacion({
   const [hospitalService, setHospitalService] = useState<SectorServicio>(
     (observadaParaReenviar?.hospital_service as SectorServicio) || "guardia_emergencias"
   );
+
+  // Configuración de aranceles y topes (dinámica desde SuperAdmin)
+  const [config, setConfig] = useState<ConfiguracionModuloPrestadores>(
+    DEFAULT_CONFIGURACION_PRESTADORES
+  );
+
+  useEffect(() => {
+    if (open) {
+      getPrestadoresConfig(tenantId).then(setConfig);
+    }
+  }, [open, tenantId]);
 
   // Campos específicos de Guardias (Formulario G)
   const [reemplazoDe, setReemplazoDe] = useState<string>("");
@@ -343,16 +358,34 @@ export function ModalNuevaPrestacion({
     }
   };
 
-  // Cálculo de totales
-  const totalInvoiceAmount = facturas.reduce((sum, f) => {
-    const val = parseFloat(f.amount);
-    return sum + (isNaN(val) || val <= 0 ? 0 : val);
-  }, 0);
-
+  // Cálculo de totales y montos sugeridos según aranceles vigentes
   const totalHorasEH = renglonesEH.reduce(
     (sum, r) => sum + (Number(r.horas_cumplidas) || 0),
     0
   );
+
+  const montoSugerido = useMemo(() => {
+    if (serviceType === "guardia") {
+      return renglonesGuardia.reduce((sum, g) => {
+        if (!g.fecha) return sum;
+        const d = new Date(`${g.fecha}T12:00:00`);
+        const dayOfWeek = d.getDay(); // 0 es Domingo, 6 es Sábado
+        const isInhabil = dayOfWeek === 0 || dayOfWeek === 6;
+        if (g.tipo === "critica") {
+          return sum + (isInhabil ? config.valor_guardia_critica_inhabil : config.valor_guardia_critica_habil);
+        } else {
+          return sum + (isInhabil ? config.valor_guardia_ordinaria_inhabil : config.valor_guardia_ordinaria_habil);
+        }
+      }, 0);
+    } else {
+      return totalHorasEH * config.valor_hora_extension;
+    }
+  }, [serviceType, renglonesGuardia, totalHorasEH, config]);
+
+  const totalInvoiceAmount = facturas.reduce((sum, f) => {
+    const val = parseFloat(f.amount);
+    return sum + (isNaN(val) || val <= 0 ? 0 : val);
+  }, 0);
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
@@ -401,7 +434,7 @@ export function ModalNuevaPrestacion({
       }
     }
 
-    // 2. Validar Facturas y Tope de $800.000
+    // 2. Validar Facturas y Tope configurable
     for (let i = 0; i < facturas.length; i++) {
       const fac = facturas[i];
       const facNum = i + 1;
@@ -421,10 +454,10 @@ export function ModalNuevaPrestacion({
         return;
       }
 
-      if (numAmount > MAX_INVOICE_AMOUNT) {
+      if (numAmount > config.tope_maximo_factura) {
         toast.error(
           `El Comprobante #${facNum} (${formatMoney(numAmount)}) supera el límite normativo de ${formatMoney(
-            MAX_INVOICE_AMOUNT
+            config.tope_maximo_factura
           )}.`
         );
         return;
@@ -905,22 +938,48 @@ export function ModalNuevaPrestacion({
               </div>
             </div>
 
-            {/* SECCIÓN 3: FACTURACIÓN AFIP (Tope $800.000) */}
+            {/* SECCIÓN 3: FACTURACIÓN AFIP */}
             <div className="p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
                   <DollarSign className="w-3.5 h-3.5 text-emerald-600" /> 3. Facturación
                 </h4>
                 <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
-                  Tope máx: {formatMoney(MAX_INVOICE_AMOUNT)} por trámite
+                  Tope máx: {formatMoney(config.tope_maximo_factura)} por trámite
                 </span>
               </div>
+
+              {/* Banner con monto calculado automáticamente según aranceles vigentes */}
+              {montoSugerido > 0 && (
+                <div className="p-2.5 bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 rounded-xl flex items-center justify-between text-xs text-sky-900 dark:text-sky-200 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Calculator className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                    <span>Total estimado según aranceles vigentes:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-sm text-sky-700 dark:text-sky-300">
+                      {formatMoney(montoSugerido)}
+                    </span>
+                    {facturas.length === 1 && !facturas[0].amount && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleUpdateFactura(facturas[0].id, "amount", String(montoSugerido))}
+                        className="h-6 text-[11px] px-2 bg-sky-200/70 hover:bg-sky-300 text-sky-800 dark:bg-sky-900 dark:text-sky-200"
+                      >
+                        Copiar a Factura
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-3">
                 {facturas.map((fac, index) => {
                   const facNum = index + 1;
                   const parsedAmt = parseFloat(fac.amount);
-                  const isOverLimit = !isNaN(parsedAmt) && parsedAmt > MAX_INVOICE_AMOUNT;
+                  const isOverLimit = !isNaN(parsedAmt) && parsedAmt > config.tope_maximo_factura;
 
                   return (
                     <div
@@ -996,7 +1055,7 @@ export function ModalNuevaPrestacion({
                         <div className="p-2 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-lg flex items-start gap-2 text-[11px] text-rose-700 dark:text-rose-300">
                           <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                           <div>
-                            <strong>Tope superado:</strong> El monto individual no puede exceder {formatMoney(MAX_INVOICE_AMOUNT)}. Por favor reduce este importe y presiona <strong>"+ Agregar otra factura"</strong> para distribuir el saldo.
+                            <strong>Tope superado:</strong> El monto individual no puede exceder {formatMoney(config.tope_maximo_factura)}. Por favor reduce este importe y presiona <strong>"+ Agregar otra factura"</strong> para distribuir el saldo.
                           </div>
                         </div>
                       )}

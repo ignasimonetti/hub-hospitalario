@@ -6,6 +6,27 @@ import { useMemo } from "react";
 import Link from "next/link";
 
 function FloatingPaths({ position }: { position: number }) {
+    // Paleta institucional CISB: azul oscuro → azul → azul claro → rojo suave
+    const palette = [
+        { r: 5, g: 61, b: 108 },   // #053D6C azul oscuro
+        { r: 8, g: 72, b: 122 },   // #08487A azul institucional
+        { r: 51, g: 99, b: 139 },  // #33638B azul claro
+        { r: 192, g: 20, b: 41 },  // #C01429 rojo institucional
+    ];
+
+    const interpolateColor = (t: number) => {
+        // t va de 0 a 1, recorre los 4 stops de la paleta
+        const segments = palette.length - 1;
+        const segment = Math.min(Math.floor(t * segments), segments - 1);
+        const localT = (t * segments) - segment;
+        const from = palette[segment];
+        const to = palette[segment + 1];
+        const r = Math.round(from.r + (to.r - from.r) * localT);
+        const g = Math.round(from.g + (to.g - from.g) * localT);
+        const b = Math.round(from.b + (to.b - from.b) * localT);
+        return `rgb(${r},${g},${b})`;
+    };
+
     const paths = useMemo(() => Array.from({ length: 36 }, (_, i) => ({
         id: i,
         d: `M-${380 - i * 5 * position} -${189 + i * 6}C-${
@@ -15,14 +36,14 @@ function FloatingPaths({ position }: { position: number }) {
         } ${343 - i * 6}C${616 - i * 5 * position} ${470 - i * 6} ${
             684 - i * 5 * position
         } ${875 - i * 6} ${684 - i * 5 * position} ${875 - i * 6}`,
-        color: `rgba(15,23,42,${0.1 + i * 0.03})`,
+        color: interpolateColor(i / 35),
         width: 0.5 + i * 0.03,
     })), [position]);
 
     return (
         <div className="absolute inset-0 pointer-events-none">
             <svg
-                className="w-full h-full text-slate-950 dark:text-white"
+                className="w-full h-full"
                 viewBox="0 0 696 316"
                 fill="none"
             >
@@ -31,9 +52,9 @@ function FloatingPaths({ position }: { position: number }) {
                     <motion.path
                         key={path.id}
                         d={path.d}
-                        stroke="currentColor"
+                        stroke={path.color}
                         strokeWidth={path.width}
-                        strokeOpacity={0.1 + path.id * 0.03}
+                        strokeOpacity={0.08 + path.id * 0.02}
                         initial={{ pathLength: 0.3, opacity: 0.6 }}
                         animate={{
                             pathLength: 1,

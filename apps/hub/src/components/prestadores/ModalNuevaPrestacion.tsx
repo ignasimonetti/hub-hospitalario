@@ -644,7 +644,7 @@ export function ModalNuevaPrestacion({
             {/* SECCIÓN 1: DETALLE DE PRESENTACIÓN */}
             <div className="p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
               <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-sky-600" /> 1. Detalle de Presentación
+                <Calendar className="w-3.5 h-3.5 text-sky-600" /> Período y Sector Asistencial
               </h4>
 
               <div className="grid grid-cols-2 gap-2.5">
@@ -735,7 +735,7 @@ export function ModalNuevaPrestacion({
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
                   <ClipboardList className="w-3.5 h-3.5 text-sky-600" />
-                  2. Planilla de Asistencia Digital ({serviceType === "guardia" ? "Guardias" : "Extensión Horaria"})
+                  Planilla de Asistencia ({serviceType === "guardia" ? "Guardias Médicas" : "Extensión Horaria"})
                 </h4>
 
                 <Button
@@ -903,12 +903,12 @@ export function ModalNuevaPrestacion({
               </div>
             </div>
 
-            {/* SECCIÓN 3: FACTURACIÓN AFIP (1 FACTURA = 1 FORMULARIO) */}
+            {/* SECCIÓN: FACTURACIÓN AFIP (1 FACTURA = 1 FORMULARIO) */}
             <div className="p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-sky-600" />
-                  3. Factura Electrónica AFIP / ARCA
+                  Factura Electrónica (AFIP / ARCA)
                 </h4>
               </div>
 

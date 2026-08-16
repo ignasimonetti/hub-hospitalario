@@ -45,7 +45,7 @@ import {
   ConfiguracionModuloPrestadores,
   DEFAULT_CONFIGURACION_PRESTADORES,
 } from "@/types/prestadores";
-import { submitPrestacion, resubmitPrestacion } from "@/lib/services/prestadoresService";
+import { submitPrestacion, resubmitPrestacion, getNextFormNumber } from "@/lib/services/prestadoresService";
 import { getPrestadoresConfig } from "@/lib/services/parametersService";
 import { toast } from "sonner";
 import {
@@ -67,6 +67,7 @@ import {
   UserCheck,
   ClipboardList,
   Calculator,
+  Hash,
 } from "lucide-react";
 
 interface ModalNuevaPrestacionProps {
@@ -74,6 +75,7 @@ interface ModalNuevaPrestacionProps {
   onOpenChange: (open: boolean) => void;
   perfil: PrestadorPerfil;
   tenantId: string;
+  tenantCode?: string;
   onCreated: (prestacion: PrestacionPresentacion) => void;
   observadaParaReenviar?: PrestacionPresentacion | null;
   tipoInicial?: "guardia" | "extension_horaria";
@@ -107,6 +109,7 @@ export function ModalNuevaPrestacion({
   onOpenChange,
   perfil,
   tenantId,
+  tenantCode = "CISB",
   onCreated,
   observadaParaReenviar = null,
   tipoInicial = "guardia",
@@ -122,12 +125,36 @@ export function ModalNuevaPrestacion({
       : tipoInicial
   );
 
-  // Sincronizar tipoInicial si cambia al abrir el modal
+  // Número de trámite serializado oficial
+  const [formNumber, setFormNumber] = useState<string>(
+    observadaParaReenviar?.form_number || ""
+  );
+
+  // Sincronizar tipoInicial si cambia al abrir el modal y calcular serie correlativa
   useEffect(() => {
-    if (open && !observadaParaReenviar) {
-      setServiceType(tipoInicial);
+    if (open) {
+      if (observadaParaReenviar?.form_number) {
+        setFormNumber(observadaParaReenviar.form_number);
+        setServiceType(observadaParaReenviar.service_type as TipoPrestacion);
+      } else {
+        const targetType = tipoInicial;
+        setServiceType(targetType);
+        getNextFormNumber(targetType === "guardia" ? "guardia" : "extension_horaria", tenantCode).then(
+          (num) => setFormNumber(num)
+        );
+      }
     }
-  }, [open, tipoInicial, observadaParaReenviar]);
+  }, [open, tipoInicial, observadaParaReenviar, tenantCode]);
+
+  // Si el usuario cambia manualmente de tipo de trámite dentro del modal, actualizar la serie
+  const handleServiceTypeChange = (newType: TipoPrestacion) => {
+    setServiceType(newType);
+    if (!observadaParaReenviar) {
+      getNextFormNumber(newType === "guardia" ? "guardia" : "extension_horaria", tenantCode).then(
+        (num) => setFormNumber(num)
+      );
+    }
+  };
 
   // Período y Sector
   const [periodMonth, setPeriodMonth] = useState<number>(
@@ -515,10 +542,10 @@ export function ModalNuevaPrestacion({
         .join(", ");
     }
 
-    const formPrefix = serviceType === "guardia" ? "G" : "EH";
-    const formNumber =
+    const finalFormNumber =
+      formNumber ||
       observadaParaReenviar?.form_number ||
-      `${formPrefix}-${Math.floor(1000 + Math.random() * 9000)}`;
+      `${tenantCode}-${serviceType === "guardia" ? "G" : "EH"}-${new Date().getFullYear()}-00001`;
 
     const detail = facturas.map((f) => ({
       number: f.number.trim(),
@@ -531,7 +558,7 @@ export function ModalNuevaPrestacion({
     formData.append("tenant", tenantId);
     formData.append("period_month", String(periodMonth));
     formData.append("period_year", String(periodYear));
-    formData.append("form_number", formNumber);
+    formData.append("form_number", finalFormNumber);
     formData.append("invoice_number", invoiceNumbers);
     formData.append("invoice_date", primaryDate);
     formData.append("invoice_amount", String(totalInvoiceAmount));
@@ -578,10 +605,10 @@ export function ModalNuevaPrestacion({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[700px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-6 rounded-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader className="space-y-2 text-left">
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                     serviceType === "guardia"
                       ? "bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400"
                       : "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400"
@@ -607,15 +634,26 @@ export function ModalNuevaPrestacion({
                 </div>
               </div>
 
-              <span
-                className={`text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                  serviceType === "guardia"
-                    ? "bg-sky-100 text-sky-700 dark:bg-sky-900/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800"
-                    : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                }`}
-              >
-                {serviceType === "guardia" ? "Formulario G" : "Formulario EH"}
-              </span>
+              {/* Badges de Serie y Tipo */}
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                {formNumber && (
+                  <div className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700 flex items-center gap-1.5 shadow-xs">
+                    <span className="text-[10px] uppercase font-semibold text-slate-400">Nº Serie:</span>
+                    <span className="font-mono text-[11px] font-bold text-slate-800 dark:text-slate-200 tracking-wider">
+                      {formNumber}
+                    </span>
+                  </div>
+                )}
+                <span
+                  className={`text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider ${
+                    serviceType === "guardia"
+                      ? "bg-sky-50 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800"
+                      : "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800"
+                  }`}
+                >
+                  {serviceType === "guardia" ? "Formulario G" : "Formulario EH"}
+                </span>
+              </div>
             </div>
           </DialogHeader>
 

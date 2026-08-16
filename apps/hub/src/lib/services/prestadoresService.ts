@@ -68,6 +68,49 @@ export async function savePrestadorPerfil(
 }
 
 /**
+ * Genera el próximo número correlativo de trámite con sigla institucional
+ * Formato: {SIGLA}-{TIPO}-{AÑO}-{00001} (Ej: CISB-G-2026-00042)
+ */
+export async function getNextFormNumber(
+  serviceType: 'guardia' | 'extension_horaria',
+  tenantCode: string = 'CISB'
+): Promise<string> {
+  const year = new Date().getFullYear();
+  const typeCode = serviceType === 'guardia' ? 'G' : 'EH';
+  const prefix = `${tenantCode.toUpperCase()}-${typeCode}-${year}`;
+
+  try {
+    // Buscar la última presentación creada con este prefijo
+    const lastRecords = await pocketbase
+      .collection('prestaciones_presentaciones')
+      .getList<PrestacionPresentacion>(1, 1, {
+        filter: `form_number ~ "${prefix}"`,
+        sort: '-created',
+        requestKey: null,
+      });
+
+    let nextNumber = 1;
+    if (lastRecords && lastRecords.items.length > 0) {
+      const lastCode = lastRecords.items[0].form_number;
+      if (lastCode) {
+        const parts = lastCode.split('-');
+        const lastSeq = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(lastSeq)) {
+          nextNumber = lastSeq + 1;
+        }
+      }
+    }
+
+    const paddedNumber = String(nextNumber).padStart(5, '0');
+    return `${prefix}-${paddedNumber}`;
+  } catch (error) {
+    // Si falla o no existe registro previo, generar con fallback seguro
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    return `${prefix}-0${randomDigits}`;
+  }
+}
+
+/**
  * Obtiene las presentaciones del usuario actual para el tenant seleccionado
  */
 export async function getMisPrestaciones(tenantId?: string): Promise<PrestacionPresentacion[]> {

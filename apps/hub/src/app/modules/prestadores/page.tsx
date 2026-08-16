@@ -422,6 +422,7 @@ export default function PrestadoresPage() {
           }}
           perfil={perfil}
           tenantId={currentTenant?.id || ""}
+          tenantCode={currentTenant?.code || "CISB"}
           observadaParaReenviar={observadaParaEditar}
           tipoInicial={tipoTramiteSeleccionado}
           onCreated={(nueva) => {

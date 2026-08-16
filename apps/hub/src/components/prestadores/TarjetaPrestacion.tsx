@@ -87,11 +87,20 @@ export function TarjetaPrestacion({ prestacion, onClick }: TarjetaPrestacionProp
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                    {prestacion.form_number
-                      ? `${prestacion.form_number} • Factura ${prestacion.invoice_number}`
-                      : `Factura ${prestacion.invoice_number}`}
-                  </h4>
+                  {prestacion.form_number ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700">
+                        {prestacion.form_number}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        • Fac: {prestacion.invoice_number}
+                      </span>
+                    </div>
+                  ) : (
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                      Factura {prestacion.invoice_number}
+                    </h4>
+                  )}
                   {isGuardia && (
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300">
                       Guardias

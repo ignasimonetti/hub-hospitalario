@@ -120,13 +120,18 @@ export function ModalDetallePrestacion({
                 )}
               </div>
               <div>
-                <DialogTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  {prestacion.form_number
-                    ? `${prestacion.service_type === "guardia" ? "Formulario G" : "Formulario EH"} • ${prestacion.form_number}`
-                    : `Factura ${prestacion.invoice_number}`}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-slate-500">
-                  Período: {mesNombre} {prestacion.period_year}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <DialogTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                    {prestacion.service_type === "guardia" ? "Formulario G" : "Formulario EH"}
+                  </DialogTitle>
+                  {prestacion.form_number && (
+                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700">
+                      {prestacion.form_number}
+                    </span>
+                  )}
+                </div>
+                <DialogDescription className="text-xs text-slate-500 mt-0.5">
+                  Período: {mesNombre} {prestacion.period_year} • Factura {prestacion.invoice_number}
                 </DialogDescription>
               </div>
             </div>

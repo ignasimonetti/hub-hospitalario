@@ -103,19 +103,19 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       {/* Mobile Header & Sidebar */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 sticky top-0 z-20">
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-20">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-gray-900 dark:text-white">
+          <span className="font-semibold text-slate-900 dark:text-white">
             {currentTenant?.name || 'Hub Hospitalario'}
           </span>
         </div>
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
           <SheetTrigger asChild>
-            <button className="p-2 -mr-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg">
+            <button className="p-2 -mr-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
               <Menu className="h-6 w-6" />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-80 border-r-gray-200 dark:border-slate-800">
+          <SheetContent side="left" className="p-0 w-80 border-r-slate-200 dark:border-slate-800">
             <SheetTitle className="sr-only">Menú de Navegación</SheetTitle>
             <AppSidebar
               currentPage="dashboard"
@@ -140,8 +140,8 @@ export default function DashboardPage() {
           className="max-w-6xl mx-auto px-4 md:px-8 py-4 md:py-12"
         >
           {/* Welcome Banner */}
-          <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-slate-50 dark:from-slate-900 dark:to-slate-800 border border-slate-200/60 dark:border-slate-700/50 p-6 md:p-8 mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100">
+          <div className="rounded-2xl bg-slate-50/90 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 p-6 md:p-8 mb-8 shadow-xs">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
               {firstName ? `¡Hola, ${firstName}!` : "¡Bienvenido!"}
             </h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">

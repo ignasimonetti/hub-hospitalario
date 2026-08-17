@@ -205,7 +205,7 @@ export default function PrestadoresPage() {
           <Button
             size="sm"
             onClick={() => setModalSelectorOpen(true)}
-            className="h-8 px-3 bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs rounded-xl shadow-sm"
+            className="h-8 px-3 bg-[#08487A] hover:bg-[#053D6C] text-white font-medium text-xs rounded-xl shadow-sm transition-colors"
           >
             <Plus className="w-3.5 h-3.5 mr-1" /> Facturar
           </Button>
@@ -231,7 +231,7 @@ export default function PrestadoresPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setModalPerfilOpen(true)}
-                className="h-9 text-xs rounded-xl border-slate-200 dark:border-slate-800"
+                className="h-9 text-xs rounded-xl border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <Settings className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
                 Mis Datos Fiscales
@@ -240,7 +240,7 @@ export default function PrestadoresPage() {
               <Button
                 size="sm"
                 onClick={() => setModalSelectorOpen(true)}
-                className="hidden md:flex h-9 bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs rounded-xl shadow-sm"
+                className="hidden md:flex h-9 bg-[#08487A] hover:bg-[#053D6C] text-white font-medium text-xs rounded-xl shadow-sm transition-colors"
               >
                 <Plus className="w-4 h-4 mr-1.5" /> Nueva Presentación
               </Button>

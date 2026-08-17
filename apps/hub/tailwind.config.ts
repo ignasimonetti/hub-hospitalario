@@ -11,6 +11,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      colors: {
+        cisb: {
+          blue: "#08487A",
+          dark: "#053D6C",
+          light: "#33638B",
+          red: "#C01429",
+        },
+      },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":

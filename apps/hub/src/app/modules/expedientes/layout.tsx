@@ -16,9 +16,9 @@ export default function ExpedientesLayout({
                 fallback={
                     <div className="container mx-auto py-10 px-4">
                         <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4">
-                            <ShieldAlert className="h-16 w-16 text-yellow-500 opacity-50" />
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100 italic">Acceso Denegado</h2>
-                            <p className="text-muted-foreground dark:text-slate-400 max-w-md">
+                            <ShieldAlert className="h-16 w-16 text-amber-500/80" />
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 italic">Acceso Denegado</h2>
+                            <p className="text-slate-500 dark:text-slate-400 max-w-md">
                                 No tienes permisos para acceder al módulo de expedientes.
                                 Solo usuarios con rol de Mesa de Entradas o Superadmin pueden acceder a esta sección.
                             </p>

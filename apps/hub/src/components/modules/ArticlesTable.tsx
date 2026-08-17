@@ -178,7 +178,7 @@ export function ArticlesTable() {
                         </Button>
                     </Link>
                     <Link href="/modules/content/new">
-                        <Button className="h-10 border border-transparent shadow-sm hover:shadow-md transition-all dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white">
+                        <Button className="h-10 bg-[#08487A] hover:bg-[#053D6C] text-white border-0 shadow-sm hover:shadow-md transition-all">
                             <Plus className="mr-2 h-4 w-4" /> Nuevo Artículo
                         </Button>
                     </Link>

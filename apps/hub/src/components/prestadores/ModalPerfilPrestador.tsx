@@ -26,9 +26,9 @@ import {
   PROFESIONES_MAP,
   CONDICIONES_FISCALES_MAP,
 } from "@/types/prestadores";
-import { savePrestadorPerfil } from "@/lib/services/prestadoresService";
+import { savePrestadorPerfil, getPerfilFileUrl } from "@/lib/services/prestadoresService";
 import { toast } from "sonner";
-import { UserCheck, ShieldCheck, Loader2, Sparkles } from "lucide-react";
+import { UserCheck, ShieldCheck, Loader2, Sparkles, Eye, Trash2, FileText } from "lucide-react";
 
 interface ModalPerfilPrestadorProps {
   open: boolean;
@@ -60,7 +60,13 @@ export function ModalPerfilPrestador({
     perfilActual?.conducta_fiscal_due_date ? perfilActual.conducta_fiscal_due_date.split("T")[0] : ""
   );
   const [fileConducta, setFileConducta] = useState<File | null>(null);
+  const [removeExistingConducta, setRemoveExistingConducta] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const existingFileUrl =
+    perfilActual?.file_conducta_fiscal && !removeExistingConducta
+      ? getPerfilFileUrl(perfilActual, perfilActual.file_conducta_fiscal)
+      : null;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,8 +92,14 @@ export function ModalPerfilPrestador({
       formData.append("tax_condition", taxCondition);
       if (cbuAlias.trim()) formData.append("cbu_alias", cbuAlias.trim());
       if (phone.trim()) formData.append("phone", phone.trim());
-      if (conductaDueDate) formData.append("conducta_fiscal_due_date", conductaDueDate);
-      if (fileConducta) formData.append("file_conducta_fiscal", fileConducta);
+
+      if (removeExistingConducta && !fileConducta) {
+        formData.append("file_conducta_fiscal", "");
+        formData.append("conducta_fiscal_due_date", "");
+      } else {
+        if (conductaDueDate) formData.append("conducta_fiscal_due_date", conductaDueDate);
+        if (fileConducta) formData.append("file_conducta_fiscal", fileConducta);
+      }
 
       const saved = await savePrestadorPerfil(formData);
 
@@ -118,7 +130,7 @@ export function ModalPerfilPrestador({
           <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
             {isOnboarding
               ? "Completa estos datos por única vez. Se utilizarán automáticamente en todas tus presentaciones de honorarios."
-              : "Mantén actualizados tus datos de facturación, conducta fiscal y cobro para Tesorería."}
+              : "Mantén actualizados tus datos profesionales, condición fiscal y constancia DGR."}
           </DialogDescription>
         </DialogHeader>
 
@@ -195,7 +207,7 @@ export function ModalPerfilPrestador({
           {/* Condición Fiscal */}
           <div className="space-y-1.5">
             <Label htmlFor="tax_condition" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Condición Fiscal AFIP/ARCA <span className="text-rose-500">*</span>
+              Condición Fiscal ARCA <span className="text-rose-500">*</span>
             </Label>
             <Select
               value={taxCondition}
@@ -221,10 +233,28 @@ export function ModalPerfilPrestador({
                 <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 Conducta Fiscal / Rentas DGR
               </Label>
-              {perfilActual?.file_conducta_fiscal && (
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                  PDF Cargado
-                </span>
+              {existingFileUrl && (
+                <div className="flex items-center gap-2">
+                  <a
+                    href={existingFileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-sky-700 hover:text-sky-800 dark:text-sky-400 font-semibold bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800 flex items-center gap-1 hover:underline transition-colors"
+                  >
+                    <Eye className="w-3 h-3" /> Ver PDF
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRemoveExistingConducta(true);
+                      setConductaDueDate("");
+                    }}
+                    className="text-[11px] text-rose-600 hover:text-rose-700 dark:text-rose-400 font-semibold bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-800 flex items-center gap-1 hover:underline transition-colors"
+                    title="Eliminar constancia actual"
+                  >
+                    <Trash2 className="w-3 h-3" /> Quitar
+                  </button>
+                </div>
               )}
             </div>
 
@@ -237,20 +267,26 @@ export function ModalPerfilPrestador({
                   id="conducta_date"
                   type="date"
                   value={conductaDueDate}
-                  onChange={(e) => setConductaDueDate(e.target.value)}
+                  onChange={(e) => {
+                    setConductaDueDate(e.target.value);
+                    if (removeExistingConducta) setRemoveExistingConducta(false);
+                  }}
                   className="h-9 text-xs bg-white dark:bg-slate-900 dark:text-white"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="file_conducta" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                  {perfilActual?.file_conducta_fiscal ? "Reemplazar Constancia (PDF)" : "Adjuntar Constancia (PDF)"}
+                  {existingFileUrl ? "Reemplazar Constancia (PDF)" : "Adjuntar Constancia (PDF)"}
                 </Label>
                 <Input
                   id="file_conducta"
                   type="file"
                   accept="application/pdf"
-                  onChange={(e) => setFileConducta(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    setFileConducta(e.target.files?.[0] || null);
+                    if (removeExistingConducta) setRemoveExistingConducta(false);
+                  }}
                   className="h-9 text-xs bg-white dark:bg-slate-900 dark:text-white file:text-xs file:font-semibold file:bg-sky-50 dark:file:bg-sky-950 file:text-sky-700 dark:file:text-sky-300 file:border-0 file:rounded-md file:mr-2 cursor-pointer"
                 />
               </div>
@@ -304,7 +340,7 @@ export function ModalPerfilPrestador({
             <Button
               type="submit"
               disabled={isSaving}
-              className="w-full sm:w-auto bg-sky-600 hover:bg-sky-700 text-white font-medium shadow-sm transition-colors"
+              className="w-full sm:w-auto bg-[#08487A] hover:bg-[#053D6C] text-white font-medium shadow-sm transition-colors"
             >
               {isSaving ? (
                 <span className="flex items-center gap-2">

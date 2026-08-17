@@ -473,8 +473,6 @@ export default function ProfilePage() {
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{getUserDisplayName()}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
               </div>
-              <div className="h-8 w-px bg-gray-300 dark:bg-gray-600" />
-              <Settings className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </motion.div>
           </div>
         </div>

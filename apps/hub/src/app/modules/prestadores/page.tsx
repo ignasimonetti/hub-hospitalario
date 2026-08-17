@@ -234,7 +234,7 @@ export default function PrestadoresPage() {
                 className="h-9 text-xs rounded-xl border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <Settings className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-                Mis Datos Fiscales
+                Mis Datos
               </Button>
 
               <Button

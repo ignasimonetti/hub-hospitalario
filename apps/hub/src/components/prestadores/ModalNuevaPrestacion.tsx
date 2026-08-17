@@ -48,6 +48,7 @@ import {
   submitPrestacion,
   resubmitPrestacion,
   getNextFormNumber,
+  getPerfilFileUrl,
 } from "@/lib/services/prestadoresService";
 import { getPrestadoresConfig } from "@/lib/services/parametersService";
 import { toast } from "sonner";
@@ -73,6 +74,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   ExternalLink,
+  Eye,
 } from "lucide-react";
 
 interface ModalNuevaPrestacionProps {
@@ -625,20 +627,33 @@ export function ModalNuevaPrestacion({
                 </div>
               </div>
 
-              {!estadoConducta.valida && onOpenPerfil && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    onOpenChange(false);
-                    onOpenPerfil();
-                  }}
-                  className="h-7 text-xs bg-white dark:bg-slate-900 border-rose-300 text-rose-700 hover:bg-rose-50 shrink-0"
-                >
-                  Actualizar Perfil <ExternalLink className="w-3 h-3 ml-1" />
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {estadoConducta.valida && perfil.file_conducta_fiscal && (
+                  <a
+                    href={getPerfilFileUrl(perfil, perfil.file_conducta_fiscal)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="h-7 px-2 text-xs bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-50 rounded-lg flex items-center gap-1 font-semibold shrink-0 transition-colors"
+                  >
+                    <Eye className="w-3.5 h-3.5" /> Ver PDF
+                  </a>
+                )}
+
+                {!estadoConducta.valida && onOpenPerfil && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      onOpenChange(false);
+                      onOpenPerfil();
+                    }}
+                    className="h-7 text-xs bg-white dark:bg-slate-900 border-rose-300 text-rose-700 hover:bg-rose-50 shrink-0"
+                  >
+                    Actualizar Perfil <ExternalLink className="w-3 h-3 ml-1" />
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* SECCIÓN 1: DETALLE DE PRESENTACIÓN */}

@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { createTenant, updateTenant } from "@/app/actions/tenants";
 import { Upload, Loader2, AlertTriangle } from "lucide-react";
 import { pocketbase } from "@/lib/auth";
+import { toast } from "sonner";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -147,23 +148,23 @@ export function TenantSheet({ open, onOpenChange, tenant, onSuccess }: TenantShe
         }
 
         try {
-            let result;
             if (isEditing) {
-                console.log('[TenantSheet] Updating tenant:', tenant.id);
-                result = await updateTenant(tenant.id, formData);
+                console.log('[TenantSheet] Updating tenant via PocketBase:', tenant.id);
+                await pocketbase.collection('hub_tenants').update(tenant.id, formData, { requestKey: null });
+                toast.success("Hospital actualizado exitosamente");
             } else {
-                console.log('[TenantSheet] Creating new tenant');
-                result = await createTenant(formData);
+                console.log('[TenantSheet] Creating new tenant via PocketBase');
+                await pocketbase.collection('hub_tenants').create(formData, { requestKey: null });
+                toast.success("Hospital creado exitosamente");
             }
 
-            if (result.success) {
-                onSuccess();
-                onOpenChange(false);
-            } else {
-                setError(result.error || "Error al guardar el hospital");
-            }
+            onSuccess();
+            onOpenChange(false);
         } catch (err: any) {
-            setError(err.message || "Error inesperado");
+            console.error('Error al guardar hospital:', err);
+            const msg = err.message || "Error al guardar el hospital";
+            setError(msg);
+            toast.error(msg.includes('400') ? "Error al procesar la actualización del hospital" : msg);
         } finally {
             setIsSubmitting(false);
         }

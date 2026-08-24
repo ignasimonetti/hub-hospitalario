@@ -25,9 +25,10 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Building2, Plus, Edit, Trash2, Search, Loader2 } from "lucide-react";
-import { getTenants, deleteTenant } from "@/app/actions/tenants";
 import { TenantSheet } from "./TenantSheet";
 import { pocketbase } from "@/lib/auth";
+import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function TenantsTab() {
     const [tenants, setTenants] = useState<any[]>([]);
@@ -46,12 +47,14 @@ export function TenantsTab() {
     const loadTenants = async () => {
         setLoading(true);
         try {
-            const result = await getTenants();
-            if (result.success && result.data) {
-                setTenants(result.data);
-            }
+            const records = await pocketbase.collection('hub_tenants').getFullList({
+                sort: 'name',
+                requestKey: null
+            });
+            setTenants(records);
         } catch (error) {
             console.error("Error loading tenants:", error);
+            toast.error("Error al cargar la lista de hospitales");
         } finally {
             setLoading(false);
         }
@@ -77,14 +80,14 @@ export function TenantsTab() {
 
         setIsDeleting(true);
         try {
-            const result = await deleteTenant(tenantToDelete.id);
-            if (result.success) {
-                await loadTenants();
-                setDeleteDialogOpen(false);
-                setTenantToDelete(null);
-            }
-        } catch (error) {
+            await pocketbase.collection('hub_tenants').delete(tenantToDelete.id);
+            toast.success("Hospital eliminado exitosamente");
+            await loadTenants();
+            setDeleteDialogOpen(false);
+            setTenantToDelete(null);
+        } catch (error: any) {
             console.error("Error deleting tenant:", error);
+            toast.error(error?.message || "Error al eliminar el hospital");
         } finally {
             setIsDeleting(false);
         }
@@ -180,8 +183,18 @@ export function TenantsTab() {
                         <TableBody>
                             {filteredTenants.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground dark:text-slate-400">
-                                        {tenants.length === 0 ? "No hay hospitales registrados" : "No se encontraron hospitales"}
+                                    <TableCell colSpan={5} className="py-2">
+                                        <EmptyState
+                                            icon={Building2}
+                                            title={tenants.length === 0 ? "No hay hospitales registrados" : "Sin resultados para la búsqueda"}
+                                            description={tenants.length === 0 ? "Comenzá creando el primer hospital para habilitar el espacio de trabajo." : "Probá ajustando el término de búsqueda."}
+                                            action={tenants.length === 0 ? {
+                                                label: "Nuevo Hospital",
+                                                onClick: handleNewTenant,
+                                                icon: Plus
+                                            } : undefined}
+                                            compact
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ) : (

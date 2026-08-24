@@ -18,12 +18,13 @@ import {
     LifeBuoy,
     FolderOpen,
     Package,
-    Stethoscope
+    Stethoscope,
+    Receipt
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AppSidebarProps {
-    currentPage?: 'dashboard' | 'blog' | 'admin' | 'expedientes' | 'supply' | 'prestadores';
+    currentPage?: 'dashboard' | 'blog' | 'admin' | 'expedientes' | 'supply' | 'prestadores' | 'tesoreria';
     isMobile?: boolean;
     onMobileClose?: () => void;
 }
@@ -88,6 +89,12 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
     const isSupplyUser = (currentRole?.slug || '').startsWith('supply_') ||
         (currentRole?.name?.toLowerCase() || '').includes('suministros');
     const canAccessSupply = isAdmin || isSupplyUser;
+
+    // Check if user has Tesoreria access
+    const isTesoreriaUser = (currentRole?.slug || '').includes('tesoreria') ||
+        (currentRole?.name?.toLowerCase() || '').includes('tesorer') ||
+        (currentRole?.slug || '').includes('director');
+    const canAccessTesoreria = isAdmin || isTesoreriaUser;
 
     const getTenantLogoUrl = () => {
         if (currentTenant && currentTenant.logo) {
@@ -238,6 +245,21 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
                             <Stethoscope className="h-4 w-4 text-sky-600 dark:text-sky-400 flex-shrink-0" />
                             {showContent && <span>Portal de Prestadores</span>}
                         </button>
+
+                        {/* Módulo de Tesorería */}
+                        {canAccessTesoreria && (
+                            <button
+                                className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'tesoreria'
+                                    ? 'text-gray-900 dark:text-slate-100 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg border border-emerald-200 dark:border-emerald-700'
+                                    : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
+                                    } transition-colors`}
+                                title={!showContent ? 'Tesorería' : undefined}
+                                onClick={() => handleNavigation('/modules/tesoreria')}
+                            >
+                                <Receipt className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                {showContent && <span>Tesorería</span>}
+                            </button>
+                        )}
 
                         {/* Admin Section */}
                         {isAdmin && (

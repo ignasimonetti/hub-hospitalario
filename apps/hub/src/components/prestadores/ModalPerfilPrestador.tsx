@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,7 @@ import {
 } from "@/types/prestadores";
 import { savePrestadorPerfil, getPerfilFileUrl } from "@/lib/services/prestadoresService";
 import { toast } from "sonner";
+import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 import { UserCheck, ShieldCheck, Loader2, Sparkles, Eye, Trash2, FileText } from "lucide-react";
 
 interface ModalPerfilPrestadorProps {
@@ -37,6 +38,11 @@ interface ModalPerfilPrestadorProps {
   onSaved: (perfil: PrestadorPerfil) => void;
   isOnboarding?: boolean;
 }
+
+const normalizeDateStr = (dateStr?: string) => {
+  if (!dateStr) return "";
+  return dateStr.split(" ")[0].split("T")[0];
+};
 
 export function ModalPerfilPrestador({
   open,
@@ -57,11 +63,12 @@ export function ModalPerfilPrestador({
   const [cbuAlias, setCbuAlias] = useState(perfilActual?.cbu_alias || "");
   const [phone, setPhone] = useState(perfilActual?.phone || "");
   const [conductaDueDate, setConductaDueDate] = useState(
-    perfilActual?.conducta_fiscal_due_date ? perfilActual.conducta_fiscal_due_date.split("T")[0] : ""
+    normalizeDateStr(perfilActual?.conducta_fiscal_due_date)
   );
   const [fileConducta, setFileConducta] = useState<File | null>(null);
   const [removeExistingConducta, setRemoveExistingConducta] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sincronizar estado local cuando perfilActual cambia o se abre el modal
   useEffect(() => {
@@ -73,13 +80,12 @@ export function ModalPerfilPrestador({
       setTaxCondition(perfilActual.tax_condition || "monotributo");
       setCbuAlias(perfilActual.cbu_alias || "");
       setPhone(perfilActual.phone || "");
-      setConductaDueDate(
-        perfilActual.conducta_fiscal_due_date
-          ? perfilActual.conducta_fiscal_due_date.split("T")[0]
-          : ""
-      );
+      setConductaDueDate(normalizeDateStr(perfilActual.conducta_fiscal_due_date));
       setFileConducta(null);
       setRemoveExistingConducta(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   }, [open, perfilActual]);
 
@@ -130,17 +136,19 @@ export function ModalPerfilPrestador({
       const formData = new FormData();
       formData.append("cuit", cleanCuit);
       formData.append("profession", profession);
-      if (specialty.trim()) formData.append("specialty", specialty.trim());
+      formData.append("specialty", specialty.trim());
       formData.append("license_number", licenseNumber.trim());
       formData.append("tax_condition", taxCondition);
-      if (cbuAlias.trim()) formData.append("cbu_alias", cbuAlias.trim());
-      if (phone.trim()) formData.append("phone", phone.trim());
+      formData.append("cbu_alias", cbuAlias.trim());
+      formData.append("phone", phone.trim());
 
       if (removeExistingConducta && !fileConducta) {
+        // Limpiar archivo y fecha
         formData.append("file_conducta_fiscal", "");
         formData.append("conducta_fiscal_due_date", "");
       } else {
-        if (conductaDueDate) formData.append("conducta_fiscal_due_date", conductaDueDate);
+        // Siempre enviar la fecha (aunque no haya nuevo archivo, para actualizarla)
+        formData.append("conducta_fiscal_due_date", conductaDueDate || "");
         if (fileConducta) formData.append("file_conducta_fiscal", fileConducta);
       }
 
@@ -271,95 +279,60 @@ export function ModalPerfilPrestador({
           </div>
 
           {/* SECCIÓN CONDUCTA FISCAL (DGR / RENTAS) */}
-          <div className="p-3.5 bg-slate-50/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+          <div className="p-4 bg-slate-50/80 dark:bg-slate-950/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 Conducta Fiscal / Rentas DGR
               </Label>
-              {existingFilename && (
-                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                  Constancia Vigente
+              {existingFilename && !removeExistingConducta && (
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" /> Constancia Guardada
                 </span>
               )}
             </div>
 
-            {/* Tarjeta con archivo activo */}
-            {existingFilename && existingFileUrl && (
-              <div className="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 shadow-xs">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-md bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate" title={existingFilename}>
-                      {existingFilename}
-                    </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                      Vencimiento: <strong className="text-slate-700 dark:text-slate-300">{formatDisplayDate(conductaDueDate) || "Sin fecha"}</strong>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 shrink-0">
-                  <a
-                    href={existingFileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="h-7 px-2 text-xs text-sky-700 hover:text-sky-800 dark:text-sky-400 font-semibold bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 rounded-md border border-sky-200 dark:border-sky-800 flex items-center gap-1 transition-colors"
-                  >
-                    <Eye className="w-3.5 h-3.5" /> Ver PDF
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRemoveExistingConducta(true);
-                      setConductaDueDate("");
-                    }}
-                    className="h-7 px-2 text-xs text-rose-600 hover:text-rose-700 dark:text-rose-400 font-semibold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 rounded-md border border-rose-200 dark:border-rose-800 flex items-center gap-1 transition-colors"
-                    title="Eliminar constancia actual"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Quitar
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="conducta_date" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                  Fecha de Vencimiento {(existingFilename || fileConducta) && <span className="text-rose-500">*</span>}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="conducta_date" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Fecha de Vencimiento de Constancia {(existingFilename || fileConducta) && <span className="text-rose-500">*</span>}
                 </Label>
-                <Input
-                  id="conducta_date"
-                  type="date"
-                  value={conductaDueDate}
-                  onChange={(e) => {
-                    setConductaDueDate(e.target.value);
-                    if (removeExistingConducta) setRemoveExistingConducta(false);
-                  }}
-                  className="h-9 text-xs bg-white dark:bg-slate-900 dark:text-white"
-                />
+                {conductaDueDate && (
+                  <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-800/60">
+                    Vence: {formatDisplayDate(conductaDueDate)}
+                  </span>
+                )}
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="file_conducta" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                  {existingFilename ? "Reemplazar Constancia (PDF)" : "Adjuntar Constancia (PDF)"}
-                </Label>
-                <Input
-                  id="file_conducta"
-                  type="file"
-                  accept="application/pdf"
-                  onChange={(e) => {
-                    setFileConducta(e.target.files?.[0] || null);
-                    if (removeExistingConducta) setRemoveExistingConducta(false);
-                  }}
-                  className="h-9 text-xs bg-white dark:bg-slate-900 dark:text-white file:text-xs file:font-semibold file:bg-sky-50 dark:file:bg-sky-950 file:text-sky-700 dark:file:text-sky-300 file:border-0 file:rounded-md file:mr-2 cursor-pointer"
-                />
-              </div>
+              <Input
+                id="conducta_date"
+                type="date"
+                value={conductaDueDate}
+                onChange={(e) => setConductaDueDate(e.target.value)}
+                className="h-9 text-xs bg-white dark:bg-slate-900 dark:text-white"
+              />
             </div>
-            <p className="text-[10px] text-slate-400">
-              Se utilizará de forma automática en todos tus formularios mientras se encuentre vigente.
+
+            <FileUploadDropzone
+              accept=".pdf"
+              maxSizeMB={10}
+              label="Adjuntar Constancia de Conducta Fiscal (PDF)"
+              helperText="Formato PDF oficial de Rentas DGR (máx. 10MB)"
+              currentFileName={!removeExistingConducta && existingFilename ? `Constancia adjunta (${existingFilename.slice(0, 20)}...)` : undefined}
+              currentFileUrl={!removeExistingConducta ? existingFileUrl || undefined : undefined}
+              onFileSelect={(file) => {
+                setFileConducta(file);
+                if (file) {
+                  setRemoveExistingConducta(true);
+                }
+              }}
+              onRemoveCurrent={() => {
+                setRemoveExistingConducta(true);
+                setFileConducta(null);
+                setConductaDueDate("");
+              }}
+            />
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+              Se vinculará automáticamente a todas tus presentaciones mientras se encuentre vigente.
             </p>
           </div>
 

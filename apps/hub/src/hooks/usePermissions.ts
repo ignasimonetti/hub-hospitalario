@@ -235,24 +235,42 @@ async function getCurrentUserRoles(tenantId?: string): Promise<any[]> {
     filter += ` && tenant = "${tenantId}"`
   }
 
-  const userRoles = await pocketbase.collection('hub_user_roles').getList(1, 100, {
-    filter: filter,
-    expand: 'role,tenant'
-  })
+  try {
+    const userRoles = await pocketbase.collection('hub_user_roles').getList(1, 100, {
+      filter: filter,
+      expand: 'role,tenant',
+      requestKey: null, // Desactiva la autocancelación por re-renders concurrentes
+    })
 
-  return userRoles.items
+    return userRoles.items
+  } catch (err: any) {
+    if (err?.isAbort || err?.message?.includes('autocancelled') || err?.name === 'AbortError') {
+      return []
+    }
+    console.error('Error fetching user roles:', err)
+    return []
+  }
 }
 
 async function getCurrentUserPermissions(tenantId?: string): Promise<any[]> {
-  const userRoles = await getCurrentUserRoles(tenantId)
-  if (!userRoles.length) return []
+  try {
+    const userRoles = await getCurrentUserRoles(tenantId)
+    if (!userRoles.length) return []
 
-  const roleIds = userRoles.map(ur => ur.role)
+    const roleIds = userRoles.map(ur => ur.role)
 
-  const rolePermissions = await pocketbase.collection('hub_role_permissions').getList(1, 100, {
-    filter: `role = "${roleIds.join('" || role = "')}"`,
-    expand: 'permission'
-  })
+    const rolePermissions = await pocketbase.collection('hub_role_permissions').getList(1, 100, {
+      filter: `role = "${roleIds.join('" || role = "')}"`,
+      expand: 'permission',
+      requestKey: null, // Desactiva la autocancelación
+    })
 
-  return rolePermissions.items.map(rp => rp.expand?.permission)
+    return rolePermissions.items.map(rp => rp.expand?.permission)
+  } catch (err: any) {
+    if (err?.isAbort || err?.message?.includes('autocancelled') || err?.name === 'AbortError') {
+      return []
+    }
+    console.error('Error fetching user permissions:', err)
+    return []
+  }
 }

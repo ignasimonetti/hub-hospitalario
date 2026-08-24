@@ -48,10 +48,32 @@ export type SectorServicio =
 
 export type TipoDiasPrestacion = 'mes_completo' | 'rango_fechas' | 'dias_especificos';
 
-export type EstadoPrestacion = 'pendiente' | 'en_revision' | 'observado' | 'aprobado' | 'pagado';
+export type OrigenObservacion = 'director_adjunto' | 'director_coordinador' | 'tesoreria';
+
+export interface EventoObservacion {
+  id: string;
+  autor_id: string;
+  autor_nombre: string;
+  rol_emisor: 'director_adjunto' | 'director_coordinador' | 'tesoreria' | 'prestador';
+  tipo: 'observacion' | 'correccion_reenvio';
+  motivo: string;
+  created_at: string;
+}
+
+export type EstadoPrestacion =
+  | 'borrador'
+  | 'pendiente'
+  | 'en_revision'
+  | 'visado_adjunto'
+  | 'observado'
+  | 'observado_tesoreria'
+  | 'aprobado'
+  | 'pagado';
 
 export interface PrestadorPerfil {
   id: string;
+  collectionId: string;
+  collectionName: string;
   user: string;
   cuit: string;
   profession: ProfesionPrestador;
@@ -68,25 +90,75 @@ export interface PrestadorPerfil {
 
 export const MAX_INVOICE_AMOUNT = 800000; // Tope máximo por comprobante / trámite ($800.000)
 
+export interface FeriadoConfig {
+  fecha: string; // YYYY-MM-DD
+  motivo: string;
+  tipo?: 'nacional' | 'provincial' | 'asueto';
+}
+
 export interface ConfiguracionModuloPrestadores {
   valor_guardia_ordinaria_habil: number;
   valor_guardia_ordinaria_inhabil: number;
   valor_guardia_critica_habil: number;
   valor_guardia_critica_inhabil: number;
+  valor_modulo_6hs_extension?: number;
   valor_hora_extension: number;
   tope_maximo_factura: number;
   sectores_habilitados?: string[];
+  feriados_config?: FeriadoConfig[];
   updated_at?: string;
   updated_by?: string;
 }
+
+export const DEFAULT_SECTORES_HABILITADOS: string[] = [
+  'Guardia de Emergencias',
+  'Terapia Intensiva Adultos (UTI)',
+  'Terapia Intensiva Pediátrica / Neonatología (UTIN)',
+  'Clínica Médica / Sala',
+  'Pediatría',
+  'Cirugía General / Quirófano',
+  'Traumatología y Ortopedia',
+  'Cardiología',
+  'Ginecología y Obstetricia',
+  'Salud Mental / Psicología',
+  'Diagnóstico por Imágenes',
+  'Laboratorio / Bioquímica',
+  'Kinesiología y Rehabilitación',
+  'Consultorios Externos',
+  'Otro Sector / Servicio',
+];
+
+export const DEFAULT_FERIADOS_ARGENTINA_SDE: FeriadoConfig[] = [
+  { fecha: '2026-01-01', motivo: 'Año Nuevo', tipo: 'nacional' },
+  { fecha: '2026-02-16', motivo: 'Carnaval', tipo: 'nacional' },
+  { fecha: '2026-02-17', motivo: 'Carnaval', tipo: 'nacional' },
+  { fecha: '2026-03-24', motivo: 'Día Nacional de la Memoria por la Verdad y la Justicia', tipo: 'nacional' },
+  { fecha: '2026-04-02', motivo: 'Día del Veterano y de los Caídos en la Guerra de Malvinas', tipo: 'nacional' },
+  { fecha: '2026-04-03', motivo: 'Viernes Santo', tipo: 'nacional' },
+  { fecha: '2026-04-27', motivo: 'Día de la Autonomía Provincial (Santiago del Estero)', tipo: 'provincial' },
+  { fecha: '2026-05-01', motivo: 'Día del Trabajador', tipo: 'nacional' },
+  { fecha: '2026-05-25', motivo: 'Día de la Revolución de Mayo', tipo: 'nacional' },
+  { fecha: '2026-06-15', motivo: 'Paso a la Inmortalidad del Gral. Don Martín Miguel de Güemes', tipo: 'nacional' },
+  { fecha: '2026-06-20', motivo: 'Paso a la Inmortalidad del Gral. Manuel Belgrano', tipo: 'nacional' },
+  { fecha: '2026-07-09', motivo: 'Día de la Independencia', tipo: 'nacional' },
+  { fecha: '2026-07-25', motivo: 'Fundación de la Ciudad de Santiago del Estero', tipo: 'provincial' },
+  { fecha: '2026-08-17', motivo: 'Paso a la Inmortalidad del Gral. José de San Martín', tipo: 'nacional' },
+  { fecha: '2026-10-12', motivo: 'Día del Respeto a la Diversidad Cultural', tipo: 'nacional' },
+  { fecha: '2026-11-23', motivo: 'Día de la Soberanía Nacional', tipo: 'nacional' },
+  { fecha: '2026-12-08', motivo: 'Día de la Inmaculada Concepción de María', tipo: 'nacional' },
+  { fecha: '2026-12-25', motivo: 'Navidad', tipo: 'nacional' },
+];
 
 export const DEFAULT_CONFIGURACION_PRESTADORES: ConfiguracionModuloPrestadores = {
   valor_guardia_ordinaria_habil: 95000,
   valor_guardia_ordinaria_inhabil: 115000,
   valor_guardia_critica_habil: 130000,
   valor_guardia_critica_inhabil: 160000,
+  valor_modulo_6hs_extension: 111000,
   valor_hora_extension: 18500,
   tope_maximo_factura: 800000,
+  sectores_habilitados: DEFAULT_SECTORES_HABILITADOS,
+  feriados_config: DEFAULT_FERIADOS_ARGENTINA_SDE,
 };
 
 export interface RenglonGuardiaDigital {
@@ -95,6 +167,7 @@ export interface RenglonGuardiaDigital {
   hora_entrada: string;
   hora_salida: string;
   tipo: 'normal' | 'critica';
+  duracion_horas?: number;
   valor?: number;
 }
 
@@ -133,6 +206,8 @@ export interface DetalleFacturaItem {
 
 export interface PrestacionPresentacion {
   id: string;
+  collectionId: string;
+  collectionName: string;
   user: string;
   tenant: string;
   form_number?: string; // Ej: "G-0001" o "EH-0001"
@@ -152,7 +227,36 @@ export interface PrestacionPresentacion {
   file_conducta_fiscal: string;
   file_service_proof?: string;
   status: EstadoPrestacion;
+  adjunto_approved_by?: string;
+  adjunto_approved_at?: string;
+  adjunto_signature_meta?: string;
+  director_approved_by?: string;
+  director_approved_at?: string;
+  director_signature_meta?: string;
+  director_observation?: string;
   treasury_observation?: string;
+  origen_observacion?: OrigenObservacion;
+  historial_observaciones?: EventoObservacion[] | string;
+  director_adjunto_asignado?: string;
+  area_adjunta_destino?: string;
+  treasury_paid_at?: string;
+  treasury_receipt_number?: string;
+  treasury_check_status?: 'pendiente_control' | 'en_revision' | 'conformado' | 'observado_fiscal';
+  treasury_locked_by?: string;
+  treasury_locked_name?: string;
+  treasury_locked_at?: string;
+  treasury_verified_by?: string;
+  treasury_verified_at?: string;
+  lote_id?: string;
+  lote_numero?: string;
+  numero_expediente_gde?: string;
+  retencion_iibb?: number;
+  retencion_ganancias?: number;
+  retencion_suss?: number;
+  retencion_otras?: number;
+  retencion_otras_concepto?: string;
+  retencion_monto?: number;
+  monto_neto_liquidable?: number;
   submitted_at?: string;
   reviewed_at?: string;
   paid_at?: string;
@@ -194,6 +298,13 @@ export const CONDICIONES_FISCALES_MAP: Record<CondicionFiscal, string> = {
   exento: 'Exento',
 };
 
+export const DIRECTORES_ADJUNTOS_AREAS = [
+  { id: "adultos", label: "Dirección Adjunta de Adultos / Polivalente", icon: "🏥" },
+  { id: "pediatria", label: "Dirección Adjunta de Pediatría / Infantil", icon: "👶" },
+  { id: "maternidad", label: "Dirección Adjunta de Maternidad & Neonatología", icon: "🤰" },
+  { id: "general", label: "Dirección Médica General / Coordinación", icon: "🛡️" },
+];
+
 export const TIPOS_PRESTACION_MAP: Record<TipoPrestacion, string> = {
   guardia: 'Guardias Médicas (Formulario G)',
   extension_horaria: 'Extensión Horaria (Formulario EH)',
@@ -228,6 +339,13 @@ export const ESTADOS_PRESTACION_CONFIG: Record<
   EstadoPrestacion,
   { label: string; color: string; badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline'; bgLight: string; textDark: string }
 > = {
+  borrador: {
+    label: 'Borrador',
+    color: 'slate',
+    badgeVariant: 'outline',
+    bgLight: 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700',
+    textDark: 'text-slate-700 dark:text-slate-300',
+  },
   pendiente: {
     label: 'Pendiente',
     color: 'amber',
@@ -242,12 +360,26 @@ export const ESTADOS_PRESTACION_CONFIG: Record<
     bgLight: 'bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800',
     textDark: 'text-sky-700 dark:text-sky-300',
   },
+  visado_adjunto: {
+    label: 'Visado Dir. Adjunto',
+    color: 'violet',
+    badgeVariant: 'secondary',
+    bgLight: 'bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800',
+    textDark: 'text-violet-700 dark:text-violet-300',
+  },
   observado: {
-    label: 'Observado',
+    label: 'Observado (Dirección)',
     color: 'rose',
     badgeVariant: 'destructive',
     bgLight: 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800',
     textDark: 'text-rose-700 dark:text-rose-300',
+  },
+  observado_tesoreria: {
+    label: 'Observado (Tesorería)',
+    color: 'amber',
+    badgeVariant: 'destructive',
+    bgLight: 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700',
+    textDark: 'text-amber-800 dark:text-amber-200',
   },
   aprobado: {
     label: 'Aprobado',

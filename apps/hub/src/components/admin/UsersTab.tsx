@@ -28,6 +28,8 @@ import { Users, Plus, Edit, Trash2, Search, Loader2, UserCheck, UserX, UserCog }
 import { getUsers, deleteUser, toggleUserStatus, updateUser } from "@/app/actions/users";
 import { UserSheet } from "./UserSheet";
 import { pocketbase } from "@/lib/auth";
+import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function UsersTab() {
     const [users, setUsers] = useState<any[]>([]);
@@ -272,8 +274,18 @@ export function UsersTab() {
                         <TableBody>
                             {filteredUsers.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground dark:text-slate-400">
-                                        {users.length === 0 ? "No hay usuarios registrados" : "No se encontraron usuarios"}
+                                    <TableCell colSpan={6} className="py-2">
+                                        <EmptyState
+                                            icon={Users}
+                                            title={users.length === 0 ? "No hay usuarios registrados" : "Sin resultados para la búsqueda"}
+                                            description={users.length === 0 ? "Comenzá invitando o creando usuarios en el sistema." : "Probá buscando por otro nombre o correo electrónico."}
+                                            action={users.length === 0 ? {
+                                                label: "Nuevo Usuario",
+                                                onClick: handleNewUser,
+                                                icon: Plus
+                                            } : undefined}
+                                            compact
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ) : (

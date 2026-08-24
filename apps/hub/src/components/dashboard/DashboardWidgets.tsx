@@ -20,6 +20,7 @@ import {
     updateWidgetPositions,
 } from '@/app/actions/dashboard-config';
 import { type WidgetDefinition } from '@/lib/dashboard-constants';
+import { EmptyState } from '@/components/ui/empty-state';
 
 // Dnd Kit Imports
 import {
@@ -277,27 +278,20 @@ export function DashboardWidgets({ className }: DashboardWidgetsProps) {
 
             {/* Widgets Grid with Drag & Drop */}
             {visibleWidgets.length === 0 ? (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                >
-                    <Card className="bg-gray-50 dark:bg-slate-900/50 border-dashed border-gray-300 dark:border-slate-700">
-                        <CardContent className="flex flex-col items-center justify-center py-12">
-                            <EyeOffIcon className="h-12 w-12 text-gray-400 dark:text-slate-600 mb-4" />
-                            <p className="text-gray-600 dark:text-slate-400 text-center">
-                                No tienes widgets visibles.
-                            </p>
-                            <Button
-                                variant="link"
-                                onClick={() => setIsConfigOpen(true)}
-                                className="mt-2"
-                            >
-                                Configurar widgets
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </motion.div>
+                <Card className="bg-slate-50/50 dark:bg-slate-900/40 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                    <CardContent className="p-4">
+                        <EmptyState
+                            icon={EyeOffIcon}
+                            title="No tienes widgets visibles"
+                            description="Personalizá tu panel activando las métricas y accesos rápidos según tu rol."
+                            action={{
+                                label: "Configurar widgets",
+                                onClick: () => setIsConfigOpen(true),
+                                icon: Settings2Icon
+                            }}
+                        />
+                    </CardContent>
+                </Card>
             ) : (
                 <DndContext
                     sensors={sensors}

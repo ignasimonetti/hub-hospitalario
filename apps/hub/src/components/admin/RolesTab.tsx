@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { RoleSheet } from "./RoleSheet";
 import { getRoles, deleteRole } from '@/app/actions/roles';
+import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -135,8 +136,13 @@ export function RolesTab() {
                                 </TableRow>
                             ) : filteredRoles.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                                        No se encontraron roles.
+                                    <TableCell colSpan={6} className="py-2">
+                                        <EmptyState
+                                            icon={Shield}
+                                            title="No se encontraron roles"
+                                            description="Probá ajustando la búsqueda para encontrar el rol deseado."
+                                            compact
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ) : (

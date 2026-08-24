@@ -11,6 +11,7 @@ import { getAuditLogs } from '@/app/actions/audit';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from "sonner";
+import { EmptyState } from '@/components/ui/empty-state';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
@@ -144,8 +145,13 @@ export function AuditTab() {
                         <TableBody>
                             {logs.length === 0 && !isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                        No hay registros de auditoría.
+                                    <TableCell colSpan={5} className="py-2">
+                                        <EmptyState
+                                            icon={Activity}
+                                            title="No hay registros de auditoría"
+                                            description="Las acciones de los usuarios y cambios en el sistema se registrarán aquí automáticamente."
+                                            compact
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ) : (

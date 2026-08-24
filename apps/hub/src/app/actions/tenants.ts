@@ -36,23 +36,15 @@ export async function createTenant(formData: FormData) {
         const pb = await getServerPocketBase();
 
         const isActiveValue = formData.get('is_active');
-        const data: any = {
-            name: formData.get('name'),
-            slug: formData.get('slug'),
-            description: formData.get('description') || '',
-            address: formData.get('address') || '',
-            phone: formData.get('phone') || '',
-            email: formData.get('email') || '',
-            is_active: isActiveValue === 'true',
-        };
+        formData.set('is_active', String(isActiveValue === 'true'));
 
-        // Handle logo upload if present
-        const logo = formData.get('logo') as File;
-        if (logo && logo.size > 0) {
-            data.logo = logo;
+        // Delete empty logo file if not provided
+        const logo = formData.get('logo');
+        if (logo instanceof File && logo.size === 0) {
+            formData.delete('logo');
         }
 
-        const tenant = await pb.collection(TENANTS_COLLECTION).create(data);
+        const tenant = await pb.collection(TENANTS_COLLECTION).create(formData);
 
         revalidatePath('/admin');
 
@@ -79,31 +71,15 @@ export async function updateTenant(id: string, formData: FormData) {
         const pb = await getServerPocketBase();
 
         const isActiveValue = formData.get('is_active');
-        console.log('[updateTenant] Raw is_active value:', isActiveValue);
+        formData.set('is_active', String(isActiveValue === 'true'));
 
-        // Ensure is_active is always a boolean, defaulting to true if undefined
-        const isActive = isActiveValue === 'true' || (isActiveValue !== 'false' && isActiveValue === null);
-        console.log('[updateTenant] Converted is_active:', isActive);
-
-        const data: any = {
-            name: formData.get('name'),
-            slug: formData.get('slug'),
-            description: formData.get('description') || '',
-            address: formData.get('address') || '',
-            phone: formData.get('phone') || '',
-            email: formData.get('email') || '',
-            is_active: isActive,
-        };
-
-        console.log('[updateTenant] Data to send:', JSON.stringify(data, null, 2));
-
-        // Handle logo upload if present
-        const logo = formData.get('logo') as File;
-        if (logo && logo.size > 0) {
-            data.logo = logo;
+        // Delete empty logo file if not provided
+        const logo = formData.get('logo');
+        if (logo instanceof File && logo.size === 0) {
+            formData.delete('logo');
         }
 
-        const tenant = await pb.collection(TENANTS_COLLECTION).update(id, data);
+        const tenant = await pb.collection(TENANTS_COLLECTION).update(id, formData);
 
         revalidatePath('/admin');
 

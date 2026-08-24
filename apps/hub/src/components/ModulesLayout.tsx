@@ -5,7 +5,7 @@ import { AppSidebar } from './AppSidebar';
 
 interface ModulesLayoutProps {
     children: ReactNode;
-    currentPage?: 'dashboard' | 'blog' | 'admin' | 'expedientes' | 'supply' | 'prestadores';
+    currentPage?: 'dashboard' | 'blog' | 'admin' | 'expedientes' | 'supply' | 'prestadores' | 'tesoreria';
 }
 
 export function ModulesLayout({ children, currentPage = 'blog' }: ModulesLayoutProps) {

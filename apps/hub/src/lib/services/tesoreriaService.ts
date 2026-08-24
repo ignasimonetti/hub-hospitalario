@@ -544,7 +544,13 @@ export async function quitarPrestacionDeLote(
 }
 
 /**
- * Agrega prestaciones conformadas a un Lote ya existente
+ * Estados de lote que permiten agregar/quitar prestaciones ("lote abierto")
+ */
+export const ESTADOS_LOTE_ABIERTO: string[] = ["borrador", "en_tramite_gde"];
+
+/**
+ * Agrega prestaciones conformadas a un Lote ya existente.
+ * Solo se permite si el lote está en estado abierto (borrador / en_tramite_gde).
  */
 export async function agregarPrestacionesALote(
   loteId: string,
@@ -555,6 +561,33 @@ export async function agregarPrestacionesALote(
   const lotes = await getLotesTesoreria(tenantId);
   const targetLote = lotes.find((l) => l.id === loteId);
   if (!targetLote) throw new Error("Lote no encontrado");
+
+  // Validar que el lote esté en estado abierto
+  if (!ESTADOS_LOTE_ABIERTO.includes(targetLote.estado)) {
+    throw new Error(
+      `El lote "${targetLote.numero_lote}" ya no admite prestaciones porque se encuentra en estado "${targetLote.estado}". Solo los lotes en estado Borrador o Expediente GDE Caratulado permiten incorporar prestaciones.`
+    );
+  }
+
+  // Validar que ninguna de las nuevas prestaciones ya pertenezca a otro lote
+  const prestacionesConflicto: { id: string; loteNumero: string }[] = [];
+  for (const id of nuevasPrestacionesIds) {
+    if (targetLote.prestaciones_ids.includes(id)) continue; // ya está en este lote, ok
+    const otroLote = lotes.find(
+      (l) => l.id !== loteId && l.prestaciones_ids && l.prestaciones_ids.includes(id)
+    );
+    if (otroLote) {
+      prestacionesConflicto.push({ id, loteNumero: otroLote.numero_lote });
+    }
+  }
+  if (prestacionesConflicto.length > 0) {
+    const detalle = prestacionesConflicto
+      .map((x) => `• ${x.id} → ya en lote ${x.loteNumero}`)
+      .join("\n");
+    throw new Error(
+      `No se pueden agregar: ${prestacionesConflicto.length} prestación(es) ya pertenecen a otro lote.\n${detalle}`
+    );
+  }
 
   const unicosIds = Array.from(new Set([...targetLote.prestaciones_ids, ...nuevasPrestacionesIds]));
   targetLote.prestaciones_ids = unicosIds;

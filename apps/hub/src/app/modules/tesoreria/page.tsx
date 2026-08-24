@@ -21,6 +21,8 @@ import {
   getPrestacionesParaTesoreria,
   getLotesTesoreria,
   crearLoteTesoreria,
+  agregarPrestacionesALote,
+  ESTADOS_LOTE_ABIERTO,
   registrarPagoLiquidacion,
   liquidarLotePrestaciones,
   observarComprobanteFiscal,
@@ -65,6 +67,8 @@ import {
   ShieldCheck,
   X,
   FolderOpen,
+  FolderPlus,
+  ChevronDown,
   Lock,
   Edit3,
   BarChart3,
@@ -127,6 +131,7 @@ export default function TesoreriaPage() {
   const [loteDetalle, setLoteDetalle] = useState<LoteTesoreria | null>(null);
   const [isCrearLoteModalOpen, setIsCrearLoteModalOpen] = useState(false);
   const [isLoteModalOpen, setIsLoteModalOpen] = useState(false);
+  const [showAgregarALoteDropdown, setShowAgregarALoteDropdown] = useState(false);
 
   useEffect(() => {
     setUser(getCurrentUser());
@@ -354,6 +359,32 @@ export default function TesoreriaPage() {
     }
   };
 
+  // Lotes abiertos que admiten incorporar prestaciones
+  const lotesAbiertos = useMemo(() => {
+    return lotes.filter((l) => ESTADOS_LOTE_ABIERTO.includes(l.estado));
+  }, [lotes]);
+
+  // Agregar prestaciones seleccionadas a un lote existente
+  const handleAgregarALoteExistente = async (loteId: string) => {
+    setShowAgregarALoteDropdown(false);
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) {
+      toast.warning("Seleccione al menos una prestación conformada.");
+      return;
+    }
+    try {
+      await agregarPrestacionesALote(loteId, ids, prestaciones, currentTenant?.id);
+      const loteTarget = lotes.find((l) => l.id === loteId);
+      toast.success(
+        `${ids.length} prestación(es) incorporadas al lote "${loteTarget?.numero_lote || loteId}".`
+      );
+      setSelectedIds(new Set());
+      await cargarDatos();
+    } catch (err: any) {
+      toast.error(err?.message || "Error al agregar prestaciones al lote.");
+    }
+  };
+
   const handleConfirmSinglePayment = async (id: string, payload: RegistrarPagoPayload) => {
     await registrarPagoLiquidacion(id, payload);
     await cargarDatos();
@@ -509,14 +540,79 @@ export default function TesoreriaPage() {
             </Button>
 
             {selectedIds.size > 0 && vistaActiva === "operaciones" && (
-              <Button
-                size="sm"
-                onClick={() => setIsCrearLoteModalOpen(true)}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-1.5 shadow-sm"
-              >
-                <FolderOpen className="h-3.5 w-3.5" />
-                Crear Lote ({selectedIds.size})
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  onClick={() => setIsCrearLoteModalOpen(true)}
+                  className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-1.5 shadow-sm"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Crear Lote ({selectedIds.size})
+                </Button>
+
+                {/* Botón Agregar a Lote Existente */}
+                {lotesAbiertos.length > 0 && (
+                  <div className="relative">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowAgregarALoteDropdown(!showAgregarALoteDropdown)}
+                      className="h-8 text-xs font-semibold flex items-center gap-1.5 border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950"
+                    >
+                      <FolderPlus className="h-3.5 w-3.5" />
+                      Agregar a Lote ({selectedIds.size})
+                      <ChevronDown className={`h-3 w-3 transition-transform ${showAgregarALoteDropdown ? "rotate-180" : ""}`} />
+                    </Button>
+
+                    {showAgregarALoteDropdown && (
+                      <>
+                        {/* Overlay para cerrar al hacer clic fuera */}
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowAgregarALoteDropdown(false)}
+                        />
+                        <div className="absolute right-0 top-full mt-1 z-50 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden">
+                          <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                              Seleccionar Lote Abierto
+                            </p>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                              Se agregarán {selectedIds.size} prestación(es) al lote seleccionado
+                            </p>
+                          </div>
+                          <div className="max-h-48 overflow-y-auto">
+                            {lotesAbiertos.map((lote) => (
+                              <button
+                                key={lote.id}
+                                onClick={() => handleAgregarALoteExistente(lote.id)}
+                                className="w-full text-left px-3 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border-b border-gray-100 dark:border-gray-800 last:border-b-0 transition-colors"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                                      {lote.numero_lote}
+                                    </p>
+                                    {lote.numero_expediente_gde && (
+                                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                        {lote.numero_expediente_gde}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="text-right">
+                                    <Badge variant="outline" className="text-[10px] px-1.5">
+                                      {lote.cantidad_prestaciones} ítem(s)
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </header>

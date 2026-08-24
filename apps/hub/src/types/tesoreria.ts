@@ -13,6 +13,7 @@ export interface PrestacionTesoreriaItem extends PrestacionPresentacion {
 export type EstadoLoteTesoreria =
   | 'borrador'
   | 'en_tramite_gde'
+  | 'cerrado'
   | 'en_contabilidad'
   | 'en_despacho'
   | 'autorizado_resolucion'
@@ -29,6 +30,8 @@ export interface LoteTesoreria {
   periodo_mes: number;
   periodo_anio: number;
   estado: EstadoLoteTesoreria;
+  numero_orden_pago?: string; // Ej: "OP-2026-00142" o Comprobante BSE
+  fecha_orden_pago?: string;
   numero_resolucion?: string; // Ej: "RESOL-2026-2244-E-GDESDE-CISB#MS"
   fecha_resolucion?: string;
   monto_bruto_total: number;
@@ -254,9 +257,14 @@ export const ESTADOS_LOTE_CONFIG: Record<
     textDark: 'text-slate-700 dark:text-slate-300',
   },
   en_tramite_gde: {
-    label: 'Expediente GDE Caratulado',
+    label: 'Expediente GDE (Abierto)',
     bgLight: 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800',
     textDark: 'text-blue-700 dark:text-blue-300',
+  },
+  cerrado: {
+    label: 'Cerrado para Emisión',
+    bgLight: 'bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800',
+    textDark: 'text-purple-700 dark:text-purple-300',
   },
   en_contabilidad: {
     label: 'Pase a Contable (Asiento Global)',

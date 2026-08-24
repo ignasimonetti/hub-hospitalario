@@ -70,6 +70,7 @@ import {
   FolderPlus,
   ChevronDown,
   Lock,
+  Unlock,
   Edit3,
   BarChart3,
   Layers,
@@ -895,13 +896,18 @@ export default function TesoreriaPage() {
                                     <span className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400">
                                       {lote.numero_lote}
                                     </span>
-                                    {lote.estado !== "en_tramite_gde" && (
-                                      <span
-                                        className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold shrink-0 ${estadoCfg.bgLight} ${estadoCfg.textDark}`}
-                                      >
-                                        {estadoCfg.label}
-                                      </span>
-                                    )}
+                                    <span
+                                      className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold shrink-0 flex items-center gap-1 ${estadoCfg.bgLight} ${estadoCfg.textDark}`}
+                                    >
+                                      {lote.estado === "pagado_bse" || lote.numero_orden_pago ? (
+                                        <FileCheck2 className="w-2.5 h-2.5 text-teal-600 dark:text-teal-400" />
+                                      ) : lote.estado === "cerrado" ? (
+                                        <Lock className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
+                                      ) : (
+                                        <Unlock className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
+                                      )}
+                                      {estadoCfg.label}
+                                    </span>
                                   </div>
                                   <h3 className="text-xs font-semibold text-gray-900 dark:text-slate-100 font-mono mt-0.5 truncate">
                                     {lote.numero_expediente_gde || "Sin Expediente GDE"}

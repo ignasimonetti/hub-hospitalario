@@ -510,13 +510,24 @@ export async function crearLoteTesoreria(
 }
 
 /**
- * Quita una prestación individual de un Lote y la devuelve al buzón general de conformadas
+ * Quita una prestación individual de un Lote y la devuelve al buzón general de conformadas.
+ * Solo se permite si el lote está en estado abierto.
  */
 export async function quitarPrestacionDeLote(
   prestacionId: string,
   loteId: string,
   tenantId?: string
 ): Promise<void> {
+  const lotes = await getLotesTesoreria(tenantId);
+  const targetLote = lotes.find((l) => l.id === loteId);
+  if (!targetLote) throw new Error("Lote no encontrado");
+
+  if (!ESTADOS_LOTE_ABIERTO.includes(targetLote.estado)) {
+    throw new Error(
+      `El lote "${targetLote.numero_lote}" está cerrado o liquidado. No se pueden quitar prestaciones sin reabrirlo previamente.`
+    );
+  }
+
   // 1. Desvincular en PocketBase
   try {
     await pocketbase.collection("prestaciones_presentaciones").update(
@@ -533,20 +544,57 @@ export async function quitarPrestacionDeLote(
   }
 
   // 2. Actualizar el Lote en memoria/storage
-  const lotes = await getLotesTesoreria(tenantId);
-  const targetLote = lotes.find((l) => l.id === loteId);
-  if (targetLote) {
-    targetLote.prestaciones_ids = targetLote.prestaciones_ids.filter((id) => id !== prestacionId);
-    targetLote.cantidad_prestaciones = targetLote.prestaciones_ids.length;
-    targetLote.updated = new Date().toISOString();
-    saveLocalLotes(lotes);
-  }
+  targetLote.prestaciones_ids = targetLote.prestaciones_ids.filter((id) => id !== prestacionId);
+  targetLote.cantidad_prestaciones = targetLote.prestaciones_ids.length;
+  targetLote.updated = new Date().toISOString();
+  saveLocalLotes(lotes);
 }
 
 /**
  * Estados de lote que permiten agregar/quitar prestaciones ("lote abierto")
  */
 export const ESTADOS_LOTE_ABIERTO: string[] = ["borrador", "en_tramite_gde"];
+
+/**
+ * Conmuta el estado de apertura/cierre de un lote.
+ * Un lote con Orden de Pago / Pago BSE no puede reabrirse jamás.
+ */
+export async function toggleCierreLoteTesoreria(
+  loteId: string,
+  tenantId?: string
+): Promise<LoteTesoreria> {
+  const lotes = await getLotesTesoreria(tenantId);
+  const targetLote = lotes.find((l) => l.id === loteId);
+  if (!targetLote) throw new Error("Lote no encontrado");
+
+  // Si ya fue pagado o tiene orden de pago, es irreversible
+  if (targetLote.estado === "pagado_bse" || targetLote.numero_orden_pago) {
+    throw new Error(
+      "Este lote ya cuenta con Orden de Pago o Liquidación BSE ejecutada y no puede ser reabierto."
+    );
+  }
+
+  const estaAbierto = ESTADOS_LOTE_ABIERTO.includes(targetLote.estado);
+  const nuevoEstado = estaAbierto ? "cerrado" : "en_tramite_gde";
+
+  targetLote.estado = nuevoEstado;
+  targetLote.updated = new Date().toISOString();
+
+  saveLocalLotes(lotes);
+
+  // Sincronizar en PB si la colección existe
+  try {
+    await pocketbase.collection("tesoreria_lotes").update(
+      targetLote.id,
+      { estado: nuevoEstado },
+      { requestKey: null }
+    );
+  } catch {
+    // Ignorar si no está en PB
+  }
+
+  return targetLote;
+}
 
 /**
  * Agrega prestaciones conformadas a un Lote ya existente.
@@ -813,8 +861,24 @@ export async function liquidarLotePrestaciones(
     const target = lotes.find((l) => l.id === loteId);
     if (target) {
       target.estado = "pagado_bse";
+      target.numero_orden_pago = payload.batchReceiptNumber;
+      target.fecha_orden_pago = payload.paymentDate || new Date().toISOString().split("T")[0];
       target.updated = new Date().toISOString();
       saveLocalLotes(lotes);
+
+      try {
+        await pocketbase.collection("tesoreria_lotes").update(
+          target.id,
+          {
+            estado: "pagado_bse",
+            numero_orden_pago: payload.batchReceiptNumber,
+            fecha_orden_pago: payload.paymentDate || new Date().toISOString().split("T")[0],
+          },
+          { requestKey: null }
+        );
+      } catch {
+        // Ignorar si PB no tiene la colección
+      }
     }
   }
 

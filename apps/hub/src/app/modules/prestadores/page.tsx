@@ -192,15 +192,29 @@ export default function PrestadoresPage() {
 
   // KPIs Financieros (Mis Prestaciones)
   const kpis = useMemo(() => {
+    // Total en Trámite: todo lo presentado que aún no fue pagado y no es borrador
     const pendiente = misPrestaciones
-      .filter((p) => ["pendiente", "en_revision", "observado"].includes(p.status))
+      .filter((p) =>
+        [
+          "pendiente",
+          "en_revision",
+          "visado_adjunto",
+          "aprobado",
+          "observado",
+          "observado_tesoreria",
+        ].includes(p.status)
+      )
       .reduce((sum, p) => sum + (p.invoice_amount || 0), 0);
 
+    // Cobrado: liquidado y pagado efectivamente
     const cobrado = misPrestaciones
       .filter((p) => p.status === "pagado")
       .reduce((sum, p) => sum + (p.invoice_amount || 0), 0);
 
-    const observadasCount = misPrestaciones.filter((p) => p.status === "observado").length;
+    // Trámites que requieren subsanación/corrección del prestador
+    const observadasCount = misPrestaciones.filter(
+      (p) => p.status === "observado" || p.status === "observado_tesoreria"
+    ).length;
 
     return { pendiente, cobrado, observadasCount };
   }, [misPrestaciones]);
@@ -229,7 +243,12 @@ export default function PrestadoresPage() {
     }
     if (filtroEstado === "pendientes") {
       return misPrestaciones.filter((p) =>
-        ["pendiente", "en_revision", "visado_adjunto", "observado", "observado_tesoreria"].includes(p.status)
+        ["pendiente", "en_revision", "visado_adjunto"].includes(p.status)
+      );
+    }
+    if (filtroEstado === "observadas") {
+      return misPrestaciones.filter((p) =>
+        ["observado", "observado_tesoreria"].includes(p.status)
       );
     }
     return misPrestaciones.filter((p) => p.status === filtroEstado);
@@ -988,7 +1007,14 @@ export default function PrestadoresPage() {
               {/* KPIs de Prestador */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* 1. Pendiente */}
-                <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-2xl">
+                <Card
+                  onClick={() => setFiltroEstado("pendientes")}
+                  className={`border transition-all rounded-2xl cursor-pointer hover:shadow-md ${
+                    filtroEstado === "pendientes"
+                      ? "ring-2 ring-amber-500 border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-slate-900"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs"
+                  }`}
+                >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-slate-500">Total en Trámite</p>
@@ -1004,7 +1030,14 @@ export default function PrestadoresPage() {
                 </Card>
 
                 {/* 2. Cobrado */}
-                <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-2xl">
+                <Card
+                  onClick={() => setFiltroEstado("pagado")}
+                  className={`border transition-all rounded-2xl cursor-pointer hover:shadow-md ${
+                    filtroEstado === "pagado"
+                      ? "ring-2 ring-emerald-500 border-emerald-300 dark:border-emerald-700 bg-emerald-50/40 dark:bg-slate-900"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs"
+                  }`}
+                >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-slate-500">Cobrado este Período</p>
@@ -1020,7 +1053,14 @@ export default function PrestadoresPage() {
                 </Card>
 
                 {/* 3. Observaciones */}
-                <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-2xl">
+                <Card
+                  onClick={() => setFiltroEstado("observadas")}
+                  className={`border transition-all rounded-2xl cursor-pointer hover:shadow-md ${
+                    filtroEstado === "observadas"
+                      ? "ring-2 ring-rose-500 border-rose-300 dark:border-rose-700 bg-rose-50/40 dark:bg-slate-900"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs"
+                  }`}
+                >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-slate-500">Observadas</p>
@@ -1086,6 +1126,25 @@ export default function PrestadoresPage() {
                   >
                     Aprobadas
                   </button>
+
+                  {kpis.observadasCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setFiltroEstado("observadas")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 ${
+                        filtroEstado === "observadas"
+                          ? "bg-rose-600 text-white shadow-2xs"
+                          : "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                      }`}
+                    >
+                      <span>Observadas</span>
+                      <span className={`px-1.5 py-0.2 text-[10px] font-bold rounded-full ${
+                        filtroEstado === "observadas" ? "bg-white text-rose-600" : "bg-rose-100 text-rose-700"
+                      }`}>
+                        {kpis.observadasCount}
+                      </span>
+                    </button>
+                  )}
 
                   <button
                     type="button"

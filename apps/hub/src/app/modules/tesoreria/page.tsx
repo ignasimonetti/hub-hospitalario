@@ -309,20 +309,32 @@ export default function TesoreriaPage() {
     };
   }, [prestaciones, lotes, filtroMes, filtroAnio]);
 
-  // Selección múltiple
+  // Selección múltiple: SOLO sobre prestaciones que ya estén 'conformado' (nunca pendientes de control)
+  const prestacionesConformadasDisponibles = useMemo(() => {
+    return itemsFiltrados.filter(
+      (i) => i.status === "aprobado" && !i.lote_id && i.treasury_check_status === "conformado"
+    );
+  }, [itemsFiltrados]);
+
   const handleToggleSelectAll = () => {
-    const disponibles = itemsFiltrados.filter((i) => i.status === "aprobado" && !i.lote_id);
-    if (selectedIds.size === disponibles.length && disponibles.length > 0) {
+    if (
+      selectedIds.size === prestacionesConformadasDisponibles.length &&
+      prestacionesConformadasDisponibles.length > 0
+    ) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(disponibles.map((i) => i.id)));
+      setSelectedIds(new Set(prestacionesConformadasDisponibles.map((i) => i.id)));
     }
   };
 
-  const handleToggleSelectOne = (id: string) => {
+  const handleToggleSelectOne = (item: PrestacionTesoreriaItem) => {
+    if (item.treasury_check_status !== "conformado") {
+      toast.warning("Debe controlar y conformar el trámite antes de incorporarlo a un lote.");
+      return;
+    }
     const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
+    if (next.has(item.id)) next.delete(item.id);
+    else next.add(item.id);
     setSelectedIds(next);
   };
 
@@ -498,7 +510,7 @@ export default function TesoreriaPage() {
                 className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-1.5 shadow-sm animate-pulse"
               >
                 <FolderOpen className="h-3.5 w-3.5" />
-                Caratular Lote GDE ({selectedIds.size})
+                Crear Lote ({selectedIds.size})
               </Button>
             )}
           </div>
@@ -766,7 +778,7 @@ export default function TesoreriaPage() {
                           No hay Lotes de Expedientes creados aún
                         </div>
                         <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                          Vaya a la pestaña "1. Bandeja de Control", seleccione las prestaciones verificadas y haga clic en "Caratular Lote GDE".
+                          Vaya a la pestaña "1. Bandeja de Control", seleccione las prestaciones verificadas y haga clic en "Crear Lote".
                         </p>
                       </Card>
                     ) : (
@@ -856,19 +868,20 @@ export default function TesoreriaPage() {
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-gray-600 dark:text-slate-400 uppercase font-semibold text-[11px] tracking-wider">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-gray-600 dark:text-slate-400 uppercase font-semibold text-[11px] tracking-wider">
                             <tr>
                               {tabActiva === "control_documental" && (
-                                <th className="py-3 px-3 w-10 text-center">
+                                <th className="py-3 px-3 w-10 text-center" title="Seleccionar todas las prestaciones conformadas">
                                   <Checkbox
                                     checked={
                                       selectedIds.size > 0 &&
-                                      selectedIds.size ===
-                                        itemsFiltrados.filter((i) => i.status === "aprobado" && !i.lote_id).length
+                                      selectedIds.size === prestacionesConformadasDisponibles.length &&
+                                      prestacionesConformadasDisponibles.length > 0
                                     }
+                                    disabled={prestacionesConformadasDisponibles.length === 0}
                                     onCheckedChange={handleToggleSelectAll}
-                                    aria-label="Seleccionar todos"
+                                    aria-label="Seleccionar todas las conformadas"
                                   />
                                 </th>
                               )}
@@ -913,7 +926,13 @@ export default function TesoreriaPage() {
                                     <td className="py-3 px-3 text-center">
                                       <Checkbox
                                         checked={isSelected}
-                                        onCheckedChange={() => handleToggleSelectOne(item.id)}
+                                        disabled={!isConformado || lockInfo.bloqueado}
+                                        onCheckedChange={() => handleToggleSelectOne(item)}
+                                        title={
+                                          !isConformado
+                                            ? "Debe controlar y conformar el trámite antes de incorporarlo a un lote"
+                                            : "Seleccionar para Lote GDE"
+                                        }
                                         aria-label={`Seleccionar ${item.form_number}`}
                                       />
                                     </td>

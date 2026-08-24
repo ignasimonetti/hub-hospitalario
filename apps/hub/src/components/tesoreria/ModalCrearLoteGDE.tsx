@@ -113,7 +113,7 @@ export function ModalCrearLoteGDE({
             </div>
             <div>
               <DialogTitle className="text-lg font-bold text-white tracking-tight">
-                Caratular & Crear Lote de Expediente GDE
+                Crear Lote
               </DialogTitle>
               <DialogDescription className="text-blue-100 text-xs mt-0.5">
                 Propagación masiva de carátula a {selectedItems.length} prestaciones conformadas

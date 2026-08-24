@@ -6,7 +6,6 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   PrestacionTesoreriaItem,
   LoteTesoreria,
-  KpisTesoreriaData,
   RegistrarPagoPayload,
   LiquidarLotePayload,
   CrearLotePayload,
@@ -17,8 +16,6 @@ import {
   SECTORES_SERVICIO_MAP,
   SectorServicio,
   ESTADOS_PRESTACION_CONFIG,
-  PROFESIONES_MAP,
-  CONDICIONES_FISCALES_MAP,
 } from "@/types/prestadores";
 import {
   getPrestacionesParaTesoreria,
@@ -32,7 +29,7 @@ import {
   exportarReporteLiquidacionesCSV,
   isPrestacionBloqueada,
 } from "@/lib/services/tesoreriaService";
-import { KpisTesoreria } from "@/components/tesoreria/KpisTesoreria";
+import { VistaMetricasTesoreria } from "@/components/tesoreria/VistaMetricasTesoreria";
 import { ModalControlDocumental } from "@/components/tesoreria/ModalControlDocumental";
 import { ModalCrearLoteGDE } from "@/components/tesoreria/ModalCrearLoteGDE";
 import { ModalDetalleLoteGDE } from "@/components/tesoreria/ModalDetalleLoteGDE";
@@ -57,29 +54,25 @@ import { useRoles } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 import {
   Receipt,
-  DollarSign,
-  Clock,
   CheckCircle2,
   AlertTriangle,
-  FileSpreadsheet,
   Download,
   Search,
-  Filter,
   RefreshCw,
   Loader2,
   Menu,
   Eye,
-  Layers,
-  CreditCard,
-  Building2,
   ShieldCheck,
-  Calendar,
   X,
-  FileCheck2,
   FolderOpen,
   Lock,
-  Plus,
   Edit3,
+  BarChart3,
+  Layers,
+  Clock,
+  FileCheck2,
+  ChevronRight,
+  ArrowLeft,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 
@@ -105,13 +98,16 @@ export default function TesoreriaPage() {
   // Permisos
   const { hasRole } = useRoles(currentTenant?.id);
 
+  // Navegación de Submódulos: "galeria" (Hub principal), "operaciones" (Bandeja y Lotes), "metricas" (Estadísticas)
+  const [vistaActiva, setVistaActiva] = useState<"galeria" | "operaciones" | "metricas">("operaciones");
+
   // Estado de Datos
   const [prestaciones, setPrestaciones] = useState<PrestacionTesoreriaItem[]>([]);
   const [lotes, setLotes] = useState<LoteTesoreria[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Filtros
+  // Filtros de Operaciones
   const [tabActiva, setTabActiva] = useState<
     "control_documental" | "lotes_gde" | "pagados" | "observados" | "todos"
   >("control_documental");
@@ -165,12 +161,62 @@ export default function TesoreriaPage() {
     return calcularKpisTesoreria(prestaciones, mesNum, anioNum);
   }, [prestaciones, filtroMes, filtroAnio]);
 
-  // Lista filtrada según pestaña y criterios
+  // Métricas simplificadas para el empleado de tesorería (operativas y claras)
+  const metricasSimples = useMemo(() => {
+    const mesNum = filtroMes === "todos" ? undefined : parseInt(filtroMes, 10);
+    const anioNum = filtroAnio === "todos" ? undefined : parseInt(filtroAnio, 10);
+
+    const filtradas = prestaciones.filter((p) => {
+      if (mesNum && p.period_month !== mesNum) return false;
+      if (anioNum && p.period_year !== anioNum) return false;
+      return true;
+    });
+
+    // 1. Pendientes de Control (aprobadas, sin asignar a lote y no conformadas aún)
+    const pendientesControl = filtradas.filter(
+      (p) => p.status === "aprobado" && !p.lote_id && p.treasury_check_status !== "conformado"
+    );
+
+    // 2. Conformadas listas para enviar a Lote (aprobadas, sin asignar a lote y ya conformadas)
+    const listasParaLote = filtradas.filter(
+      (p) => p.status === "aprobado" && !p.lote_id && p.treasury_check_status === "conformado"
+    );
+    const montoListasParaLote = listasParaLote.reduce(
+      (acc, cur) => acc + (Number(cur.invoice_amount) || 0),
+      0
+    );
+
+    // 3. En Lotes / Pendientes de Pago (en un lote pero aún no pagadas)
+    const enLotesPendientesPago = filtradas.filter(
+      (p) => p.status === "aprobado" && !!p.lote_id
+    );
+    const montoEnLotes = enLotesPendientesPago.reduce(
+      (acc, cur) => acc + (Number(cur.invoice_amount) || 0),
+      0
+    );
+
+    // 4. Observadas por Facturación
+    const observadas = filtradas.filter(
+      (p) => p.status === "observado_tesoreria" || p.status === "observado"
+    );
+
+    return {
+      pendientesControlCount: pendientesControl.length,
+      listasParaLoteCount: listasParaLote.length,
+      montoListasParaLote,
+      enLotesCount: enLotesPendientesPago.length,
+      montoEnLotes,
+      observadasCount: observadas.length,
+    };
+  }, [prestaciones, filtroMes, filtroAnio]);
+
+  // Lista filtrada según pestaña y criterios (REGLA CLAVE: enviadas a lote NO aparecen en control_documental)
   const itemsFiltrados = useMemo(() => {
     return prestaciones.filter((item) => {
       // 1. Filtro por pestaña
       if (tabActiva === "control_documental") {
-        if (item.status !== "aprobado") return false;
+        // En control documental SOLO se muestran aprobadas que NO tengan lote asignado
+        if (item.status !== "aprobado" || item.lote_id) return false;
       } else if (tabActiva === "pagados") {
         if (item.status !== "pagado") return false;
       } else if (tabActiva === "observados") {
@@ -253,7 +299,7 @@ export default function TesoreriaPage() {
     });
 
     return {
-      control_documental: filtradas.filter((p) => p.status === "aprobado").length,
+      control_documental: filtradas.filter((p) => p.status === "aprobado" && !p.lote_id).length,
       lotes_gde: lotes.length,
       pagados: filtradas.filter((p) => p.status === "pagado").length,
       observados: filtradas.filter(
@@ -265,7 +311,7 @@ export default function TesoreriaPage() {
 
   // Selección múltiple
   const handleToggleSelectAll = () => {
-    const disponibles = itemsFiltrados.filter((i) => i.status === "aprobado");
+    const disponibles = itemsFiltrados.filter((i) => i.status === "aprobado" && !i.lote_id);
     if (selectedIds.size === disponibles.length && disponibles.length > 0) {
       setSelectedIds(new Set());
     } else {
@@ -328,24 +374,11 @@ export default function TesoreriaPage() {
     toast.success(`Lote de ${aExportar.length} transferencias exportado.`);
   };
 
-  const handleExportarReporteContable = () => {
-    const aExportar = itemsFiltrados;
-    if (aExportar.length === 0) {
-      toast.error("No hay datos en la vista para exportar.");
-      return;
-    }
-    exportarReporteLiquidacionesCSV(
-      aExportar,
-      `Reporte_Tesoreria_CISB_${filtroAnio}_${filtroMes}.csv`
-    );
-    toast.success(`Reporte contable de ${aExportar.length} órdenes exportado.`);
-  };
-
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
-      maximumFractionDigits: 2,
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -398,23 +431,55 @@ export default function TesoreriaPage() {
                 <Receipt className="h-5 w-5" />
               </div>
               <div>
-                <h1 className="text-base font-bold text-gray-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                  Tesorería
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base font-bold text-gray-900 dark:text-slate-100 tracking-tight">
+                    Tesorería CISB
+                  </h1>
                   <Badge
                     variant="outline"
                     className="text-[10px] uppercase tracking-wider border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300"
                   >
-                    CISB
+                    Hospital Banda
                   </Badge>
-                </h1>
+                </div>
                 <p className="text-xs text-gray-500 dark:text-slate-400 hidden sm:block">
-                  Control documental, Liquidación y Pago
+                  {vistaActiva === "operaciones"
+                    ? "Bandeja de Control Documental & Lotes GDE"
+                    : vistaActiva === "metricas"
+                    ? "Panel de Métricas & Estadísticas"
+                    : "Módulos de Tesorería"}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Navegación rápida entre Bandeja y Métricas */}
+            <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+              <button
+                onClick={() => setVistaActiva("operaciones")}
+                className={`px-3 py-1 rounded-md font-semibold transition-colors flex items-center gap-1.5 ${
+                  vistaActiva === "operaciones"
+                    ? "bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm"
+                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400"
+                }`}
+              >
+                <Receipt className="h-3.5 w-3.5" />
+                Bandeja & Lotes
+              </button>
+              <button
+                onClick={() => setVistaActiva("metricas")}
+                className={`px-3 py-1 rounded-md font-semibold transition-colors flex items-center gap-1.5 ${
+                  vistaActiva === "metricas"
+                    ? "bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm"
+                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400"
+                }`}
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                Métricas
+              </button>
+            </div>
+
             <Button
               variant="outline"
               size="sm"
@@ -423,20 +488,10 @@ export default function TesoreriaPage() {
               className="h-8 text-xs flex items-center gap-1.5"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-              <span className="hidden sm:inline">Actualizar</span>
+              <span className="hidden md:inline">Actualizar</span>
             </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportarLoteBancario}
-              className="h-8 text-xs flex items-center gap-1.5 border-emerald-300 text-emerald-800 dark:border-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span className="hidden md:inline">Transferencias BSE (Neto)</span>
-            </Button>
-
-            {selectedIds.size > 0 && (
+            {selectedIds.size > 0 && vistaActiva === "operaciones" && (
               <Button
                 size="sm"
                 onClick={() => setIsCrearLoteModalOpen(true)}
@@ -451,494 +506,567 @@ export default function TesoreriaPage() {
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
-          {/* Barra de Filtros */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="w-36">
-                <Select value={filtroMes} onValueChange={setFiltroMes}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Mes" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos" className="text-xs">Todos los meses</SelectItem>
-                    {MESES.map((m) => (
-                      <SelectItem key={m.id} value={String(m.id)} className="text-xs">
-                        {m.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          {/* VISTA 1: SUBMÓDULO DE MÉTRICAS ANALÍTICAS */}
+          {vistaActiva === "metricas" ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setVistaActiva("operaciones")}
+                  className="text-xs text-gray-600 hover:text-gray-900 gap-1.5"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" /> Volver a la Bandeja de Operaciones
+                </Button>
+
+                {/* Selector de Período para Métricas */}
+                <div className="flex items-center gap-2">
+                  <Select value={filtroMes} onValueChange={setFiltroMes}>
+                    <SelectTrigger className="h-8 text-xs w-32">
+                      <SelectValue placeholder="Mes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos" className="text-xs">Todos los meses</SelectItem>
+                      {MESES.map((m) => (
+                        <SelectItem key={m.id} value={String(m.id)} className="text-xs">
+                          {m.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filtroAnio} onValueChange={setFiltroAnio}>
+                    <SelectTrigger className="h-8 text-xs w-24">
+                      <SelectValue placeholder="Año" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos" className="text-xs">Todos</SelectItem>
+                      <SelectItem value="2026" className="text-xs">2026</SelectItem>
+                      <SelectItem value="2025" className="text-xs">2025</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="w-28">
-                <Select value={filtroAnio} onValueChange={setFiltroAnio}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Año" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos" className="text-xs">Todos</SelectItem>
-                    <SelectItem value="2026" className="text-xs">2026</SelectItem>
-                    <SelectItem value="2025" className="text-xs">2025</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="w-48 hidden sm:block">
-                <Select value={filtroServicio} onValueChange={setFiltroServicio}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Servicio Hospitalario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos" className="text-xs">Todos los servicios</SelectItem>
-                    {Object.entries(SECTORES_SERVICIO_MAP).map(([k, v]) => (
-                      <SelectItem key={k} value={k} className="text-xs">
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <VistaMetricasTesoreria kpis={kpisData} periodoLabel={periodoLabel} />
             </div>
+          ) : (
+            /* VISTA 2: BANDEJA OPERATIVA ULTRA SIMPLIFICADA */
+            <div className="space-y-4">
+              {/* 3 Tarjetas de Métricas Esenciales para el Administrativo */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* 1. Pendientes de Control */}
+                <div className="p-3.5 bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 block uppercase tracking-wider">
+                      Pendientes de Control
+                    </span>
+                    <span className="text-xl font-extrabold text-amber-900 dark:text-amber-100">
+                      {metricasSimples.pendientesControlCount}{" "}
+                      <span className="text-xs font-normal text-amber-700">profesionales</span>
+                    </span>
+                  </div>
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg text-amber-700 dark:text-amber-300">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                </div>
 
-            {/* Buscador */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" />
-              <Input
-                placeholder="Buscar por médico, CUIT, factura, expediente GDE o Lote..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 text-xs pl-8 pr-7"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
+                {/* 2. Conformados Listos para Lote */}
+                <div className="p-3.5 bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/60 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-blue-800 dark:text-blue-300 block uppercase tracking-wider">
+                      Listas para Lote GDE
+                    </span>
+                    <span className="text-xl font-extrabold text-blue-900 dark:text-blue-100 font-mono">
+                      {metricasSimples.listasParaLoteCount}{" "}
+                      <span className="text-xs font-normal text-blue-700">
+                        ({formatMoney(metricasSimples.montoListasParaLote)})
+                      </span>
+                    </span>
+                  </div>
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg text-blue-700 dark:text-blue-300">
+                    <FileCheck2 className="h-5 w-5" />
+                  </div>
+                </div>
 
-          {/* KPIs de Cabecera */}
-          <KpisTesoreria kpis={kpisData} periodoLabel={periodoLabel} />
-
-          {/* Pestañas de Flujo de Tesorería */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
-              <div className="flex items-center gap-1 sm:gap-2">
-                {/* Pestaña 1: Control Documental */}
-                <button
-                  onClick={() => setTabActiva("control_documental")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-                    tabActiva === "control_documental"
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  1. Control & Conformación
-                  <Badge
-                    variant="secondary"
-                    className={`ml-1 text-[10px] px-1.5 py-0 h-4 ${
-                      tabActiva === "control_documental"
-                        ? "bg-blue-700 text-white"
-                        : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-                    }`}
-                  >
-                    {counts.control_documental}
-                  </Badge>
-                </button>
-
-                {/* Pestaña 2: Lotes & Expedientes GDE */}
-                <button
-                  onClick={() => setTabActiva("lotes_gde")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-                    tabActiva === "lotes_gde"
-                      ? "bg-indigo-600 text-white shadow-sm"
-                      : "text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <FolderOpen className="h-3.5 w-3.5" />
-                  2. Lotes GDE ({lotesFiltrados.length})
-                </button>
-
-                {/* Pestaña 3: Historial Liquidado */}
-                <button
-                  onClick={() => setTabActiva("pagados")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-                    tabActiva === "pagados"
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : "text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  3. Historial Liquidado
-                  <Badge
-                    variant="secondary"
-                    className={`ml-1 text-[10px] px-1.5 py-0 h-4 ${
-                      tabActiva === "pagados"
-                        ? "bg-emerald-700 text-white"
-                        : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-                    }`}
-                  >
-                    {counts.pagados}
-                  </Badge>
-                </button>
-
-                {/* Pestaña 4: Observaciones Fiscales */}
-                <button
-                  onClick={() => setTabActiva("observados")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-                    tabActiva === "observados"
-                      ? "bg-amber-600 text-white shadow-sm"
-                      : "text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  Observaciones ARCA ({counts.observados})
-                </button>
-
-                <button
-                  onClick={() => setTabActiva("todos")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-                    tabActiva === "todos"
-                      ? "bg-slate-800 dark:bg-slate-700 text-white shadow-sm"
-                      : "text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  Todos ({counts.todos})
-                </button>
+                {/* 3. En Lotes / Pendientes de Pago */}
+                <div className="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 block uppercase tracking-wider">
+                      En Lote / A Pagar BSE
+                    </span>
+                    <span className="text-xl font-extrabold text-emerald-900 dark:text-emerald-100 font-mono">
+                      {metricasSimples.enLotesCount}{" "}
+                      <span className="text-xs font-normal text-emerald-700">
+                        ({formatMoney(metricasSimples.montoEnLotes)})
+                      </span>
+                    </span>
+                  </div>
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg text-emerald-700 dark:text-emerald-300">
+                    <FolderOpen className="h-5 w-5" />
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* VISTA 1: TABLA DE LOTES GDE */}
-            {tabActiva === "lotes_gde" ? (
+              {/* Barra de Filtros & Buscador */}
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="w-36">
+                    <Select value={filtroMes} onValueChange={setFiltroMes}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Mes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos" className="text-xs">Todos los meses</SelectItem>
+                        {MESES.map((m) => (
+                          <SelectItem key={m.id} value={String(m.id)} className="text-xs">
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="w-28">
+                    <Select value={filtroAnio} onValueChange={setFiltroAnio}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Año" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos" className="text-xs">Todos</SelectItem>
+                        <SelectItem value="2026" className="text-xs">2026</SelectItem>
+                        <SelectItem value="2025" className="text-xs">2025</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="w-48 hidden sm:block">
+                    <Select value={filtroServicio} onValueChange={setFiltroServicio}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Servicio Hospitalario" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos" className="text-xs">Todos los servicios</SelectItem>
+                        {Object.entries(SECTORES_SERVICIO_MAP).map(([k, v]) => (
+                          <SelectItem key={k} value={k} className="text-xs">
+                            {v}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Buscador */}
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" />
+                  <Input
+                    placeholder="Buscar por médico, CUIT, factura, expediente GDE o Lote..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-8 text-xs pl-8 pr-7"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Pestañas de Flujo */}
               <div className="space-y-3">
-                {lotesFiltrados.length === 0 ? (
-                  <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-12 text-center text-gray-500 space-y-2">
-                    <FolderOpen className="h-10 w-10 mx-auto text-slate-300" />
-                    <div className="text-sm font-semibold text-gray-800 dark:text-slate-200">
-                      No hay Lotes de Expedientes creados aún
-                    </div>
-                    <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                      Vaya a la pestaña "1. Control & Conformación", seleccione las prestaciones verificadas y haga clic en "Caratular Lote GDE".
-                    </p>
-                  </Card>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                    {lotesFiltrados.map((lote) => {
-                      const estadoCfg = ESTADOS_LOTE_CONFIG[lote.estado] || {
-                        label: lote.estado,
-                        bgLight: "bg-slate-100 border-slate-200",
-                        textDark: "text-slate-700",
-                      };
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    {/* Pestaña 1: Control & Conformación (SIN las ya enviadas a lote) */}
+                    <button
+                      onClick={() => setTabActiva("control_documental")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                        tabActiva === "control_documental"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      1. Bandeja de Control
+                      <Badge
+                        variant="secondary"
+                        className={`ml-1 text-[10px] px-1.5 py-0 h-4 ${
+                          tabActiva === "control_documental"
+                            ? "bg-blue-700 text-white"
+                            : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        {counts.control_documental}
+                      </Badge>
+                    </button>
 
-                      return (
-                        <Card
-                          key={lote.id}
-                          className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-md transition-shadow cursor-pointer"
-                          onClick={() => setLoteDetalle(lote)}
-                        >
-                          <CardContent className="p-4 space-y-3">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <span className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400 block">
-                                  {lote.numero_lote}
-                                </span>
-                                <h3 className="text-xs font-semibold text-gray-900 dark:text-slate-100 font-mono mt-0.5">
-                                  {lote.numero_expediente_gde || "Sin Expediente GDE"}
-                                </h3>
-                              </div>
-                              <span
-                                className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${estadoCfg.bgLight} ${estadoCfg.textDark}`}
-                              >
-                                {estadoCfg.label}
-                              </span>
-                            </div>
+                    {/* Pestaña 2: Lotes & Expedientes GDE */}
+                    <button
+                      onClick={() => setTabActiva("lotes_gde")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                        tabActiva === "lotes_gde"
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <FolderOpen className="h-3.5 w-3.5" />
+                      2. Lotes GDE ({lotesFiltrados.length})
+                    </button>
 
-                            <p className="text-[11px] text-gray-500 line-clamp-2">
-                              {lote.descripcion}
-                            </p>
+                    {/* Pestaña 3: Historial Liquidado */}
+                    <button
+                      onClick={() => setTabActiva("pagados")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                        tabActiva === "pagados"
+                          ? "bg-emerald-600 text-white shadow-sm"
+                          : "text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      3. Historial Pagado ({counts.pagados})
+                    </button>
 
-                            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                              <div>
-                                <span className="text-gray-400 text-[10px] block">Trámites</span>
-                                <span className="font-bold text-gray-800 dark:text-slate-200">
-                                  {lote.cantidad_prestaciones} profesionales
-                                </span>
-                              </div>
-                              <div className="text-right">
-                                <span className="text-gray-400 text-[10px] block">Neto a Pagar</span>
-                                <span className="font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
-                                  {formatMoney(lote.monto_neto_total)}
-                                </span>
-                              </div>
-                            </div>
+                    {/* Pestaña 4: Observaciones Fiscales */}
+                    <button
+                      onClick={() => setTabActiva("observados")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                        tabActiva === "observados"
+                          ? "bg-amber-600 text-white shadow-sm"
+                          : "text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      Observadas ({counts.observados})
+                    </button>
 
-                            {lote.numero_resolucion && (
-                              <div className="p-1.5 rounded bg-purple-50 dark:bg-purple-950/30 text-[10px] text-purple-800 dark:text-purple-300 font-mono truncate">
-                                📜 {lote.numero_resolucion}
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
+                    <button
+                      onClick={() => setTabActiva("todos")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                        tabActiva === "todos"
+                          ? "bg-slate-800 dark:bg-slate-700 text-white shadow-sm"
+                          : "text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      Todos ({counts.todos})
+                    </button>
                   </div>
-                )}
-              </div>
-            ) : (
-              /* VISTA 2: TABLA DE PRESTACIONES INDIVIDUALES (NOTION-STYLE) */
-              <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-                {loading ? (
-                  <div className="py-20 flex flex-col items-center justify-center gap-2 text-gray-500">
-                    <Loader2 className="h-7 w-7 animate-spin text-emerald-600" />
-                    <span className="text-xs">Cargando trámites de Tesorería...</span>
-                  </div>
-                ) : itemsFiltrados.length === 0 ? (
-                  <div className="py-16 text-center text-gray-500 dark:text-slate-400 space-y-2">
-                    <Receipt className="h-10 w-10 mx-auto text-slate-300 dark:text-slate-600" />
-                    <div className="text-sm font-semibold text-gray-800 dark:text-slate-200">
-                      No se encontraron trámites en esta vista
-                    </div>
-                    <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                      Pruebe modificando los filtros de período, servicio o término de búsqueda.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-gray-600 dark:text-slate-400 uppercase font-semibold text-[11px] tracking-wider">
-                        <tr>
-                          {tabActiva === "control_documental" && (
-                            <th className="py-3 px-3 w-10 text-center">
-                              <Checkbox
-                                checked={
-                                  selectedIds.size > 0 &&
-                                  selectedIds.size ===
-                                    itemsFiltrados.filter((i) => i.status === "aprobado").length
-                                }
-                                onCheckedChange={handleToggleSelectAll}
-                                aria-label="Seleccionar todos"
-                              />
-                            </th>
-                          )}
-                          <th className="py-3 px-3">Trámite & Período</th>
-                          <th className="py-3 px-3">Beneficiario & CUIT</th>
-                          <th className="py-3 px-3">Expediente GDE / Lote</th>
-                          <th className="py-3 px-3">Factura ARCA</th>
-                          <th className="py-3 px-3 text-right">Bruto Facturado</th>
-                          <th className="py-3 px-3 text-right">Neto BSE</th>
-                          <th className="py-3 px-3 text-center">Estado Control</th>
-                          <th className="py-3 px-3 text-right">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                        {itemsFiltrados.map((item) => {
-                          const perfil = item.perfilPrestador;
-                          const userExpand = item.expand?.user;
-                          const nombrePrestador = userExpand
-                            ? `${userExpand.lastName || ""} ${userExpand.firstName || ""}`.trim() ||
-                              userExpand.email
-                            : "Prestador";
+                </div>
 
-                          const lockInfo = isPrestacionBloqueada(item, user?.id);
-                          const isSelected = selectedIds.has(item.id);
-
-                          const montoBruto = Number(item.invoice_amount) || 0;
-                          const retMonto = Number(item.retencion_monto) || 0;
-                          const montoNeto =
-                            item.monto_neto_liquidable !== undefined
-                              ? Number(item.monto_neto_liquidable)
-                              : montoBruto - retMonto;
-
-                          const isConformado = item.treasury_check_status === "conformado";
+                {/* VISTA 1: TABLA DE LOTES GDE */}
+                {tabActiva === "lotes_gde" ? (
+                  <div className="space-y-3">
+                    {lotesFiltrados.length === 0 ? (
+                      <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-12 text-center text-gray-500 space-y-2">
+                        <FolderOpen className="h-10 w-10 mx-auto text-slate-300" />
+                        <div className="text-sm font-semibold text-gray-800 dark:text-slate-200">
+                          No hay Lotes de Expedientes creados aún
+                        </div>
+                        <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                          Vaya a la pestaña "1. Bandeja de Control", seleccione las prestaciones verificadas y haga clic en "Caratular Lote GDE".
+                        </p>
+                      </Card>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                        {lotesFiltrados.map((lote) => {
+                          const estadoCfg = ESTADOS_LOTE_CONFIG[lote.estado] || {
+                            label: lote.estado,
+                            bgLight: "bg-slate-100 border-slate-200",
+                            textDark: "text-slate-700",
+                          };
 
                           return (
-                            <tr
-                              key={item.id}
-                              className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${
-                                isSelected ? "bg-blue-50/40 dark:bg-blue-950/20" : ""
-                              } ${lockInfo.bloqueado ? "opacity-75 bg-amber-50/20" : ""}`}
+                            <Card
+                              key={lote.id}
+                              className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-md transition-shadow cursor-pointer"
+                              onClick={() => setLoteDetalle(lote)}
                             >
-                              {tabActiva === "control_documental" && (
-                                <td className="py-3 px-3 text-center">
-                                  <Checkbox
-                                    checked={isSelected}
-                                    onCheckedChange={() => handleToggleSelectOne(item.id)}
-                                    aria-label={`Seleccionar ${item.form_number}`}
-                                  />
-                                </td>
-                              )}
-
-                              {/* Trámite y Período */}
-                              <td className="py-3 px-3">
-                                <div className="font-mono font-bold text-gray-900 dark:text-slate-100 flex items-center gap-1.5">
-                                  <span>{item.form_number || item.id.slice(0, 8)}</span>
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[9px] px-1 py-0 h-3.5 border-slate-300"
-                                  >
-                                    {item.service_type === "guardia" ? "G" : "EH"}
-                                  </Badge>
-                                </div>
-                                <div className="text-[11px] text-gray-500">
-                                  {String(item.period_month).padStart(2, "0")}/{item.period_year}
-                                </div>
-                              </td>
-
-                              {/* Beneficiario y CUIT */}
-                              <td className="py-3 px-3">
-                                <div className="font-semibold text-gray-900 dark:text-slate-100">
-                                  {nombrePrestador}
-                                </div>
-                                <div className="text-[11px] text-gray-500 font-mono">
-                                  CUIT: {perfil?.cuit || "Sin CUIT"}
-                                </div>
-                              </td>
-
-                              {/* Expediente GDE / Lote Asignado */}
-                              <td className="py-3 px-3">
-                                {item.numero_expediente_gde || item.lote_numero ? (
+                              <CardContent className="p-4 space-y-3">
+                                <div className="flex items-start justify-between">
                                   <div>
-                                    <div
-                                      className="font-mono font-semibold text-[11px] text-indigo-700 dark:text-indigo-300 truncate max-w-[130px]"
-                                      title={item.numero_expediente_gde || ""}
-                                    >
-                                      {item.numero_expediente_gde || "En Lote"}
-                                    </div>
-                                    <div className="text-[10px] text-gray-500 font-mono">
-                                      {item.lote_numero}
-                                    </div>
+                                    <span className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400 block">
+                                      {lote.numero_lote}
+                                    </span>
+                                    <h3 className="text-xs font-semibold text-gray-900 dark:text-slate-100 font-mono mt-0.5">
+                                      {lote.numero_expediente_gde || "Sin Expediente GDE"}
+                                    </h3>
                                   </div>
-                                ) : (
-                                  <span className="text-[11px] text-gray-400 italic">
-                                    Sin Lote asignado
+                                  <span
+                                    className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${estadoCfg.bgLight} ${estadoCfg.textDark}`}
+                                  >
+                                    {estadoCfg.label}
                                   </span>
-                                )}
-                              </td>
-
-                              {/* Factura ARCA */}
-                              <td className="py-3 px-3">
-                                <div className="font-mono font-semibold text-gray-900 dark:text-slate-100">
-                                  {item.invoice_number || "S/N"}
                                 </div>
-                                <div className="text-[10px] text-gray-400">
-                                  {formatDate(item.invoice_date)}
+
+                                <p className="text-[11px] text-gray-500 line-clamp-2">
+                                  {lote.descripcion}
+                                </p>
+
+                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                                  <div>
+                                    <span className="text-gray-400 text-[10px] block">Trámites</span>
+                                    <span className="font-bold text-gray-800 dark:text-slate-200">
+                                      {lote.cantidad_prestaciones} profesionales
+                                    </span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-gray-400 text-[10px] block">Neto a Pagar</span>
+                                    <span className="font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
+                                      {formatMoney(lote.monto_neto_total)}
+                                    </span>
+                                  </div>
                                 </div>
-                              </td>
 
-                              {/* Bruto Facturado */}
-                              <td className="py-3 px-3 text-right">
-                                <span className="font-mono font-medium text-gray-900 dark:text-slate-100 text-xs">
-                                  {formatMoney(montoBruto)}
-                                </span>
-                              </td>
-
-                              {/* Neto BSE */}
-                              <td className="py-3 px-3 text-right">
-                                <span className="font-extrabold font-mono text-emerald-700 dark:text-emerald-400 text-xs">
-                                  {formatMoney(montoNeto)}
-                                </span>
-                              </td>
-
-                              {/* Estado de Control Documental & Locking */}
-                              <td className="py-3 px-3 text-center">
-                                {lockInfo.bloqueado ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="bg-amber-50 text-amber-800 border-amber-300 text-[10px] flex items-center gap-1 mx-auto w-fit"
-                                  >
-                                    <Lock className="h-3 w-3" />
-                                    {lockInfo.porUsuario} ({lockInfo.minutosRestantes}m)
-                                  </Badge>
-                                ) : isConformado ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="bg-emerald-50 text-emerald-800 border-emerald-300 text-[10px] flex items-center gap-1 mx-auto w-fit font-semibold"
-                                  >
-                                    <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Conformado
-                                  </Badge>
-                                ) : item.status === "pagado" ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="bg-teal-50 text-teal-800 border-teal-300 text-[10px] mx-auto w-fit"
-                                  >
-                                    Pagado BSE
-                                  </Badge>
-                                ) : (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[10px] text-gray-500 border-slate-200 mx-auto w-fit"
-                                  >
-                                    Pendiente Control
-                                  </Badge>
+                                {lote.numero_resolucion && (
+                                  <div className="p-1.5 rounded bg-purple-50 dark:bg-purple-950/30 text-[10px] text-purple-800 dark:text-purple-300 font-mono truncate">
+                                    📜 {lote.numero_resolucion}
+                                  </div>
                                 )}
-                              </td>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* VISTA 2: TABLA DE PRESTACIONES (SIN PRESTACIONES ENVIADAS A LOTE) */
+                  <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+                    {loading ? (
+                      <div className="py-20 flex flex-col items-center justify-center gap-2 text-gray-500">
+                        <Loader2 className="h-7 w-7 animate-spin text-emerald-600" />
+                        <span className="text-xs">Cargando trámites de Tesorería...</span>
+                      </div>
+                    ) : itemsFiltrados.length === 0 ? (
+                      <div className="py-16 text-center text-gray-500 dark:text-slate-400 space-y-2">
+                        <Receipt className="h-10 w-10 mx-auto text-slate-300 dark:text-slate-600" />
+                        <div className="text-sm font-semibold text-gray-800 dark:text-slate-200">
+                          {tabActiva === "control_documental"
+                            ? "¡Bandeja al día! No hay trámites pendientes de incorporar a lotes"
+                            : "No se encontraron trámites en esta vista"}
+                        </div>
+                        <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                          {tabActiva === "control_documental"
+                            ? "Todas las prestaciones aprobadas fueron enviadas a sus respectivos Lotes GDE o no hay nuevas facturas presentadas."
+                            : "Pruebe modificando los filtros de período, servicio o término de búsqueda."}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-gray-600 dark:text-slate-400 uppercase font-semibold text-[11px] tracking-wider">
+                            <tr>
+                              {tabActiva === "control_documental" && (
+                                <th className="py-3 px-3 w-10 text-center">
+                                  <Checkbox
+                                    checked={
+                                      selectedIds.size > 0 &&
+                                      selectedIds.size ===
+                                        itemsFiltrados.filter((i) => i.status === "aprobado" && !i.lote_id).length
+                                    }
+                                    onCheckedChange={handleToggleSelectAll}
+                                    aria-label="Seleccionar todos"
+                                  />
+                                </th>
+                              )}
+                              <th className="py-3 px-3">Trámite & Período</th>
+                              <th className="py-3 px-3">Beneficiario & CUIT</th>
+                              <th className="py-3 px-3">Factura ARCA</th>
+                              <th className="py-3 px-3 text-right">Bruto Facturado</th>
+                              <th className="py-3 px-3 text-right">Neto BSE</th>
+                              <th className="py-3 px-3 text-center">Estado Control</th>
+                              <th className="py-3 px-3 text-right">Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                            {itemsFiltrados.map((item) => {
+                              const perfil = item.perfilPrestador;
+                              const userExpand = item.expand?.user;
+                              const nombrePrestador = userExpand
+                                ? `${userExpand.lastName || ""} ${userExpand.firstName || ""}`.trim() ||
+                                  userExpand.email
+                                : "Prestador";
 
-                              {/* Acciones */}
-                              <td className="py-3 px-3 text-right">
-                                <div className="flex items-center justify-end gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 w-7 p-0 text-gray-600 hover:text-gray-900"
-                                    title="Ver detalle 360°"
-                                    onClick={() => setItemDetalle(item)}
-                                  >
-                                    <Eye className="h-3.5 w-3.5" />
-                                  </Button>
+                              const lockInfo = isPrestacionBloqueada(item, user?.id);
+                              const isSelected = selectedIds.has(item.id);
 
-                                  {item.status === "aprobado" && (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        disabled={lockInfo.bloqueado}
-                                        onClick={() => setItemControl(item)}
-                                        variant={isConformado ? "outline" : "default"}
-                                        className={`h-7 px-2.5 text-[11px] font-semibold flex items-center gap-1 ${
-                                          isConformado
-                                            ? "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200"
-                                            : "bg-blue-600 hover:bg-blue-700 text-white"
-                                        }`}
+                              const montoBruto = Number(item.invoice_amount) || 0;
+                              const retMonto = Number(item.retencion_monto) || 0;
+                              const montoNeto =
+                                item.monto_neto_liquidable !== undefined
+                                  ? Number(item.monto_neto_liquidable)
+                                  : montoBruto - retMonto;
+
+                              const isConformado = item.treasury_check_status === "conformado";
+
+                              return (
+                                <tr
+                                  key={item.id}
+                                  className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${
+                                    isSelected ? "bg-blue-50/40 dark:bg-blue-950/20" : ""
+                                  } ${lockInfo.bloqueado ? "opacity-75 bg-amber-50/20" : ""}`}
+                                >
+                                  {tabActiva === "control_documental" && (
+                                    <td className="py-3 px-3 text-center">
+                                      <Checkbox
+                                        checked={isSelected}
+                                        onCheckedChange={() => handleToggleSelectOne(item.id)}
+                                        aria-label={`Seleccionar ${item.form_number}`}
+                                      />
+                                    </td>
+                                  )}
+
+                                  {/* Trámite y Período */}
+                                  <td className="py-3 px-3">
+                                    <div className="font-mono font-bold text-gray-900 dark:text-slate-100 flex items-center gap-1.5">
+                                      <span>{item.form_number || item.id.slice(0, 8)}</span>
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[9px] px-1 py-0 h-3.5 border-slate-300"
                                       >
-                                        {isConformado ? (
-                                          <>
-                                            <Edit3 className="h-3 w-3 text-slate-500" />
-                                            Editar
-                                          </>
-                                        ) : (
-                                          <>
-                                            <ShieldCheck className="h-3 w-3" />
-                                            Controlar
-                                          </>
-                                        )}
-                                      </Button>
+                                        {item.service_type === "guardia" ? "G" : "EH"}
+                                      </Badge>
+                                    </div>
+                                    <div className="text-[11px] text-gray-500">
+                                      {String(item.period_month).padStart(2, "0")}/{item.period_year}
+                                    </div>
+                                  </td>
 
+                                  {/* Beneficiario y CUIT */}
+                                  <td className="py-3 px-3">
+                                    <div className="font-semibold text-gray-900 dark:text-slate-100">
+                                      {nombrePrestador}
+                                    </div>
+                                    <div className="text-[11px] text-gray-500 font-mono">
+                                      CUIT: {perfil?.cuit || "Sin CUIT"}
+                                    </div>
+                                  </td>
+
+                                  {/* Factura ARCA */}
+                                  <td className="py-3 px-3">
+                                    <div className="font-mono font-semibold text-gray-900 dark:text-slate-100">
+                                      {item.invoice_number || "S/N"}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400">
+                                      {formatDate(item.invoice_date)}
+                                    </div>
+                                  </td>
+
+                                  {/* Bruto Facturado */}
+                                  <td className="py-3 px-3 text-right">
+                                    <span className="font-mono font-medium text-gray-900 dark:text-slate-100 text-xs">
+                                      {formatMoney(montoBruto)}
+                                    </span>
+                                  </td>
+
+                                  {/* Neto BSE */}
+                                  <td className="py-3 px-3 text-right">
+                                    <span className="font-extrabold font-mono text-emerald-700 dark:text-emerald-400 text-xs">
+                                      {formatMoney(montoNeto)}
+                                    </span>
+                                  </td>
+
+                                  {/* Estado de Control Documental & Locking */}
+                                  <td className="py-3 px-3 text-center">
+                                    {lockInfo.bloqueado ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-amber-50 text-amber-800 border-amber-300 text-[10px] flex items-center gap-1 mx-auto w-fit"
+                                      >
+                                        <Lock className="h-3 w-3" />
+                                        {lockInfo.porUsuario} ({lockInfo.minutosRestantes}m)
+                                      </Badge>
+                                    ) : isConformado ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-emerald-50 text-emerald-800 border-emerald-300 text-[10px] flex items-center gap-1 mx-auto w-fit font-semibold"
+                                      >
+                                        <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Conformado
+                                      </Badge>
+                                    ) : item.status === "pagado" ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-teal-50 text-teal-800 border-teal-300 text-[10px] mx-auto w-fit"
+                                      >
+                                        Pagado BSE
+                                      </Badge>
+                                    ) : (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] text-gray-500 border-slate-200 mx-auto w-fit"
+                                      >
+                                        Pendiente Control
+                                      </Badge>
+                                    )}
+                                  </td>
+
+                                  {/* Acciones */}
+                                  <td className="py-3 px-3 text-right">
+                                    <div className="flex items-center justify-end gap-1">
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-7 w-7 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                                        title="Observar factura ARCA"
-                                        onClick={() => setItemParaObservar(item)}
+                                        className="h-7 w-7 p-0 text-gray-600 hover:text-gray-900"
+                                        title="Ver detalle 360°"
+                                        onClick={() => setItemDetalle(item)}
                                       >
-                                        <AlertTriangle className="h-3.5 w-3.5" />
+                                        <Eye className="h-3.5 w-3.5" />
                                       </Button>
-                                    </>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+
+                                      {item.status === "aprobado" && (
+                                        <>
+                                          <Button
+                                            size="sm"
+                                            disabled={lockInfo.bloqueado}
+                                            onClick={() => setItemControl(item)}
+                                            variant={isConformado ? "outline" : "default"}
+                                            className={`h-7 px-2.5 text-[11px] font-semibold flex items-center gap-1 ${
+                                              isConformado
+                                                ? "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200"
+                                                : "bg-blue-600 hover:bg-blue-700 text-white"
+                                            }`}
+                                          >
+                                            {isConformado ? (
+                                              <>
+                                                <Edit3 className="h-3 w-3 text-slate-500" />
+                                                Editar
+                                              </>
+                                            ) : (
+                                              <>
+                                                <ShieldCheck className="h-3 w-3" />
+                                                Controlar
+                                              </>
+                                            )}
+                                          </Button>
+
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 w-7 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                            title="Observar factura ARCA"
+                                            onClick={() => setItemParaObservar(item)}
+                                          >
+                                            <AlertTriangle className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </Card>
                 )}
-              </Card>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
 

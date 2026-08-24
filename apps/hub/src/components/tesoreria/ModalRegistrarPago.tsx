@@ -110,7 +110,7 @@ export function ModalRegistrarPago({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto p-0 border-slate-200 dark:border-slate-800">
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-5 text-white">
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-5 pr-12 text-white">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
               <Receipt className="h-5 w-5" />

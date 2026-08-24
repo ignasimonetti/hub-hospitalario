@@ -93,15 +93,15 @@ export function ModalObservarFiscal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 border-slate-200 dark:border-slate-800">
-        <div className="bg-gradient-to-r from-amber-600 to-rose-600 p-5 text-white">
+      <DialogContent className="max-w-lg p-0 border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-600 to-rose-600 p-5 pr-12 text-white">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
               <FileWarning className="h-5 w-5" />
             </div>
             <div>
               <DialogTitle className="text-lg font-bold text-white tracking-tight">
-                Observar Comprobante Fiscal (ARCA)
+                Observar Trámite
               </DialogTitle>
               <DialogDescription className="text-amber-100 text-xs mt-0.5">
                 Trámite Nº {prestacion.form_number || prestacion.id} • {nombrePrestador}

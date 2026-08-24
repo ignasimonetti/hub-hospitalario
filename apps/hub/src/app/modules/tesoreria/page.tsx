@@ -714,7 +714,7 @@ export default function TesoreriaPage() {
                       }`}
                     >
                       <FolderOpen className="h-3.5 w-3.5" />
-                      2. Lotes GDE ({lotesFiltrados.length})
+                      2. Lotes ({lotesFiltrados.length})
                     </button>
 
                     {/* Pestaña 3: Historial Liquidado */}
@@ -727,7 +727,7 @@ export default function TesoreriaPage() {
                       }`}
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      3. Historial Pagado ({counts.pagados})
+                      3. Historial ({counts.pagados})
                     </button>
 
                     {/* Pestaña 4: Observaciones Fiscales */}
@@ -1123,8 +1123,6 @@ export default function TesoreriaPage() {
         isOpen={!!itemDetalle}
         onClose={() => setItemDetalle(null)}
         prestacion={itemDetalle}
-        onRegistrarPago={(p) => setItemParaPagar(p)}
-        onObservarFiscal={(p) => setItemParaObservar(p)}
       />
     </div>
   );

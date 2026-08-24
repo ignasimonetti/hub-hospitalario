@@ -184,7 +184,7 @@ export function ModalDetalleLoteGDE({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 border-slate-200 dark:border-slate-800">
         {/* Header */}
-        <div className="bg-slate-900 text-white p-5">
+        <div className="bg-slate-900 text-white p-5 pr-12">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">

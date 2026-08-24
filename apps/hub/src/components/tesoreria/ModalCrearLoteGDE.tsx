@@ -105,7 +105,7 @@ export function ModalCrearLoteGDE({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 border-slate-200 dark:border-slate-800">
+      <DialogContent className="max-w-lg p-0 border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="bg-gradient-to-r from-blue-700 to-indigo-800 p-5 text-white">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">

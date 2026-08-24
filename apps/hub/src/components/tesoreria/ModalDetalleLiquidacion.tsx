@@ -49,16 +49,12 @@ interface ModalDetalleLiquidacionProps {
   isOpen: boolean;
   onClose: () => void;
   prestacion: PrestacionTesoreriaItem | null;
-  onRegistrarPago: (prestacion: PrestacionTesoreriaItem) => void;
-  onObservarFiscal: (prestacion: PrestacionTesoreriaItem) => void;
 }
 
 export function ModalDetalleLiquidacion({
   isOpen,
   onClose,
   prestacion,
-  onRegistrarPago,
-  onObservarFiscal,
 }: ModalDetalleLiquidacionProps) {
   const [activeTab, setActiveTab] = useState<"liquidacion" | "asistencial" | "historial">("liquidacion");
 
@@ -145,30 +141,30 @@ export function ModalDetalleLiquidacion({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 border-slate-200 dark:border-slate-800">
         {/* Header */}
-        <div className="bg-slate-900 text-white p-5">
+        <div className="p-5 pr-12 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-sky-400 bg-sky-950/80 px-2 py-0.5 rounded border border-sky-800/80">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:border-slate-700">
                   {prestacion.form_number || `ID: ${prestacion.id.slice(0, 8)}`}
                 </span>
                 <span className={`text-xs px-2.5 py-0.5 rounded-full border font-semibold ${estadoCfg.bgLight} ${estadoCfg.textDark}`}>
                   {estadoCfg.label}
                 </span>
               </div>
-              <DialogTitle className="text-lg font-bold text-white tracking-tight mt-1.5">
+              <DialogTitle className="text-base font-bold text-slate-900 dark:text-slate-100 tracking-tight mt-1.5">
                 {nombrePrestador}
               </DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs mt-0.5 flex items-center gap-2">
+              <DialogDescription className="text-slate-500 dark:text-slate-400 text-xs mt-0.5 flex items-center gap-2">
                 <span>{srvLabel}</span>
                 <span>•</span>
                 <span>Período: {String(prestacion.period_month).padStart(2, "0")}/{prestacion.period_year}</span>
               </DialogDescription>
             </div>
 
-            <div className="text-right">
-              <div className="text-xs text-slate-400">Total a Liquidar</div>
-              <div className="text-xl font-extrabold text-emerald-400 font-mono">
+            <div className="text-right shrink-0">
+              <div className="text-xs text-slate-500 dark:text-slate-400">Total a Liquidar</div>
+              <div className="text-xl font-extrabold text-slate-900 dark:text-slate-100 font-mono">
                 {formatMoney(Number(prestacion.invoice_amount) || 0)}
               </div>
             </div>
@@ -200,7 +196,7 @@ export function ModalDetalleLiquidacion({
               {/* Datos Bancarios y Fiscales */}
               <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 space-y-3">
                 <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <CreditCard className="h-4 w-4 text-sky-600" />
+                  <CreditCard className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                   Datos de Acreditación Bancaria & Fiscal
                 </div>
 
@@ -232,7 +228,7 @@ export function ModalDetalleLiquidacion({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs text-sky-600 dark:text-sky-400"
+                        className="h-7 text-xs text-slate-500 dark:text-slate-400"
                         onClick={() => copyToClipboard(perfil.cbu_alias!, "CBU/Alias")}
                       >
                         <Copy className="h-3 w-3 mr-1" />
@@ -246,7 +242,7 @@ export function ModalDetalleLiquidacion({
               {/* Comprobantes Fiscales ARCA */}
               <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
                 <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <Receipt className="h-4 w-4 text-emerald-600" />
+                  <Receipt className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                   Comprobante Fiscal (Factura Electrónica ARCA)
                 </div>
 
@@ -265,7 +261,7 @@ export function ModalDetalleLiquidacion({
                   </div>
                   <div>
                     <span className="text-gray-500 dark:text-slate-400">Importe Facturado:</span>
-                    <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                    <div className="font-bold text-gray-900 dark:text-slate-100">
                       {formatMoney(Number(prestacion.invoice_amount) || 0)}
                     </div>
                   </div>
@@ -277,10 +273,10 @@ export function ModalDetalleLiquidacion({
                       href={facturaUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60 transition-colors border border-emerald-200 dark:border-emerald-800"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      Ver / Descargar Factura ARCA
+                      Ver / Descargar Factura
                     </a>
                   ) : (
                     <span className="text-xs text-gray-400">Sin archivo de factura adjunto</span>
@@ -347,7 +343,7 @@ export function ModalDetalleLiquidacion({
               {/* Firmas de Dirección */}
               <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 space-y-3">
                 <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <ShieldCheck className="h-4 w-4 text-violet-600" />
+                  <ShieldCheck className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                   Visados y Aprobación de la Dirección Asistencial
                 </div>
 
@@ -364,13 +360,13 @@ export function ModalDetalleLiquidacion({
                           : "Pendiente de visado adjunto"}
                       </span>
                       {prestacion.adjunto_signature_meta && (
-                        <p className="text-[11px] font-mono text-violet-700 dark:text-violet-300 mt-0.5">
+                        <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
                           {prestacion.adjunto_signature_meta}
                         </p>
                       )}
                     </div>
                     {prestacion.adjunto_approved_at ? (
-                      <Badge className="bg-violet-100 text-violet-800 dark:bg-violet-900/50 dark:text-violet-200 text-[10px]">
+                      <Badge className="bg-slate-900 text-white dark:bg-slate-700 text-[10px]">
                         Visado
                       </Badge>
                     ) : (
@@ -390,7 +386,7 @@ export function ModalDetalleLiquidacion({
                           : "Pendiente de aprobación de coordinación"}
                       </span>
                       {prestacion.director_signature_meta && (
-                        <p className="text-[11px] font-mono text-emerald-700 dark:text-emerald-300 mt-0.5">
+                        <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
                           {prestacion.director_signature_meta}
                         </p>
                       )}
@@ -420,7 +416,7 @@ export function ModalDetalleLiquidacion({
                   size="sm"
                   variant="outline"
                   onClick={handleVerPlanillaOficial}
-                  className="text-xs flex items-center gap-1.5 border-sky-300 text-sky-700 dark:border-sky-800 dark:text-sky-300 hover:bg-sky-50 dark:hover:bg-sky-950/40"
+                  className="text-xs flex items-center gap-1.5"
                 >
                   <FileSpreadsheet className="h-3.5 w-3.5" />
                   Abrir Planilla Oficial
@@ -460,42 +456,11 @@ export function ModalDetalleLiquidacion({
           </div>
         </Tabs>
 
-        {/* Footer Actions */}
-        <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 gap-2 sm:justify-between">
-          <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
+        {/* Footer: Modo Solo Lectura / Ficha de Consulta */}
+        <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+          <Button variant="outline" size="sm" onClick={onClose} className="text-xs ml-auto">
             Cerrar
           </Button>
-
-          <div className="flex items-center gap-2">
-            {prestacion.status === "aprobado" && (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    onClose();
-                    onObservarFiscal(prestacion);
-                  }}
-                  className="text-xs border-amber-300 text-amber-800 dark:border-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40"
-                >
-                  <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-                  Observar Comprobante ARCA
-                </Button>
-
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    onClose();
-                    onRegistrarPago(prestacion);
-                  }}
-                  className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                  Registrar Pago / Liquidar
-                </Button>
-              </>
-            )}
-          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

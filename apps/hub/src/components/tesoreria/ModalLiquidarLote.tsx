@@ -93,7 +93,7 @@ export function ModalLiquidarLote({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 border-slate-200 dark:border-slate-800">
+      <DialogContent className="max-w-md p-0 border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="bg-gradient-to-r from-emerald-700 to-teal-800 p-5 text-white">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">

@@ -1021,7 +1021,7 @@ export function generarPlanillaResumenLoteHTML(
   tituloLote: string,
   expedienteGde: string,
   prestaciones: PrestacionTesoreriaItem[],
-  hospitalName: string = 'Centro Integral de Salud La Banda "Dr. Ricardo Abdala"'
+  hospitalName: string = 'Centro Integral de Salud La Banda - Dr. Ricardo "Pololo" Abdala'
 ): string {
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {

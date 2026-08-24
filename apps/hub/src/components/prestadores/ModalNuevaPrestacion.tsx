@@ -328,6 +328,15 @@ export function ModalNuevaPrestacion({
     observadaParaReenviar?.director_adjunto_asignado || ""
   );
 
+  // Es una subsanación de observación fiscal originada por Tesorería
+  const esObservacionTesoreria = useMemo(() => {
+    return Boolean(
+      observadaParaReenviar &&
+      (observadaParaReenviar.status === "observado_tesoreria" ||
+       observadaParaReenviar.origen_observacion === "tesoreria")
+    );
+  }, [observadaParaReenviar]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingBorrador, setIsSavingBorrador] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -884,7 +893,11 @@ export function ModalNuevaPrestacion({
       let result: PrestacionPresentacion;
       if (observadaParaReenviar) {
         result = await resubmitPrestacion(observadaParaReenviar.id, formData);
-        toast.success("Corrección reenviada a Dirección para revisión exitosamente");
+        if (esObservacionTesoreria) {
+          toast.success("Corrección fiscal reenviada exitosamente. El trámite volvió directamente a Tesorería.");
+        } else {
+          toast.success("Corrección reenviada a Dirección para revisión exitosamente.");
+        }
       } else {
         result = await submitPrestacion(formData);
         toast.success(`Trámite ${generatedFormNumber} presentado ante Dirección con éxito`);
@@ -1653,37 +1666,51 @@ export function ModalNuevaPrestacion({
             </div>
           </div>
 
-          {/* Selector de Director Nominal de Destino */}
-          <div className="p-3 bg-sky-50/70 dark:bg-sky-950/40 rounded-xl border border-sky-200 dark:border-sky-800/80 space-y-1.5 text-left">
-            <Label className="text-xs font-bold text-sky-950 dark:text-sky-200 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
-              Director para Visado <span className="text-rose-500">*</span>
-            </Label>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Selecciona el Director que debe controlar y autorizar esta prestación:
-            </p>
-            <Select value={directorAdjuntoAsignado} onValueChange={setDirectorAdjuntoAsignado}>
-              <SelectTrigger className="h-8 text-xs bg-white dark:bg-slate-900 border-sky-200 dark:border-sky-800">
-                <SelectValue placeholder="Selecciona un Director" />
-              </SelectTrigger>
-              <SelectContent>
-                {directoresDisponibles.length > 0 ? (
-                  directoresDisponibles.map((dir) => (
-                    <SelectItem key={dir.id} value={dir.id} className="text-xs">
-                      👤 {dir.nombre} <span className="text-[10px] text-slate-400">({(dir as any).rol || "Dirección"})</span>
+          {/* Selector de Director Nominal de Destino (Omitido cuando la subsanación es de Tesorería) */}
+          {esObservacionTesoreria ? (
+            <div className="p-3 bg-amber-50/80 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800/80 space-y-1 text-left">
+              <div className="flex items-center gap-1.5 font-bold text-xs text-amber-900 dark:text-amber-200">
+                <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                Retorno Directo a Tesorería
+              </div>
+              <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                Este trámite ya cuenta con las autorizaciones asistenciales de Dirección. Al confirmar, volverá directamente al panel de <strong>Tesorería</strong> en estado <em>Aprobado</em> para continuar con la liquidación y pago.
+              </p>
+            </div>
+          ) : (
+            <div className="p-3 bg-sky-50/70 dark:bg-sky-950/40 rounded-xl border border-sky-200 dark:border-sky-800/80 space-y-1.5 text-left">
+              <Label className="text-xs font-bold text-sky-950 dark:text-sky-200 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
+                Director para Visado <span className="text-rose-500">*</span>
+              </Label>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Selecciona el Director que debe controlar y autorizar esta prestación:
+              </p>
+              <Select value={directorAdjuntoAsignado} onValueChange={setDirectorAdjuntoAsignado}>
+                <SelectTrigger className="h-8 text-xs bg-white dark:bg-slate-900 border-sky-200 dark:border-sky-800">
+                  <SelectValue placeholder="Selecciona un Director" />
+                </SelectTrigger>
+                <SelectContent>
+                  {directoresDisponibles.length > 0 ? (
+                    directoresDisponibles.map((dir) => (
+                      <SelectItem key={dir.id} value={dir.id} className="text-xs">
+                        👤 {dir.nombre} <span className="text-[10px] text-slate-400">({(dir as any).rol || "Dirección"})</span>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="direccion_general" className="text-xs">
+                      🛡️ Dirección Médica Asistencial
                     </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="direccion_general" className="text-xs">
-                    🛡️ Dirección Médica Asistencial
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <p className="text-[11px] text-slate-400 dark:text-slate-500 italic">
-            * Al confirmar, se generará el número de trámite correlativo y la planilla ingresará a la bandeja de auditoría del Director seleccionado.
+            {esObservacionTesoreria
+              ? "* Las firmas médicas originales quedan debidamente preservadas en el historial."
+              : "* Al confirmar, se generará el número de trámite correlativo y la planilla ingresará a la bandeja de auditoría del Director seleccionado."}
           </p>
 
           <AlertDialogFooter className="pt-3 flex flex-col-reverse sm:flex-row gap-2">
@@ -1697,7 +1724,7 @@ export function ModalNuevaPrestacion({
               onClick={handleExecuteSubmit}
               className="w-full sm:w-auto bg-[#08487A] hover:bg-[#06375d] text-white font-medium text-xs shadow-sm"
             >
-              Sí, Confirmar y Presentar
+              {esObservacionTesoreria ? "Confirmar y Reenviar a Tesorería" : "Sí, Confirmar y Presentar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

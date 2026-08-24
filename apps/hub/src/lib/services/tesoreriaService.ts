@@ -864,26 +864,48 @@ export async function observarComprobanteFiscal(
       created_at: now,
     });
 
-    const updated = await pocketbase
-      .collection("prestaciones_presentaciones")
-      .update<PrestacionPresentacion>(
-        id,
-        {
-          status: "observado_tesoreria",
-          origen_observacion: "tesoreria",
-          treasury_observation: motivoCompleto,
-          treasury_check_status: "observado_fiscal",
-          treasury_locked_by: "",
-          treasury_locked_name: "",
-          treasury_locked_at: "",
-          historial_observaciones: JSON.stringify(historial),
-          reviewed_at: now,
-        },
-        {
-          expand: "tenant,user",
-          requestKey: null,
-        }
-      );
+    let updated: PrestacionPresentacion;
+    try {
+      updated = await pocketbase
+        .collection("prestaciones_presentaciones")
+        .update<PrestacionPresentacion>(
+          id,
+          {
+            status: "observado_tesoreria",
+            origen_observacion: "tesoreria",
+            treasury_observation: motivoCompleto,
+            treasury_check_status: "observado_fiscal",
+            treasury_locked_by: "",
+            treasury_locked_name: "",
+            treasury_locked_at: "",
+            historial_observaciones: JSON.stringify(historial),
+            reviewed_at: now,
+          },
+          {
+            expand: "tenant,user",
+            requestKey: null,
+          }
+        );
+    } catch (updateErr: any) {
+      // Fallback: Si fallan campos auxiliares en PB, actualizar los campos core
+      console.warn("Fallback update en observarComprobanteFiscal:", updateErr?.message);
+      updated = await pocketbase
+        .collection("prestaciones_presentaciones")
+        .update<PrestacionPresentacion>(
+          id,
+          {
+            status: "observado_tesoreria",
+            origen_observacion: "tesoreria",
+            treasury_observation: motivoCompleto,
+            historial_observaciones: JSON.stringify(historial),
+            reviewed_at: now,
+          },
+          {
+            expand: "tenant,user",
+            requestKey: null,
+          }
+        );
+    }
 
     return updated;
   } catch (error: any) {

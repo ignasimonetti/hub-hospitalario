@@ -479,17 +479,9 @@ export default function TesoreriaPage() {
                 <Receipt className="h-5 w-5" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base font-bold text-gray-900 dark:text-slate-100 tracking-tight">
-                    Tesorería CISB
-                  </h1>
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] uppercase tracking-wider border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300"
-                  >
-                    Hospital Banda
-                  </Badge>
-                </div>
+                <h1 className="text-base font-bold text-gray-900 dark:text-slate-100 tracking-tight">
+                  Tesorería
+                </h1>
                 <p className="text-xs text-gray-500 dark:text-slate-400 hidden sm:block">
                   {vistaActiva === "operaciones"
                     ? "Bandeja de Control Documental & Lotes GDE"
@@ -688,7 +680,7 @@ export default function TesoreriaPage() {
                 <div className="p-3.5 bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/60 rounded-xl flex items-center justify-between">
                   <div>
                     <span className="text-[11px] font-semibold text-blue-800 dark:text-blue-300 block uppercase tracking-wider">
-                      Listas para Lote GDE
+                      Listas para Lote
                     </span>
                     <span className="text-xl font-extrabold text-blue-900 dark:text-blue-100 font-mono">
                       {metricasSimples.listasParaLoteCount}{" "}
@@ -706,7 +698,7 @@ export default function TesoreriaPage() {
                 <div className="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 rounded-xl flex items-center justify-between">
                   <div>
                     <span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 block uppercase tracking-wider">
-                      En Lote / A Pagar BSE
+                      En Lote / A Pagar
                     </span>
                     <span className="text-xl font-extrabold text-emerald-900 dark:text-emerald-100 font-mono">
                       {metricasSimples.enLotesCount}{" "}

@@ -411,6 +411,36 @@ export async function crearLoteTesoreria(
   const user = pocketbase.authStore.model;
   if (!user) throw new Error("Usuario no autenticado");
 
+  // ── VALIDACIÓN DE SEGURIDAD: ninguna prestación puede estar en más de un lote ──
+  const lotesExistentes = await getLotesTesoreria(tenantId);
+  const prestacionesYaEnLote: { prestacionId: string; loteNumero: string }[] = [];
+
+  for (const id of payload.prestacionesIds) {
+    // Verificar contra lotes guardados (localStorage / PB)
+    const loteContenedor = lotesExistentes.find(
+      (l) => l.prestaciones_ids && l.prestaciones_ids.includes(id)
+    );
+    if (loteContenedor) {
+      prestacionesYaEnLote.push({ prestacionId: id, loteNumero: loteContenedor.numero_lote });
+      continue;
+    }
+    // Verificar contra el campo lote_id de la propia prestación
+    const prest = prestaciones.find((p) => p.id === id);
+    if (prest && prest.lote_id) {
+      prestacionesYaEnLote.push({ prestacionId: id, loteNumero: prest.lote_numero || prest.lote_id });
+    }
+  }
+
+  if (prestacionesYaEnLote.length > 0) {
+    const detalle = prestacionesYaEnLote
+      .map((x) => `• ${x.prestacionId} → ya en lote ${x.loteNumero}`)
+      .join("\n");
+    throw new Error(
+      `No se puede crear el lote: ${prestacionesYaEnLote.length} prestación(es) ya pertenecen a otro lote.\n${detalle}`
+    );
+  }
+  // ── FIN VALIDACIÓN ──
+
   const now = new Date().toISOString();
   const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email;
 

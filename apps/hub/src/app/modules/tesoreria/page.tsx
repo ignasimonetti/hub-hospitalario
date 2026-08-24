@@ -344,9 +344,14 @@ export default function TesoreriaPage() {
 
   // Creación de Lote
   const handleConfirmCrearLote = async (payload: CrearLotePayload) => {
-    await crearLoteTesoreria(payload, prestaciones, currentTenant?.id);
-    await cargarDatos();
-    setTabActiva("lotes_gde");
+    try {
+      await crearLoteTesoreria(payload, prestaciones, currentTenant?.id);
+      setSelectedIds(new Set());
+      await cargarDatos();
+      setTabActiva("lotes_gde");
+    } catch (err: any) {
+      toast.error(err?.message || "Error al crear el lote. Intente nuevamente.");
+    }
   };
 
   const handleConfirmSinglePayment = async (id: string, payload: RegistrarPagoPayload) => {
@@ -797,36 +802,42 @@ export default function TesoreriaPage() {
                               onClick={() => setLoteDetalle(lote)}
                             >
                               <CardContent className="p-4 space-y-3">
-                                <div className="flex items-start justify-between">
-                                  <div>
-                                    <span className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400 block">
+                                <div>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <span className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400">
                                       {lote.numero_lote}
                                     </span>
-                                    <h3 className="text-xs font-semibold text-gray-900 dark:text-slate-100 font-mono mt-0.5">
-                                      {lote.numero_expediente_gde || "Sin Expediente GDE"}
-                                    </h3>
+                                    {lote.estado !== "en_tramite_gde" && (
+                                      <span
+                                        className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold shrink-0 ${estadoCfg.bgLight} ${estadoCfg.textDark}`}
+                                      >
+                                        {estadoCfg.label}
+                                      </span>
+                                    )}
                                   </div>
-                                  <span
-                                    className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${estadoCfg.bgLight} ${estadoCfg.textDark}`}
-                                  >
-                                    {estadoCfg.label}
-                                  </span>
+                                  <h3 className="text-xs font-semibold text-gray-900 dark:text-slate-100 font-mono mt-0.5 truncate">
+                                    {lote.numero_expediente_gde || "Sin Expediente GDE"}
+                                  </h3>
                                 </div>
 
                                 <p className="text-[11px] text-gray-500 line-clamp-2">
                                   {lote.descripcion}
                                 </p>
 
-                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-end justify-between gap-2 text-xs">
                                   <div>
                                     <span className="text-gray-400 text-[10px] block">Trámites</span>
                                     <span className="font-bold text-gray-800 dark:text-slate-200">
                                       {lote.cantidad_prestaciones} profesionales
                                     </span>
+                                    <span className="text-gray-400 text-[10px] block mt-1">
+                                      Período: {String(lote.periodo_mes).padStart(2, "0")}/{lote.periodo_anio}
+                                      {lote.created_by_name ? ` • ${lote.created_by_name}` : ""}
+                                    </span>
                                   </div>
-                                  <div className="text-right">
+                                  <div className="text-right shrink-0">
                                     <span className="text-gray-400 text-[10px] block">Neto a Pagar</span>
-                                    <span className="font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
+                                    <span className="text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
                                       {formatMoney(lote.monto_neto_total)}
                                     </span>
                                   </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LoteTesoreria, PrestacionTesoreriaItem, ESTADOS_LOTE_CONFIG } from "@/types/tesoreria";
 import {
   generarPlanillaResumenLoteHTML,
+  generarOrdenDePagoHTML,
   liquidarLotePrestaciones,
   quitarPrestacionDeLote,
   eliminarLoteTesoreria,
@@ -35,6 +36,7 @@ import {
   Unlock,
   Receipt,
   FileCheck2,
+  ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -55,6 +57,8 @@ export function ModalDetalleLoteGDE({
 }: ModalDetalleLoteGDEProps) {
   const [isPayingLote, setIsPayingLote] = useState(false);
   const [isTogglingCierre, setIsTogglingCierre] = useState(false);
+  const [isGeneratingOP, setIsGeneratingOP] = useState(false);
+  const [numeroOP, setNumeroOP] = useState("");
   const [comprobantePagoBSE, setComprobantePagoBSE] = useState("");
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -93,6 +97,35 @@ export function ModalDetalleLoteGDE({
       toast.error(err?.message || "Error al conmutar estado del lote");
     } finally {
       setIsTogglingCierre(false);
+    }
+  };
+
+  const handleGenerarOrdenDePago = async () => {
+    if (!numeroOP.trim()) {
+      toast.error("Ingrese el número de Orden de Pago antes de generarla (ej: 3930).");
+      return;
+    }
+    try {
+      setIsGeneratingOP(true);
+
+      // Cierre implícito si el lote estaba abierto
+      if (estaAbierto) {
+        await toggleCierreLoteTesoreria(lote.id);
+        toast.info(`Lote "${lote.numero_lote}" cerrado automáticamente al generar la Orden de Pago.`);
+        await onRefresh();
+      }
+
+      const html = generarOrdenDePagoHTML(lote, prestacionesDelLote, numeroOP.trim());
+      const win = window.open("", "_blank");
+      if (win) {
+        win.document.write(html);
+        win.document.close();
+      }
+      toast.success(`Orden de Pago N° ${numeroOP.trim()} generada exitosamente para ${lote.numero_lote}.`);
+    } catch (err: any) {
+      toast.error(err?.message || "Error al generar la Orden de Pago");
+    } finally {
+      setIsGeneratingOP(false);
     }
   };
 
@@ -390,6 +423,44 @@ export function ModalDetalleLoteGDE({
               </table>
             </div>
           </div>
+
+          {/* Generar Orden de Pago (Documento para Expediente GDE) */}
+          {!estaPagado && (
+            <div className="p-3.5 rounded-lg border-2 border-sky-200 dark:border-sky-800 bg-sky-50/70 dark:bg-sky-950/40 space-y-2.5">
+              <div className="text-xs font-bold text-sky-900 dark:text-sky-100 flex items-center gap-1.5">
+                <ClipboardList className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                Generar Orden de Pago (Documento para Expediente)
+              </div>
+              <p className="text-[11px] text-sky-800 dark:text-sky-300">
+                Genera el documento de Orden de Pago global con la nómina de beneficiarios, retenciones e importes.
+                {estaAbierto && (
+                  <span className="font-semibold"> El lote se cerrará automáticamente al generar la OP.</span>
+                )}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <Input
+                  placeholder="Nº Orden de Pago (ej: 3930)"
+                  value={numeroOP}
+                  onChange={(e) => setNumeroOP(e.target.value)}
+                  className="h-8 text-xs font-mono bg-white dark:bg-slate-900 border-sky-200 dark:border-sky-800 w-48"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleGenerarOrdenDePago}
+                  disabled={isGeneratingOP || !numeroOP.trim()}
+                  className="h-8 text-xs bg-sky-600 hover:bg-sky-700 text-white font-semibold flex items-center gap-1.5"
+                >
+                  {isGeneratingOP ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <ClipboardList className="h-3.5 w-3.5" />
+                  )}
+                  Generar Orden de Pago
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Liquidación Final / Cierre de Pago BSE */}
           {!estaPagado && (

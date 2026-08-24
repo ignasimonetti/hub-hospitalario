@@ -1078,6 +1078,311 @@ export function calcularKpisTesoreria(
 }
 
 /**
+ * Convierte un importe numérico a su representación en texto (pesos argentinos).
+ */
+function importeEnLetras(monto: number): string {
+  const unidades = [
+    "", "UNO", "DOS", "TRES", "CUATRO", "CINCO", "SEIS", "SIETE", "OCHO", "NUEVE",
+    "DIEZ", "ONCE", "DOCE", "TRECE", "CATORCE", "QUINCE", "DIECISEIS", "DIECISIETE",
+    "DIECIOCHO", "DIECINUEVE", "VEINTE",
+  ];
+  const decenas = [
+    "", "", "VEINTI", "TREINTA", "CUARENTA", "CINCUENTA", "SESENTA", "SETENTA", "OCHENTA", "NOVENTA",
+  ];
+  const centenas = [
+    "", "CIENTO", "DOSCIENTOS", "TRESCIENTOS", "CUATROCIENTOS", "QUINIENTOS",
+    "SEISCIENTOS", "SETECIENTOS", "OCHOCIENTOS", "NOVECIENTOS",
+  ];
+
+  const parteEntera = Math.floor(Math.abs(monto));
+  const centavos = Math.round((Math.abs(monto) - parteEntera) * 100);
+
+  function convertirGrupo(n: number): string {
+    if (n === 0) return "";
+    if (n === 100) return "CIEN";
+    if (n <= 20) return unidades[n];
+    if (n < 30) return "VEINTI" + unidades[n - 20];
+
+    const d = Math.floor(n / 10);
+    const u = n % 10;
+    if (n < 100) return decenas[d] + (u > 0 ? " Y " + unidades[u] : "");
+
+    const c = Math.floor(n / 100);
+    const resto = n % 100;
+    return centenas[c] + (resto > 0 ? " " + convertirGrupo(resto) : "");
+  }
+
+  if (parteEntera === 0) return `CERO CON ${String(centavos).padStart(2, "0")}/100`;
+
+  let resultado = "";
+  const millones = Math.floor(parteEntera / 1000000);
+  const miles = Math.floor((parteEntera % 1000000) / 1000);
+  const cientos = parteEntera % 1000;
+
+  if (millones > 0) {
+    resultado += (millones === 1 ? "UN MILLON" : convertirGrupo(millones) + " MILLONES") + " ";
+  }
+  if (miles > 0) {
+    resultado += (miles === 1 ? "MIL" : convertirGrupo(miles) + " MIL") + " ";
+  }
+  if (cientos > 0) {
+    resultado += convertirGrupo(cientos);
+  }
+
+  return resultado.trim() + ` CON ${String(centavos).padStart(2, "0")}/100`;
+}
+
+/**
+ * Genera la Orden de Pago Global en formato HTML, replicando el formato oficial del CISB.
+ * Adaptada para lotes con múltiples beneficiarios (ya no una OP por factura).
+ */
+export function generarOrdenDePagoHTML(
+  lote: LoteTesoreria,
+  prestaciones: PrestacionTesoreriaItem[],
+  numeroOP: string,
+  hospitalName: string = 'Centro Integral de Salud La Banda - Dr. Ricardo "Pololo" Abdala'
+): string {
+  const formatMoney = (amount: number) =>
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      maximumFractionDigits: 2,
+    }).format(amount);
+
+  const hoy = new Date();
+  const fechaEmision = hoy.toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const anio = hoy.getFullYear();
+
+  // Cálculos totales
+  let totalBruto = 0;
+  let totalRetIIBB = 0;
+  let totalRetGanancias = 0;
+  let totalRetSUSS = 0;
+  let totalRetOtras = 0;
+
+  const beneficiarios = prestaciones.map((p) => {
+    const user = p.expand?.user;
+    const nombre = user
+      ? `${user.lastName || ""} ${user.firstName || ""}`.trim().toUpperCase() || user.email.toUpperCase()
+      : "PRESTADOR ASISTENCIAL";
+
+    const cuit = p.perfilPrestador?.cuit || "Sin CUIT";
+    const cbuAlias = p.perfilPrestador?.cbu_alias || "Sin CBU/Alias";
+    const montoBruto = Number(p.invoice_amount) || 0;
+    const retIIBB = Number(p.retencion_iibb) || 0;
+    const retGanancias = Number(p.retencion_ganancias) || 0;
+    const retSUSS = Number(p.retencion_suss) || 0;
+    const retOtras = Number(p.retencion_otras) || 0;
+    const retTotal = Number(p.retencion_monto) || retIIBB + retGanancias + retSUSS + retOtras;
+    const montoNeto =
+      p.monto_neto_liquidable !== undefined ? Number(p.monto_neto_liquidable) : montoBruto - retTotal;
+
+    totalBruto += montoBruto;
+    totalRetIIBB += retIIBB;
+    totalRetGanancias += retGanancias;
+    totalRetSUSS += retSUSS;
+    totalRetOtras += retOtras;
+
+    return { nombre, cuit, cbuAlias, montoBruto, retIIBB, retGanancias, retSUSS, retOtras, retTotal, montoNeto, factura: p.invoice_number || "S/N" };
+  });
+
+  const totalRetenciones = totalRetIIBB + totalRetGanancias + totalRetSUSS + totalRetOtras;
+  const totalNeto = totalBruto - totalRetenciones;
+
+  const filasRetenciones = `
+    <tr>
+      <td style="padding: 6px 12px; font-size: 11px;">D.G.R. Prov. Sgo. del Estero — Ret. I.I.B.B</td>
+      <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetIIBB)}</td>
+      <td style="padding: 6px 12px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
+    </tr>
+    <tr>
+      <td style="padding: 6px 12px; font-size: 11px;">A.F.I.P. Ret. Aport. Previsional — RSS RG 1784/04 Art. 14</td>
+      <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetSUSS)}</td>
+      <td style="padding: 6px 12px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
+    </tr>
+    <tr>
+      <td style="padding: 6px 12px; font-size: 11px;">A.F.I.P. Ret. Imp. a las Ganancias — RG 830</td>
+      <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetGanancias)}</td>
+      <td style="padding: 6px 12px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
+    </tr>
+    ${totalRetOtras > 0 ? `
+    <tr>
+      <td style="padding: 6px 12px; font-size: 11px;">Otras Retenciones</td>
+      <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetOtras)}</td>
+      <td style="padding: 6px 12px; font-size: 10px; text-align: center; color: #64748b;">CHEQUE N°</td>
+    </tr>` : ""}
+  `;
+
+  const filasBeneficiarios = beneficiarios
+    .map((b) => `
+      <tr style="border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 6px 12px; font-size: 11px; font-weight: 600;">${b.nombre}</td>
+        <td style="padding: 6px 12px; font-family: monospace; font-size: 11px;">${b.cuit}</td>
+        <td style="padding: 6px 12px; font-family: monospace; font-size: 11px;">${b.factura}</td>
+        <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(b.montoBruto)}</td>
+        <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px; color: #dc2626;">${b.retTotal > 0 ? `-${formatMoney(b.retTotal)}` : "-"}</td>
+        <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px; font-weight: bold; color: #059669;">${formatMoney(b.montoNeto)}</td>
+        <td style="padding: 6px 12px; font-size: 10px; text-align: center; color: #64748b;">TRANSACCIÓN</td>
+      </tr>
+    `)
+    .join("");
+
+  return `
+  <!DOCTYPE html>
+  <html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <title>Orden de Pago ${numeroOP} - ${anio} - CISB</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: Arial, sans-serif; margin: 0; padding: 25mm 20mm; color: #0f172a; line-height: 1.35; font-size: 12px; }
+      .header-area { text-align: center; font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+      .op-title-row { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 14px; }
+      .op-title { font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+      .op-number { font-size: 18px; font-weight: 800; font-family: monospace; }
+      .meta-grid { display: grid; grid-template-columns: 140px 1fr; gap: 4px 12px; font-size: 11px; margin-bottom: 16px; }
+      .meta-label { font-weight: bold; color: #334155; }
+      .meta-value { font-family: monospace; }
+      .legal-text { font-size: 10.5px; text-transform: uppercase; border: 1px solid #cbd5e1; padding: 10px 14px; background-color: #f8fafc; text-align: center; margin: 14px 0; letter-spacing: 0.3px; line-height: 1.5; }
+      .importe-box { background-color: #f0fdf4; border: 2px solid #16a34a; border-radius: 6px; padding: 12px 16px; margin: 14px 0; }
+      .importe-label { font-size: 11px; font-weight: bold; color: #15803d; }
+      .importe-valor { font-size: 22px; font-weight: 800; font-family: monospace; color: #0f172a; }
+      .importe-letras { font-size: 11px; font-style: italic; margin-top: 4px; color: #334155; }
+      table.detail { width: 100%; border-collapse: collapse; margin-top: 10px; }
+      table.detail th { background-color: #f1f5f9; border-bottom: 2px solid #0f172a; border-top: 1px solid #cbd5e1; padding: 7px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+      table.detail .total-row td { border-top: 2px solid #0f172a; font-weight: 800; font-size: 12px; padding: 8px 12px; background-color: #f8fafc; }
+      .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #334155; margin: 18px 0 8px 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+      .bank-info { background-color: #eff6ff; border: 1px solid #93c5fd; border-radius: 6px; padding: 10px 14px; margin: 14px 0; font-size: 11px; }
+      .footer-sign { margin-top: 50px; display: flex; justify-content: space-between; text-align: center; font-size: 10px; }
+      .sign-box { border-top: 1px solid #94a3b8; width: 200px; padding-top: 6px; }
+      .footer-date { text-align: right; font-size: 11px; margin-top: 20px; color: #64748b; }
+      @media print {
+        body { margin: 10mm; padding: 0; }
+        .no-print { display: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="no-print" style="margin-bottom: 15px; text-align: right;">
+      <button onclick="window.print()" style="padding: 8px 16px; background-color: #0284c7; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
+        🖨️ Imprimir / Guardar como PDF
+      </button>
+    </div>
+
+    <div class="header-area">Área Tesorería</div>
+
+    <div class="op-title-row">
+      <div class="op-title">Orden de Pago</div>
+      <div><span class="op-number">${numeroOP}</span> &nbsp; <span style="font-size: 14px; font-weight: bold;">${anio}</span></div>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-label">EXP:</div>
+      <div class="meta-value">${lote.numero_expediente_gde || "A CARATULAR"}</div>
+
+      <div class="meta-label">RESOLUCIÓN N°:</div>
+      <div class="meta-value">${lote.numero_resolucion || "PENDIENTE"}</div>
+
+      <div class="meta-label">JURISDICCIÓN:</div>
+      <div class="meta-value">63</div>
+
+      <div class="meta-label">PROGRAMA:</div>
+      <div class="meta-value">11 — PREVENCIÓN, PROMOCIÓN, PROTECCIÓN, RECUPERACIÓN Y REHABILITACIÓN DE LA SALUD</div>
+
+      <div class="meta-label">CÓDIGO DE PAGO:</div>
+      <div class="meta-value">ACT 1 &nbsp;/&nbsp; PART 341</div>
+
+      <div class="meta-label">REFERENCIA:</div>
+      <div class="meta-value">${lote.numero_lote} — ${lote.descripcion}</div>
+    </div>
+
+    <div class="legal-text">
+      Cumplidos los trámites legales y reglamentarios sobre ejecución del presupuesto,<br>
+      se procede al pago de:
+    </div>
+
+    <div class="importe-box">
+      <div class="importe-label">EL IMPORTE:</div>
+      <div class="importe-valor">${formatMoney(totalBruto)}</div>
+      <div class="importe-letras">SON PESOS: ${importeEnLetras(totalBruto)}</div>
+    </div>
+
+    <!-- Sección de Retenciones Globales -->
+    <div class="section-title">Retenciones Aplicables</div>
+    <table class="detail">
+      <thead>
+        <tr>
+          <th style="text-align: left;">Concepto</th>
+          <th style="text-align: right;">Pesos</th>
+          <th style="text-align: center; width: 130px;">Mediante</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filasRetenciones}
+      </tbody>
+    </table>
+
+    <!-- Nómina de Beneficiarios -->
+    <div class="section-title">Nómina de Beneficiarios — Detalle por Prestador (${beneficiarios.length})</div>
+    <table class="detail">
+      <thead>
+        <tr>
+          <th style="text-align: left;">Beneficiario</th>
+          <th style="text-align: left;">CUIT</th>
+          <th style="text-align: left;">Factura</th>
+          <th style="text-align: right;">Bruto</th>
+          <th style="text-align: right;">Retención</th>
+          <th style="text-align: right;">Neto</th>
+          <th style="text-align: center; width: 100px;">Mediante</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filasBeneficiarios}
+        <tr class="total-row">
+          <td colspan="3" style="text-align: right; text-transform: uppercase;">Total General:</td>
+          <td style="text-align: right; font-family: monospace;">${formatMoney(totalBruto)}</td>
+          <td style="text-align: right; font-family: monospace; color: #dc2626;">${totalRetenciones > 0 ? `-${formatMoney(totalRetenciones)}` : "-"}</td>
+          <td style="text-align: right; font-family: monospace; color: #059669;">${formatMoney(totalNeto)}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Datos Bancarios -->
+    <div class="bank-info">
+      <strong>A PAGARSE MEDIANTE CUENTA BANCARIA (CUENTA DÉBITO):</strong><br>
+      BSE — CUENTA CORRIENTE &nbsp;&nbsp; <span style="font-family: monospace; font-weight: bold;">1255424/86</span>
+      &nbsp;&nbsp;&nbsp; REMESAS DEL TESORO
+    </div>
+
+    <div class="footer-date">
+      Santiago del Estero — La Banda, ${fechaEmision}
+    </div>
+
+    <div class="footer-sign">
+      <div class="sign-box">
+        Responsable Control Tesorería<br>
+        CISB — La Banda
+      </div>
+      <div class="sign-box">
+        Jefe Depto. Tesorería<br>
+        CISB — La Banda
+      </div>
+      <div class="sign-box">
+        Director Ejecutivo<br>
+        CISB — La Banda
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+}
+
+/**
  * Genera la Planilla Oficial de Resumen de Lote para Expediente GDE (Anexo I)
  * Formato fiel al modelo analógico oficial del CISB
  */

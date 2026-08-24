@@ -270,7 +270,7 @@ export async function getPrestacionesParaTesoreria(
       filter = `tenant = "${tenantId}"`;
     }
 
-    const [records, perfilesMap] = await Promise.all([
+    const [records, perfilesMap, lotesGuardados] = await Promise.all([
       pocketbase
         .collection("prestaciones_presentaciones")
         .getFullList<PrestacionPresentacion>({
@@ -280,7 +280,18 @@ export async function getPrestacionesParaTesoreria(
           requestKey: null,
         }),
       getMapPerfilesPrestadores(),
+      getLotesTesoreria(tenantId),
     ]);
+
+    // Mapa auxiliar: prestacionId -> LoteTesoreria
+    const prestacionToLoteMap = new Map<string, LoteTesoreria>();
+    for (const l of lotesGuardados) {
+      if (l.prestaciones_ids && Array.isArray(l.prestaciones_ids)) {
+        for (const pId of l.prestaciones_ids) {
+          prestacionToLoteMap.set(pId, l);
+        }
+      }
+    }
 
     const itemsConPerfil: PrestacionTesoreriaItem[] = records.map((rec) => {
       const perfil = rec.user ? perfilesMap.get(rec.user) || null : null;
@@ -312,6 +323,12 @@ export async function getPrestacionesParaTesoreria(
         }
       }
 
+      // Reconstrucción infalible de lote_id desde el mapa de lotes
+      const loteAsignado = prestacionToLoteMap.get(rec.id);
+      const finalLoteId = rec.lote_id || loteAsignado?.id || "";
+      const finalLoteNumero = rec.lote_numero || loteAsignado?.numero_lote || "";
+      const finalExpteGde = rec.numero_expediente_gde || loteAsignado?.numero_expediente_gde || "";
+
       return {
         ...rec,
         treasury_check_status: checkStatus as any,
@@ -322,6 +339,9 @@ export async function getPrestacionesParaTesoreria(
         retencion_otras_concepto: retOtrasConcepto,
         retencion_monto: retTotal,
         monto_neto_liquidable: montoNeto,
+        lote_id: finalLoteId,
+        lote_numero: finalLoteNumero,
+        numero_expediente_gde: finalExpteGde,
         perfilPrestador: perfil,
       };
     });
@@ -426,7 +446,9 @@ export async function crearLoteTesoreria(
 
   // 1. Guardar en localStorage
   const currentLotes = await getLotesTesoreria(tenantId);
-  const updatedLotes = [nuevoLote, ...currentLotes];
+  // Reemplazar si existiera o agregar al inicio
+  const filtered = currentLotes.filter((l) => l.id !== loteId);
+  const updatedLotes = [nuevoLote, ...filtered];
   saveLocalLotes(updatedLotes);
 
   // 2. Intentar guardar en PocketBase si existe la colección

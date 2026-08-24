@@ -149,7 +149,7 @@ export function ModalCrearLoteGDE({
               </div>
               <div>
                 <span className="text-[10px] text-emerald-800 dark:text-emerald-400 block font-semibold">
-                  Neto a Liquidar (BSE)
+                  Neto a Liquidar
                 </span>
                 <span className="font-extrabold font-mono text-emerald-700 dark:text-emerald-400">
                   {formatMoney(montoNeto)}

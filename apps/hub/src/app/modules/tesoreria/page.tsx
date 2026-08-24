@@ -507,7 +507,7 @@ export default function TesoreriaPage() {
               <Button
                 size="sm"
                 onClick={() => setIsCrearLoteModalOpen(true)}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-1.5 shadow-sm animate-pulse"
+                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-1.5 shadow-sm"
               >
                 <FolderOpen className="h-3.5 w-3.5" />
                 Crear Lote ({selectedIds.size})
@@ -887,10 +887,10 @@ export default function TesoreriaPage() {
                               )}
                               <th className="py-3 px-3">Trámite & Período</th>
                               <th className="py-3 px-3">Beneficiario & CUIT</th>
-                              <th className="py-3 px-3">Factura ARCA</th>
-                              <th className="py-3 px-3 text-right">Bruto Facturado</th>
-                              <th className="py-3 px-3 text-right">Neto BSE</th>
-                              <th className="py-3 px-3 text-center">Estado Control</th>
+                              <th className="py-3 px-3">Factura</th>
+                              <th className="py-3 px-3 text-right">Importe Bruto</th>
+                              <th className="py-3 px-3 text-right">Importe Neto</th>
+                              <th className="py-3 px-3 text-center">Estado</th>
                               <th className="py-3 px-3 text-right">Acciones</th>
                             </tr>
                           </thead>

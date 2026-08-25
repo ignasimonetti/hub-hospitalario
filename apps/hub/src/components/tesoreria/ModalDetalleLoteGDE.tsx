@@ -38,6 +38,8 @@ import {
   Receipt,
   FileCheck2,
   ClipboardList,
+  FileText,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -107,6 +109,15 @@ export function ModalDetalleLoteGDE({
       lote.numero_expediente_gde || "A CARATULAR",
       prestacionesDelLote
     );
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    }
+  };
+
+  const handleAbrirOrdenDePagoPDF = () => {
+    const html = generarOrdenDePagoHTML(lote, prestacionesDelLote, lote.op_config);
     const win = window.open("", "_blank");
     if (win) {
       win.document.write(html);
@@ -405,7 +416,7 @@ export function ModalDetalleLoteGDE({
             </div>
           </div>
 
-          {/* Generar Orden de Pago (Documento para Expediente GDE) */}
+          {/* Generar / Ver / Editar Orden de Pago (Documento para Expediente GDE) */}
           {!estaPagado && (
             <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="space-y-1">
@@ -414,21 +425,50 @@ export function ModalDetalleLoteGDE({
                   Orden de Pago Global (Documento Oficial GDE)
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {lote.numero_orden_pago
-                    ? `OP N° ${lote.numero_orden_pago} configurada. Puede editar los datos presupuestarios o volver a emitir el documento.`
-                    : "Complete los datos contables y presupuestarios del expediente para emitir la Orden de Pago oficial."}
+                  {tieneOP
+                    ? `OP N° ${lote.numero_orden_pago} emitida. Puede visualizar el documento oficial o corregir datos presupuestarios.`
+                    : "Complete los datos contables y presupuestarios del expediente para consolidar y emitir la Orden de Pago."}
                 </p>
               </div>
 
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => setIsConfigOPOpen(true)}
-                className="h-8 text-xs font-semibold flex items-center gap-1.5 shrink-0"
-              >
-                <ClipboardList className="h-3.5 w-3.5" />
-                {lote.numero_orden_pago ? "Ver / Editar Orden de Pago" : "Generar Orden de Pago"}
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                {tieneOP ? (
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleAbrirOrdenDePagoPDF}
+                      className="h-8 text-xs font-bold flex items-center gap-1.5 bg-blue-700 hover:bg-blue-800 text-white shadow-xs"
+                      title="Abrir el documento oficial en una nueva pestaña para imprimir o descargar en PDF"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      Ver Orden de Pago (PDF)
+                    </Button>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsConfigOPOpen(true)}
+                      className="h-8 text-xs font-semibold flex items-center gap-1.5"
+                      title="Modificar número de resolución, imputación contable o cuenta débito"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      Editar Datos de OP
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setIsConfigOPOpen(true)}
+                    className="h-8 text-xs font-semibold flex items-center gap-1.5 bg-blue-700 hover:bg-blue-800 text-white"
+                  >
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    Generar Orden de Pago
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 

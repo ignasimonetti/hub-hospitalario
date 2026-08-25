@@ -1447,21 +1447,6 @@ export function generarOrdenDePagoHTML(
     <div class="footer-date">
       Santiago del Estero — La Banda, ${fechaEmision}
     </div>
-
-    <div class="footer-sign">
-      <div class="sign-box">
-        Responsable Control Tesorería<br>
-        CISB — La Banda
-      </div>
-      <div class="sign-box">
-        Jefe Depto. Tesorería<br>
-        CISB — La Banda
-      </div>
-      <div class="sign-box">
-        Director Ejecutivo<br>
-        CISB — La Banda
-      </div>
-    </div>
   </body>
   </html>
   `;

@@ -1264,40 +1264,19 @@ export function generarOrdenDePagoHTML(
   const totalRetenciones = totalRetIIBB + totalRetGanancias + totalRetSUSS + totalRetOtras;
   const totalNeto = totalBruto - totalRetenciones;
 
-  const filasRetenciones = `
-    <tr>
-      <td style="padding: 5px 10px; font-size: 11px;">D.G.R. Prov. Sgo. del Estero — Ret. I.I.B.B</td>
-      <td style="padding: 5px 10px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetIIBB)}</td>
-      <td style="padding: 5px 10px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
-    </tr>
-    <tr>
-      <td style="padding: 5px 10px; font-size: 11px;">A.F.I.P. Ret. Aport. Previsional — RSS RG 1784/04 Art. 14</td>
-      <td style="padding: 5px 10px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetSUSS)}</td>
-      <td style="padding: 5px 10px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
-    </tr>
-    <tr>
-      <td style="padding: 5px 10px; font-size: 11px;">A.F.I.P. Ret. Imp. a las Ganancias — RG 830</td>
-      <td style="padding: 5px 10px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetGanancias)}</td>
-      <td style="padding: 5px 10px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
-    </tr>
-    ${totalRetOtras > 0 ? `
-    <tr>
-      <td style="padding: 5px 10px; font-size: 11px;">Otras Retenciones</td>
-      <td style="padding: 5px 10px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetOtras)}</td>
-      <td style="padding: 5px 10px; font-size: 10px; text-align: center; color: #64748b;">CHEQUE N°</td>
-    </tr>` : ""}
-  `;
-
   const filasBeneficiarios = beneficiarios
     .map((b) => `
       <tr style="border-bottom: 1px solid #e2e8f0;">
-        <td style="padding: 5px 8px; font-size: 10.5px; font-weight: 600;">${b.nombre}</td>
-        <td style="padding: 5px 8px; font-family: monospace; font-size: 10.5px;">${b.cuit}</td>
-        <td style="padding: 5px 8px; font-family: monospace; font-size: 10.5px;">${b.factura}</td>
-        <td style="padding: 5px 8px; font-family: monospace; text-align: right; font-size: 10.5px;">${formatMoney(b.montoBruto)}</td>
-        <td style="padding: 5px 8px; font-family: monospace; text-align: right; font-size: 10.5px; color: #dc2626;">${b.retTotal > 0 ? `-${formatMoney(b.retTotal)}` : "-"}</td>
-        <td style="padding: 5px 8px; font-family: monospace; text-align: right; font-size: 10.5px; font-weight: bold; color: #059669;">${formatMoney(b.montoNeto)}</td>
-        <td style="padding: 5px 8px; font-size: 9.5px; text-align: center; color: #64748b;">TRANSACCIÓN</td>
+        <td style="padding: 6px 8px; font-size: 10px; font-weight: 600;">${b.nombre}</td>
+        <td style="padding: 6px 8px; font-family: monospace; font-size: 10px; text-align: center;">${b.cuit}</td>
+        <td style="padding: 6px 8px; font-family: monospace; font-size: 10px; text-align: center;">${b.factura}</td>
+        <td style="padding: 6px 8px; font-family: monospace; text-align: right; font-size: 10px;">${formatMoney(b.montoBruto)}</td>
+        <td style="padding: 6px 8px; font-family: monospace; text-align: right; font-size: 10px; color: #dc2626;">${b.retIIBB > 0 ? `-${formatMoney(b.retIIBB)}` : "-"}</td>
+        <td style="padding: 6px 8px; font-family: monospace; text-align: right; font-size: 10px; color: #dc2626;">${b.retGanancias > 0 ? `-${formatMoney(b.retGanancias)}` : "-"}</td>
+        <td style="padding: 6px 8px; font-family: monospace; text-align: right; font-size: 10px; color: #dc2626;">${b.retSUSS > 0 ? `-${formatMoney(b.retSUSS)}` : "-"}</td>
+        <td style="padding: 6px 8px; font-family: monospace; text-align: right; font-size: 10px; color: #dc2626;">${b.retOtras > 0 ? `-${formatMoney(b.retOtras)}` : "-"}</td>
+        <td style="padding: 6px 8px; font-family: monospace; text-align: right; font-size: 10px; font-weight: 700; color: #b91c1c;">${b.retTotal > 0 ? `-${formatMoney(b.retTotal)}` : "-"}</td>
+        <td style="padding: 6px 8px; font-family: monospace; text-align: right; font-size: 10.5px; font-weight: 800; color: #047857;">${formatMoney(b.montoNeto)}</td>
       </tr>
     `)
     .join("");
@@ -1310,46 +1289,50 @@ export function generarOrdenDePagoHTML(
     <title>Orden de Pago ${numeroOP} - ${anio} - CISB</title>
     <style>
       * { box-sizing: border-box; }
-      body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 20mm 15mm; color: #0f172a; line-height: 1.3; font-size: 11.5px; background: #fff; }
+      @page {
+        size: A4 landscape;
+        margin: 10mm 12mm;
+      }
+      body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 15mm 15mm; color: #0f172a; line-height: 1.3; font-size: 11px; background: #fff; }
       
-      .top-branding { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #08487A; padding-bottom: 12px; margin-bottom: 12px; }
+      .top-branding { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #08487A; padding-bottom: 10px; margin-bottom: 10px; }
       .logo-box { display: flex; align-items: center; gap: 12px; }
-      .logo-img { height: 52px; width: auto; object-fit: contain; }
+      .logo-img { height: 48px; width: auto; object-fit: contain; }
       .institution-text { text-align: left; }
       .institution-name { font-size: 13px; font-weight: 800; color: #08487A; text-transform: uppercase; letter-spacing: 0.5px; }
-      .institution-sub { font-size: 10px; font-weight: 600; color: #475569; text-transform: uppercase; }
+      .institution-sub { font-size: 9.5px; font-weight: 600; color: #475569; text-transform: uppercase; }
       .header-area { font-size: 12px; font-weight: 800; color: #08487A; text-transform: uppercase; letter-spacing: 1px; text-align: right; }
 
-      .op-title-row { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 8px 14px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 12px; }
-      .op-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #08487A; }
-      .op-number { font-size: 18px; font-weight: 900; font-family: monospace; color: #0f172a; }
+      .op-title-row { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 10px; }
+      .op-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #08487A; }
+      .op-number { font-size: 16px; font-weight: 900; font-family: monospace; color: #0f172a; }
 
-      .meta-grid { display: grid; grid-template-columns: 140px 1fr 120px 1fr; gap: 4px 10px; font-size: 10.5px; margin-bottom: 12px; background: #fafafa; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; }
+      .meta-grid { display: grid; grid-template-columns: 130px 1fr 120px 1fr; gap: 3px 10px; font-size: 10px; margin-bottom: 10px; background: #fafafa; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 6px; }
       .meta-label { font-weight: 700; color: #334155; }
       .meta-value { font-family: monospace; color: #0f172a; }
 
-      .legal-text { font-size: 10px; text-transform: uppercase; border: 1px solid #cbd5e1; padding: 8px 12px; background-color: #f8fafc; text-align: center; margin: 10px 0; letter-spacing: 0.3px; line-height: 1.4; font-weight: 600; }
+      .legal-text { font-size: 9.5px; text-transform: uppercase; border: 1px solid #cbd5e1; padding: 6px 10px; background-color: #f8fafc; text-align: center; margin: 8px 0; letter-spacing: 0.3px; line-height: 1.3; font-weight: 600; }
       
-      .importe-box { background-color: #f0fdf4; border: 2px solid #16a34a; border-radius: 6px; padding: 10px 14px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+      .importe-box { background-color: #f0fdf4; border: 1.5px solid #16a34a; border-radius: 6px; padding: 8px 12px; margin: 8px 0 12px 0; display: flex; justify-content: space-between; align-items: center; }
       .importe-left { flex: 1; }
-      .importe-label { font-size: 10.5px; font-weight: 800; color: #15803d; text-transform: uppercase; }
-      .importe-valor { font-size: 20px; font-weight: 900; font-family: monospace; color: #0f172a; }
-      .importe-letras { font-size: 10px; font-style: italic; margin-top: 2px; color: #334155; font-weight: 600; }
+      .importe-label { font-size: 10px; font-weight: 800; color: #15803d; text-transform: uppercase; }
+      .importe-valor { font-size: 18px; font-weight: 900; font-family: monospace; color: #0f172a; }
+      .importe-letras { font-size: 9.5px; font-style: italic; margin-top: 1px; color: #334155; font-weight: 600; }
 
       table.detail { width: 100%; border-collapse: collapse; margin-top: 6px; }
-      table.detail th { background-color: #f1f5f9; border-bottom: 2px solid #0f172a; border-top: 1px solid #cbd5e1; padding: 6px 8px; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.3px; }
-      table.detail .total-row td { border-top: 2px solid #0f172a; border-bottom: 2px solid #0f172a; font-weight: 800; font-size: 11px; padding: 6px 8px; background-color: #f8fafc; }
+      table.detail th { background-color: #f1f5f9; border-bottom: 2px solid #0f172a; border-top: 1px solid #cbd5e1; padding: 6px 6px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.2px; }
+      table.detail .total-row td { border-top: 2px solid #0f172a; border-bottom: 2px solid #0f172a; font-weight: 800; font-size: 10px; padding: 6px 6px; background-color: #f8fafc; }
       
-      .section-title { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #08487A; margin: 14px 0 6px 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; }
+      .section-title { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #08487A; margin: 10px 0 4px 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; }
 
-      .bank-info { background-color: #eff6ff; border: 1px solid #93c5fd; border-radius: 6px; padding: 8px 12px; margin: 12px 0; font-size: 10.5px; display: flex; justify-content: space-between; align-items: center; }
+      .bank-info { background-color: #eff6ff; border: 1px solid #93c5fd; border-radius: 6px; padding: 6px 10px; margin: 10px 0; font-size: 10px; display: flex; justify-content: space-between; align-items: center; }
       
-      .footer-date { text-align: right; font-size: 10.5px; margin-top: 16px; color: #475569; font-weight: 600; }
-      .footer-sign { margin-top: 45px; display: flex; justify-content: space-between; text-align: center; font-size: 9.5px; }
-      .sign-box { border-top: 1px solid #94a3b8; width: 180px; padding-top: 5px; }
+      .footer-date { text-align: right; font-size: 10px; margin-top: 12px; color: #475569; font-weight: 600; }
+      .footer-sign { margin-top: 35px; display: flex; justify-content: space-between; text-align: center; font-size: 9px; }
+      .sign-box { border-top: 1px solid #94a3b8; width: 170px; padding-top: 4px; }
 
       @media print {
-        body { margin: 8mm 10mm; padding: 0; }
+        body { margin: 0; padding: 4mm 6mm; }
         .no-print { display: none !important; }
       }
     </style>
@@ -1378,11 +1361,11 @@ export function generarOrdenDePagoHTML(
     <div class="op-title-row">
       <div class="op-title">ORDEN DE PAGO GLOBAL</div>
       <div>
-        <span style="font-size: 11px; font-weight: bold; color: #475569;">N° </span>
+        <span style="font-size: 10.5px; font-weight: bold; color: #475569;">N° </span>
         <span class="op-number">${numeroOP}</span>
         &nbsp;&nbsp;
-        <span style="font-size: 11px; font-weight: bold; color: #475569;">AÑO: </span>
-        <span style="font-size: 14px; font-weight: 800; font-family: monospace;">${anio}</span>
+        <span style="font-size: 10.5px; font-weight: bold; color: #475569;">AÑO: </span>
+        <span style="font-size: 13px; font-weight: 800; font-family: monospace;">${anio}</span>
       </div>
     </div>
 
@@ -1412,54 +1395,40 @@ export function generarOrdenDePagoHTML(
 
     <div class="importe-box">
       <div class="importe-left">
-        <div class="importe-label">El Importe Total a Liquidar:</div>
+        <div class="importe-label">El Importe Total Bruto a Liquidar:</div>
         <div class="importe-valor">${formatMoney(totalBruto)}</div>
         <div class="importe-letras">SON PESOS: ${importeEnLetras(totalBruto)}</div>
       </div>
     </div>
 
-    <!-- Sección de Retenciones Globales -->
-    <div class="section-title">Retenciones Impositivas y Aportes</div>
-    <table class="detail">
-      <thead>
-        <tr>
-          <th style="text-align: left;">Concepto de Retención</th>
-          <th style="text-align: right; width: 140px;">Monto Retenido</th>
-          <th style="text-align: center; width: 130px;">Forma de Pago</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${filasRetenciones}
-        <tr style="border-top: 1px solid #cbd5e1; background: #fafafa; font-weight: bold;">
-          <td style="padding: 5px 10px; font-size: 10.5px;">TOTAL RETENCIONES:</td>
-          <td style="padding: 5px 10px; font-family: monospace; text-align: right; font-size: 11px; color: #dc2626;">${formatMoney(totalRetenciones)}</td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Nómina de Beneficiarios -->
-    <div class="section-title">Nómina Consolidada de Beneficiarios (${beneficiarios.length} Prestadores)</div>
+    <!-- Matriz Única Integral de Liquidación y Retenciones -->
+    <div class="section-title">Matriz Consolidada de Liquidación y Retenciones (${beneficiarios.length} Prestadores)</div>
     <table class="detail">
       <thead>
         <tr>
           <th style="text-align: left;">Beneficiario / Profesional</th>
-          <th style="text-align: left; width: 100px;">CUIT</th>
-          <th style="text-align: left; width: 70px;">Factura</th>
-          <th style="text-align: right; width: 85px;">Bruto</th>
-          <th style="text-align: right; width: 80px;">Retención</th>
+          <th style="text-align: center; width: 85px;">CUIT</th>
+          <th style="text-align: center; width: 75px;">Factura</th>
+          <th style="text-align: right; width: 80px;">Bruto</th>
+          <th style="text-align: right; width: 70px;">Ret. IIBB</th>
+          <th style="text-align: right; width: 70px;">Ret. Gan.</th>
+          <th style="text-align: right; width: 70px;">Ret. SUSS</th>
+          <th style="text-align: right; width: 70px;">Otras Ret.</th>
+          <th style="text-align: right; width: 80px;">Total Ret.</th>
           <th style="text-align: right; width: 90px;">Neto a Pagar</th>
-          <th style="text-align: center; width: 85px;">Mediante</th>
         </tr>
       </thead>
       <tbody>
         ${filasBeneficiarios}
         <tr class="total-row">
-          <td colspan="3" style="text-align: right; text-transform: uppercase;">Totales Generales:</td>
+          <td colspan="3" style="text-align: right; text-transform: uppercase;">TOTALES CONSOLIDADOS:</td>
           <td style="text-align: right; font-family: monospace;">${formatMoney(totalBruto)}</td>
-          <td style="text-align: right; font-family: monospace; color: #dc2626;">${totalRetenciones > 0 ? `-${formatMoney(totalRetenciones)}` : "-"}</td>
-          <td style="text-align: right; font-family: monospace; color: #059669;">${formatMoney(totalNeto)}</td>
-          <td></td>
+          <td style="text-align: right; font-family: monospace; color: #dc2626;">${totalRetIIBB > 0 ? `-${formatMoney(totalRetIIBB)}` : "-"}</td>
+          <td style="text-align: right; font-family: monospace; color: #dc2626;">${totalRetGanancias > 0 ? `-${formatMoney(totalRetGanancias)}` : "-"}</td>
+          <td style="text-align: right; font-family: monospace; color: #dc2626;">${totalRetSUSS > 0 ? `-${formatMoney(totalRetSUSS)}` : "-"}</td>
+          <td style="text-align: right; font-family: monospace; color: #dc2626;">${totalRetOtras > 0 ? `-${formatMoney(totalRetOtras)}` : "-"}</td>
+          <td style="text-align: right; font-family: monospace; color: #b91c1c; font-weight: 800;">${totalRetenciones > 0 ? `-${formatMoney(totalRetenciones)}` : "-"}</td>
+          <td style="text-align: right; font-family: monospace; color: #047857; font-weight: 800;">${formatMoney(totalNeto)}</td>
         </tr>
       </tbody>
     </table>

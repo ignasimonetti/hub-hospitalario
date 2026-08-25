@@ -222,11 +222,7 @@ export function ModalDetalleLoteGDE({
                   variant={estaAbierto ? "outline" : "secondary"}
                   onClick={handleToggleCierre}
                   disabled={isTogglingCierre}
-                  className={`h-7 text-xs font-semibold flex items-center gap-1.5 shadow-2xs ${
-                    estaAbierto
-                      ? "border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-950/40"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}
+                  className="h-7 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
                   title={
                     estaAbierto
                       ? "Cerrar lote para evitar que se sigan agregando o quitando prestaciones"
@@ -253,30 +249,30 @@ export function ModalDetalleLoteGDE({
         <div className="p-5 space-y-4">
           {/* Banner de Estado del Lote */}
           {estaPagado ? (
-            <div className="p-3 bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/80 rounded-xl flex items-center justify-between text-xs text-teal-900 dark:text-teal-200">
+            <div className="p-3 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-xl flex items-center justify-between text-xs text-emerald-900 dark:text-emerald-200">
               <div className="flex items-center gap-2">
-                <FileCheck2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                <FileCheck2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <div>
                   <span className="font-bold">Lote Liquidado con Orden de Pago / Pago BSE</span>
-                  <p className="text-[11px] text-teal-700 dark:text-teal-300 font-mono">
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-mono">
                     Comprobante: {lote.numero_orden_pago || "Ref. Liquidado"} • Fecha: {lote.fecha_orden_pago || "-"}
                   </p>
                 </div>
               </div>
-              <Badge className="bg-teal-600 text-white font-mono text-[10px]">Inmutable</Badge>
+              <Badge className="bg-emerald-600 text-white font-mono text-[10px]">Inmutable</Badge>
             </div>
           ) : !estaAbierto ? (
-            <div className="p-3 bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/80 rounded-xl flex items-center justify-between text-xs text-purple-900 dark:text-purple-200">
+            <div className="p-3 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
               <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <div>
                   <span className="font-bold">Lote Cerrado para Emisión y Contabilidad</span>
-                  <p className="text-[11px] text-purple-700 dark:text-purple-300">
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300">
                     No admite agregar ni quitar prestaciones. Para modificar su nómina, pulse "Reabrir Lote".
                   </p>
                 </div>
               </div>
-              <Badge variant="outline" className="border-purple-300 text-purple-700 text-[10px]">Bloqueado</Badge>
+              <Badge variant="outline" className="border-amber-300 text-amber-700 text-[10px]">Bloqueado</Badge>
             </div>
           ) : null}
 
@@ -397,13 +393,13 @@ export function ModalDetalleLoteGDE({
 
           {/* Generar Orden de Pago (Documento para Expediente GDE) */}
           {!estaPagado && (
-            <div className="p-3.5 rounded-xl border-2 border-sky-200 dark:border-sky-800/80 bg-sky-50/70 dark:bg-sky-950/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="space-y-1">
-                <div className="text-xs font-bold text-sky-900 dark:text-sky-100 flex items-center gap-1.5">
-                  <ClipboardList className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <ClipboardList className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                   Orden de Pago Global (Documento Oficial GDE)
                 </div>
-                <p className="text-[11px] text-sky-800 dark:text-sky-300">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {lote.numero_orden_pago
                     ? `OP N° ${lote.numero_orden_pago} configurada. Puede editar los datos presupuestarios o volver a emitir el documento.`
                     : "Complete los datos contables y presupuestarios del expediente para emitir la Orden de Pago oficial."}
@@ -414,7 +410,7 @@ export function ModalDetalleLoteGDE({
                 type="button"
                 size="sm"
                 onClick={() => setIsConfigOPOpen(true)}
-                className="h-8 text-xs bg-[#08487A] hover:bg-[#06375d] text-white font-bold flex items-center gap-1.5 shrink-0 shadow-sm"
+                className="h-8 text-xs font-semibold flex items-center gap-1.5 shrink-0"
               >
                 <ClipboardList className="h-3.5 w-3.5" />
                 {lote.numero_orden_pago ? "Ver / Editar Orden de Pago" : "Generar Orden de Pago"}
@@ -426,8 +422,8 @@ export function ModalDetalleLoteGDE({
           {!estaPagado && (
             <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 space-y-2.5">
               <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                <Receipt className="h-4 w-4 text-emerald-600" />
-                Imputar Orden de Pago / Pago BSE (Cierre Definitivo)
+                <Receipt className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                Cierre de Pago
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Al registrar el número de orden de pago o transferencia BSE, el lote quedará cerrado de forma inmutable.

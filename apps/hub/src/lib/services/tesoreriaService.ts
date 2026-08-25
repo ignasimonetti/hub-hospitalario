@@ -575,6 +575,13 @@ export async function toggleCierreLoteTesoreria(
     );
   }
 
+  // Si ya cuenta con Orden de Pago emitida, no puede reabrirse para preservar la integridad contable
+  if (targetLote.numero_orden_pago || targetLote.op_config) {
+    throw new Error(
+      "Este lote ya cuenta con una Orden de Pago emitida para el expediente GDE y no puede reabrirse."
+    );
+  }
+
   const estaAbierto = ESTADOS_LOTE_ABIERTO.includes(targetLote.estado);
   const nuevoEstado = estaAbierto ? "cerrado" : "en_tramite_gde";
 

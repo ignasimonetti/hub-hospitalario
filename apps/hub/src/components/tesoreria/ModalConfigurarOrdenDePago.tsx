@@ -172,7 +172,7 @@ export function ModalConfigurarOrdenDePago({
         <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60">
           <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold text-sm">
             <ClipboardList className="w-5 h-5" />
-            Consolidar y Generar Orden de Pago (OP Global)
+            {lote.numero_orden_pago ? "Actualizar / Regenerar Orden de Pago" : "Consolidar y Generar Orden de Pago (OP Global)"}
           </div>
           <DialogTitle className="text-base font-extrabold text-slate-900 dark:text-slate-100 mt-1">
             {lote.numero_lote} — {prestacionesDelLote.length} Prestadores
@@ -184,12 +184,21 @@ export function ModalConfigurarOrdenDePago({
 
         <div className="p-5 space-y-4">
           {/* Banner Informativo */}
-          <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
-            <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <strong>Cierre Implícito del Lote:</strong> Al consolidar la Orden de Pago con todos sus datos requeridos, el lote se cerrará automáticamente para resguardar la nómina de pagos.
+          {lote.numero_orden_pago ? (
+            <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/70 flex items-start gap-2.5 text-xs text-purple-900 dark:text-purple-200">
+              <Info className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+              <div>
+                <strong>Lote con OP Emitida:</strong> Los montos, retenciones y nómina de prestadores son inmutables. Aquí puede rectificar datos formales (Nº de resolución, imputación contable o cuenta débito) y emitir el PDF actualizado para el GDE.
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+              <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <strong>Cierre Definitivo de Nómina:</strong> Al consolidar la Orden de Pago, el lote quedará cerrado de forma permanente, resguardando la nómina de pagos para el expediente electrónico.
+              </div>
+            </div>
+          )}
 
           {/* Resumen Financiero del Lote */}
           <div className="grid grid-cols-3 gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center">

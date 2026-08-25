@@ -67,6 +67,7 @@ export function ModalDetalleLoteGDE({
 
   const estaAbierto = ESTADOS_LOTE_ABIERTO.includes(lote.estado);
   const estaPagado = lote.estado === "pagado_bse" || Boolean(lote.comprobante_pago_bse);
+  const tieneOP = Boolean(lote.numero_orden_pago || lote.op_config);
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
@@ -214,8 +215,8 @@ export function ModalDetalleLoteGDE({
                 </div>
               </div>
 
-              {/* Switch Abrir / Cerrar Lote (Solo disponible antes de imputar Orden de Pago) */}
-              {!estaPagado && (
+              {/* Switch Abrir / Cerrar Lote (Solo disponible si no está pagado ni tiene Orden de Pago) */}
+              {!estaPagado && !tieneOP && (
                 <Button
                   type="button"
                   size="sm"
@@ -260,6 +261,19 @@ export function ModalDetalleLoteGDE({
                 </div>
               </div>
               <Badge className="bg-emerald-600 text-white font-mono text-[10px]">Inmutable</Badge>
+            </div>
+          ) : tieneOP ? (
+            <div className="p-3 bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/80 rounded-xl flex items-center justify-between text-xs text-purple-900 dark:text-purple-200">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                <div>
+                  <span className="font-bold">Lote Cerrado con Orden de Pago Emitida (OP N° {lote.numero_orden_pago})</span>
+                  <p className="text-[11px] text-purple-700 dark:text-purple-300">
+                    La nómina de prestadores y montos es definitiva e inmutable. Puede actualizar los datos administrativos/presupuestarios si fuera necesario.
+                  </p>
+                </div>
+              </div>
+              <Badge variant="outline" className="border-purple-300 text-purple-700 bg-purple-100/60 dark:bg-purple-900/30 text-[10px]">OP Emitida</Badge>
             </div>
           ) : !estaAbierto ? (
             <div className="p-3 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">

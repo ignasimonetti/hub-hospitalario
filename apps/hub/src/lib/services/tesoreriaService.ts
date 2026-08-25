@@ -861,7 +861,7 @@ export async function registrarPagoLiquidacion(
             status: "pagado",
             paid_at: payload.paymentDate || now.split("T")[0],
             treasury_paid_at: now,
-            treasury_receipt_number: payload.receiptNumber,
+            treasury_receipt_number: payload.receiptNumber || "",
             treasury_observation: payload.notes || current.treasury_observation || "",
             historial_observaciones: JSON.stringify(historial),
           },
@@ -877,6 +877,83 @@ export async function registrarPagoLiquidacion(
     console.error("Error registrando pago en tesorería:", error);
     throw new Error(error?.message || "Error al registrar la liquidación de pago");
   }
+}
+
+/**
+ * Marca una o varias prestaciones de un lote directamente como 'pagado'
+ * sin requerir comprobante obligatorio (ideal para transferencias manuales de Home Banking).
+ * Si todas las prestaciones del lote resultan pagadas, actualiza automáticamente el lote a 'pagado_bse'.
+ */
+export async function marcarPrestacionesPagadas(
+  prestacionesIds: string[],
+  loteId?: string,
+  tenantId?: string
+): Promise<{ exitosas: number; fallidas: number; loteCompleto: boolean }> {
+  let exitosas = 0;
+  let fallidas = 0;
+  const fechaHoy = new Date().toISOString().split("T")[0];
+
+  for (const id of prestacionesIds) {
+    try {
+      await registrarPagoLiquidacion(id, {
+        receiptNumber: "TRANSFERENCIA_HB",
+        paymentDate: fechaHoy,
+        notes: "Transferencia bancaria individual ejecutada vía Home Banking",
+      });
+      exitosas++;
+    } catch (err) {
+      console.error(`Error marcando como pagada la prestación ${id}:`, err);
+      fallidas++;
+    }
+  }
+
+  let loteCompleto = false;
+
+  // Si se proveyó el lote, verificar si ya están todas pagadas
+  if (loteId) {
+    try {
+      const lotes = await getLotesTesoreria(tenantId);
+      const target = lotes.find((l) => l.id === loteId);
+      if (target) {
+        // Consultar prestaciones del lote en PB
+        const prestacionesLote = await pocketbase
+          .collection("prestaciones_presentaciones")
+          .getFullList<PrestacionPresentacion>({
+            filter: target.prestaciones_ids.map((pid) => `id = "${pid}"`).join(" || "),
+            requestKey: null,
+          });
+
+        const todasPagadas =
+          prestacionesLote.length > 0 &&
+          prestacionesLote.every((p) => p.status === "pagado");
+
+        if (todasPagadas) {
+          loteCompleto = true;
+          target.estado = "pagado_bse";
+          target.fecha_pago_bse = fechaHoy;
+          target.updated = new Date().toISOString();
+          saveLocalLotes(lotes);
+
+          try {
+            await pocketbase.collection("tesoreria_lotes").update(
+              target.id,
+              {
+                estado: "pagado_bse",
+                fecha_pago_bse: fechaHoy,
+              },
+              { requestKey: null }
+            );
+          } catch {
+            // Ignorar si PB no tiene la colección
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Error al verificar estado completo del lote:", err);
+    }
+  }
+
+  return { exitosas, fallidas, loteCompleto };
 }
 
 /**

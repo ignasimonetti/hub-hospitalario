@@ -6,6 +6,7 @@ import {
   generarPlanillaResumenLoteHTML,
   generarOrdenDePagoHTML,
   liquidarLotePrestaciones,
+  marcarPrestacionesPagadas,
   quitarPrestacionDeLote,
   eliminarLoteTesoreria,
   toggleCierreLoteTesoreria,
@@ -64,12 +65,18 @@ export function ModalDetalleLoteGDE({
   const [comprobantePagoBSE, setComprobantePagoBSE] = useState("");
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isMarkingPaid, setIsMarkingPaid] = useState<string | null>(null); // 'bulk' o ID específico
 
   if (!lote) return null;
 
   const estaAbierto = ESTADOS_LOTE_ABIERTO.includes(lote.estado);
   const estaPagado = lote.estado === "pagado_bse" || Boolean(lote.comprobante_pago_bse);
   const tieneOP = Boolean(lote.numero_orden_pago || lote.op_config);
+
+  const prestacionesPagadasCount = prestacionesDelLote.filter((p) => p.status === "pagado").length;
+  const totalPrestacionesCount = prestacionesDelLote.length;
+  const todosPagados = totalPrestacionesCount > 0 && prestacionesPagadasCount === totalPrestacionesCount;
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
@@ -83,6 +90,89 @@ export function ModalDetalleLoteGDE({
     label: lote.estado,
     bgLight: "bg-slate-100 border-slate-200",
     textDark: "text-slate-700",
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      // Seleccionar solo los pendientes de pago
+      const pendientes = prestacionesDelLote
+        .filter((p) => p.status !== "pagado")
+        .map((p) => p.id);
+      setSelectedIds(pendientes);
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleToggleSelectRow = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleMarcarPagadoIndividual = async (id: string, nombreMedico: string) => {
+    try {
+      setIsMarkingPaid(id);
+      const res = await marcarPrestacionesPagadas([id], lote.id);
+      if (res.loteCompleto) {
+        toast.success(`Pago registrado para ${nombreMedico}. ¡Todo el lote quedó pagado y cerrado!`);
+      } else {
+        toast.success(`Pago registrado para ${nombreMedico}. Estado actualizado a "Pagado".`);
+      }
+      setSelectedIds((prev) => prev.filter((item) => item !== id));
+      await onRefresh();
+    } catch (err: any) {
+      toast.error(err?.message || "Error al registrar el pago");
+    } finally {
+      setIsMarkingPaid(null);
+    }
+  };
+
+  const handleMarcarSeleccionadosPagados = async () => {
+    if (selectedIds.length === 0) return;
+    try {
+      setIsMarkingPaid("bulk");
+      const res = await marcarPrestacionesPagadas(selectedIds, lote.id);
+      if (res.loteCompleto) {
+        toast.success(`Se registraron ${res.exitosas} pagos. ¡Todo el lote quedó liquidado!`);
+      } else {
+        toast.success(`Se registraron ${res.exitosas} pagos exitosamente.`);
+      }
+      setSelectedIds([]);
+      await onRefresh();
+    } catch (err: any) {
+      toast.error(err?.message || "Error al registrar pagos masivos");
+    } finally {
+      setIsMarkingPaid(null);
+    }
+  };
+
+  const handleMarcarTodosPagados = async () => {
+    const pendientes = prestacionesDelLote
+      .filter((p) => p.status !== "pagado")
+      .map((p) => p.id);
+    if (pendientes.length === 0) {
+      toast.info("Todas las prestaciones de este lote ya están pagadas.");
+      return;
+    }
+    if (
+      !window.confirm(
+        `¿Confirmar que se transfirió el pago a los ${pendientes.length} prestadores pendientes? Se actualizará su estado a "Pagado" en el sistema.`
+      )
+    ) {
+      return;
+    }
+    try {
+      setIsMarkingPaid("bulk");
+      const res = await marcarPrestacionesPagadas(pendientes, lote.id);
+      toast.success(`Se marcaron ${res.exitosas} prestaciones como Pagadas. Lote liquidado.`);
+      setSelectedIds([]);
+      await onRefresh();
+    } catch (err: any) {
+      toast.error(err?.message || "Error al liquidar prestaciones");
+    } finally {
+      setIsMarkingPaid(null);
+    }
   };
 
   const handleToggleCierre = async () => {
@@ -341,29 +431,70 @@ export function ModalDetalleLoteGDE({
             )}
           </div>
 
-          {/* Tabla de Prestaciones del Lote con Botón para Quitar */}
+          {/* Tabla de Prestaciones del Lote con Selección y Pagos Individuales */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
-                Nómina de Profesionales Incluidos ({prestacionesDelLote.length})
-              </span>
-              <span className="text-[11px] text-gray-400">
-                {estaAbierto
-                  ? "Pase el cursor sobre un trámite para quitarlo del lote"
-                  : "Nómina fija (lote cerrado)"}
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
+                  Nómina de Profesionales ({prestacionesDelLote.length})
+                </span>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] font-mono font-semibold ${
+                    todosPagados
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300"
+                      : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300"
+                  }`}
+                >
+                  {prestacionesPagadasCount} de {totalPrestacionesCount} Pagados
+                </Badge>
+              </div>
+
+              {/* Botón de acción masiva para seleccionados */}
+              {!estaPagado && selectedIds.length > 0 && (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleMarcarSeleccionadosPagados}
+                  disabled={Boolean(isMarkingPaid)}
+                  className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-xs animate-in fade-in duration-200"
+                >
+                  {isMarkingPaid === "bulk" ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  )}
+                  Marcar {selectedIds.length} seleccionados como Pagados
+                </Button>
+              )}
             </div>
 
-            <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden max-h-60 overflow-y-auto">
+            <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden max-h-72 overflow-y-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-semibold text-gray-600 dark:text-slate-400 sticky top-0 border-b border-slate-200 dark:border-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-semibold text-gray-600 dark:text-slate-400 sticky top-0 border-b border-slate-200 dark:border-slate-800 z-10">
                   <tr>
+                    {!estaPagado && (
+                      <th className="p-2 w-8 text-center">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedIds.length > 0 &&
+                            selectedIds.length ===
+                              prestacionesDelLote.filter((p) => p.status !== "pagado").length
+                          }
+                          onChange={(e) => handleSelectAll(e.target.checked)}
+                          className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                          title="Seleccionar todos los pendientes de pago"
+                        />
+                      </th>
+                    )}
                     <th className="p-2">Profesional & CUIT</th>
                     <th className="p-2">Factura</th>
                     <th className="p-2 text-right">Bruto</th>
                     <th className="p-2 text-right">Retención</th>
                     <th className="p-2 text-right">Neto</th>
-                    <th className="p-2 text-center w-12">Quitar</th>
+                    <th className="p-2 text-center">Estado de Pago</th>
+                    {estaAbierto && !estaPagado && <th className="p-2 text-center w-10">Quitar</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -375,9 +506,32 @@ export function ModalDetalleLoteGDE({
                     const bruto = Number(p.invoice_amount) || 0;
                     const ret = Number(p.retencion_monto) || 0;
                     const neto = p.monto_neto_liquidable !== undefined ? Number(p.monto_neto_liquidable) : bruto - ret;
+                    const isPagadoRow = p.status === "pagado";
+                    const isSelected = selectedIds.includes(p.id);
 
                     return (
-                      <tr key={p.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                      <tr
+                        key={p.id}
+                        className={`transition-colors ${
+                          isPagadoRow
+                            ? "bg-emerald-50/30 dark:bg-emerald-950/10"
+                            : isSelected
+                            ? "bg-blue-50/50 dark:bg-blue-950/20"
+                            : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
+                        }`}
+                      >
+                        {!estaPagado && (
+                          <td className="p-2 text-center">
+                            {!isPagadoRow && (
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleToggleSelectRow(p.id)}
+                                className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                              />
+                            )}
+                          </td>
+                        )}
                         <td className="p-2">
                           <div className="font-semibold text-gray-900 dark:text-slate-100">{nombre}</div>
                           <div className="text-[10px] text-gray-400 font-mono">CUIT: {p.perfilPrestador?.cuit || "-"}</div>
@@ -391,7 +545,33 @@ export function ModalDetalleLoteGDE({
                           {formatMoney(neto)}
                         </td>
                         <td className="p-2 text-center">
-                          {estaAbierto && !estaPagado && (
+                          {isPagadoRow ? (
+                            <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 text-[10px] font-semibold flex items-center gap-1 mx-auto w-fit">
+                              <Check className="h-3 w-3" />
+                              Pagado
+                            </Badge>
+                          ) : !estaPagado ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleMarcarPagadoIndividual(p.id, nombre)}
+                              disabled={Boolean(isMarkingPaid)}
+                              className="h-6 px-2 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-300 dark:border-emerald-700"
+                              title="Marcar como pagada tras realizar la transferencia en Home Banking"
+                            >
+                              {isMarkingPaid === p.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                "Marcar Pagado"
+                              )}
+                            </Button>
+                          ) : (
+                            <span className="text-[11px] text-slate-400">Pendiente</span>
+                          )}
+                        </td>
+                        {estaAbierto && !estaPagado && (
+                          <td className="p-2 text-center">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -406,8 +586,8 @@ export function ModalDetalleLoteGDE({
                                 <UserMinus className="h-3.5 w-3.5" />
                               )}
                             </Button>
-                          )}
-                        </td>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -472,38 +652,33 @@ export function ModalDetalleLoteGDE({
             </div>
           )}
 
-          {/* Liquidación Final / Cierre de Pago BSE */}
-          {!estaPagado && (
-            <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 space-y-2.5">
-              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                <Receipt className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                Cierre de Pago
+          {/* Liquidación Rápida Masiva de Pendientes */}
+          {!estaPagado && !todosPagados && (
+            <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 flex items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <Receipt className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  Liquidación Total de Pendientes
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Si ya ejecutó todas las transferencias de este lote en Home Banking, puede marcarlas todas juntas en 1 clic.
+                </p>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Al registrar el número de orden de pago o transferencia BSE, el lote quedará cerrado de forma inmutable.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                <Input
-                  placeholder="Nº Orden de Pago Global / Ref. BSE (ej: OP-LOTE-4-BSE)"
-                  value={comprobantePagoBSE}
-                  onChange={(e) => setComprobantePagoBSE(e.target.value)}
-                  className="h-8 text-xs font-mono bg-white dark:bg-slate-900 flex-1"
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleConfirmarPagoLote}
-                  disabled={isPayingLote}
-                  className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-1"
-                >
-                  {isPayingLote ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Check className="h-3.5 w-3.5" />
-                  )}
-                  Confirmar Transferencias Ejecutadas
-                </Button>
-              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleMarcarTodosPagados}
+                disabled={Boolean(isMarkingPaid)}
+                className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shrink-0"
+              >
+                {isMarkingPaid === "bulk" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Check className="h-3.5 w-3.5" />
+                )}
+                Marcar Todos como Pagados ({totalPrestacionesCount - prestacionesPagadasCount})
+              </Button>
             </div>
           )}
         </div>

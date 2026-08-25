@@ -7,6 +7,7 @@ import {
   generarOrdenDePagoHTML,
   liquidarLotePrestaciones,
   marcarPrestacionesPagadas,
+  revertirPagoIndividual,
   quitarPrestacionDeLote,
   eliminarLoteTesoreria,
   toggleCierreLoteTesoreria,
@@ -41,6 +42,7 @@ import {
   ClipboardList,
   FileText,
   Pencil,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -67,6 +69,7 @@ export function ModalDetalleLoteGDE({
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isMarkingPaid, setIsMarkingPaid] = useState<string | null>(null); // 'bulk' o ID específico
+  const [isRevertingId, setIsRevertingId] = useState<string | null>(null);
 
   if (!lote) return null;
 
@@ -125,6 +128,26 @@ export function ModalDetalleLoteGDE({
       toast.error(err?.message || "Error al registrar el pago");
     } finally {
       setIsMarkingPaid(null);
+    }
+  };
+
+  const handleRevertirPago = async (id: string, nombreMedico: string) => {
+    if (
+      !window.confirm(
+        `¿Desea revertir el estado de pago de ${nombreMedico}? Su estado volverá a Conformado/Pendiente de Pago en el sistema.`
+      )
+    ) {
+      return;
+    }
+    try {
+      setIsRevertingId(id);
+      await revertirPagoIndividual(id, lote.id, "Corrección de clic involuntario en Tesorería");
+      toast.success(`Pago de ${nombreMedico} revertido a Pendiente de Pago.`);
+      await onRefresh();
+    } catch (err: any) {
+      toast.error(err?.message || "Error al revertir pago");
+    } finally {
+      setIsRevertingId(null);
     }
   };
 
@@ -546,10 +569,29 @@ export function ModalDetalleLoteGDE({
                         </td>
                         <td className="p-2 text-center">
                           {isPagadoRow ? (
-                            <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 text-[10px] font-semibold flex items-center gap-1 mx-auto w-fit">
-                              <Check className="h-3 w-3" />
-                              Pagado
-                            </Badge>
+                            <div className="flex items-center justify-center gap-1">
+                              <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 text-[10px] font-semibold flex items-center gap-1">
+                                <Check className="h-3 w-3" />
+                                Pagado
+                              </Badge>
+                              {!estaPagado && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRevertirPago(p.id, nombre)}
+                                  disabled={isRevertingId === p.id}
+                                  className="h-6 w-6 p-0 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded"
+                                  title="Revertir pago (deshacer error involuntario)"
+                                >
+                                  {isRevertingId === p.id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <RotateCcw className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                           ) : !estaPagado ? (
                             <Button
                               type="button"

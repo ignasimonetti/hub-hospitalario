@@ -957,6 +957,92 @@ export async function marcarPrestacionesPagadas(
 }
 
 /**
+ * Revierte el estado 'pagado' de una prestación individual por error material de carga,
+ * devolviéndola al estado 'aprobado' (conformada por tesorería) y recalculando el estado del lote si correspondiera.
+ */
+export async function revertirPagoIndividual(
+  prestacionId: string,
+  loteId?: string,
+  motivo: string = "Corrección de error material de carga en Tesorería",
+  tenantId?: string
+): Promise<PrestacionPresentacion> {
+  const user = pocketbase.authStore.model;
+  if (!user) throw new Error("Usuario no autenticado");
+
+  const now = new Date().toISOString();
+  const nombreTesorero = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email;
+
+  const current = await pocketbase
+    .collection("prestaciones_presentaciones")
+    .getOne<PrestacionPresentacion>(prestacionId, { requestKey: null });
+
+  let historial: EventoObservacion[] = [];
+  if (current.historial_observaciones) {
+    try {
+      historial = typeof current.historial_observaciones === "string"
+        ? JSON.parse(current.historial_observaciones)
+        : [...current.historial_observaciones];
+    } catch {
+      historial = [];
+    }
+  }
+
+  historial.push({
+    id: `ev-revert-${Date.now()}`,
+    autor_id: user.id,
+    autor_nombre: nombreTesorero,
+    rol_emisor: "tesoreria",
+    tipo: "observacion",
+    motivo: `Pago revertido: ${motivo}`,
+    created_at: now,
+  });
+
+  const updated = await pocketbase
+    .collection("prestaciones_presentaciones")
+    .update<PrestacionPresentacion>(
+      prestacionId,
+      {
+        status: "aprobado",
+        paid_at: "",
+        treasury_paid_at: "",
+        treasury_receipt_number: "",
+        historial_observaciones: JSON.stringify(historial),
+      },
+      {
+        expand: "tenant,user",
+        requestKey: null,
+      }
+    );
+
+  // Si el lote figuraba como pagado_bse, devolverlo a cerrado con OP
+  if (loteId) {
+    try {
+      const lotes = await getLotesTesoreria(tenantId);
+      const target = lotes.find((l) => l.id === loteId);
+      if (target && target.estado === "pagado_bse") {
+        target.estado = "cerrado";
+        target.updated = new Date().toISOString();
+        saveLocalLotes(lotes);
+
+        try {
+          await pocketbase.collection("tesoreria_lotes").update(
+            target.id,
+            { estado: "cerrado" },
+            { requestKey: null }
+          );
+        } catch {
+          // Ignorar si PB no tiene la colección
+        }
+      }
+    } catch (err) {
+      console.warn("Error al actualizar estado del lote tras revertir:", err);
+    }
+  }
+
+  return updated;
+}
+
+/**
  * Liquida en lote múltiple
  */
 export async function liquidarLotePrestaciones(

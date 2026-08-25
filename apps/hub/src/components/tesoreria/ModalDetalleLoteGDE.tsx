@@ -66,7 +66,7 @@ export function ModalDetalleLoteGDE({
   if (!lote) return null;
 
   const estaAbierto = ESTADOS_LOTE_ABIERTO.includes(lote.estado);
-  const estaPagado = lote.estado === "pagado_bse" || Boolean(lote.numero_orden_pago);
+  const estaPagado = lote.estado === "pagado_bse" || Boolean(lote.comprobante_pago_bse);
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {

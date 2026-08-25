@@ -46,8 +46,10 @@ export interface LoteTesoreria {
   periodo_mes: number;
   periodo_anio: number;
   estado: EstadoLoteTesoreria;
-  numero_orden_pago?: string; // Ej: "3930" o Comprobante BSE
+  numero_orden_pago?: string; // Ej: "3930" (Orden de Pago GDE)
   fecha_orden_pago?: string;
+  comprobante_pago_bse?: string; // Ej: "OP-LOTE-4-BSE" o REF Transferencia
+  fecha_pago_bse?: string;
   numero_resolucion?: string; // Ej: "RESOL-2026-2244-E-GDESDE-CISB#MS"
   fecha_resolucion?: string;
   op_config?: OrdenDePagoConfigPayload; // Datos presupuestarios y bancarios configurados

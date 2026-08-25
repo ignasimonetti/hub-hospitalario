@@ -151,6 +151,13 @@ export default function TesoreriaPage() {
       setPrestaciones(items);
       setLotes(lotesList);
       setSelectedIds(new Set());
+
+      // Sincronizar el lote abierto actualmente en el modal
+      setLoteDetalle((prev) => {
+        if (!prev) return null;
+        const actualizado = lotesList.find((l) => l.id === prev.id);
+        return actualizado || prev;
+      });
     } catch (err: any) {
       toast.error("Error al cargar datos de tesorería");
       console.error(err);

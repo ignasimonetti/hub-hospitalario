@@ -568,10 +568,10 @@ export async function toggleCierreLoteTesoreria(
   const targetLote = lotes.find((l) => l.id === loteId);
   if (!targetLote) throw new Error("Lote no encontrado");
 
-  // Si ya fue pagado o tiene orden de pago, es irreversible
-  if (targetLote.estado === "pagado_bse" || targetLote.numero_orden_pago) {
+  // Si ya fue pagado o tiene liquidación bancaria BSE ejecutada, es irreversible
+  if (targetLote.estado === "pagado_bse" || targetLote.comprobante_pago_bse) {
     throw new Error(
-      "Este lote ya cuenta con Orden de Pago o Liquidación BSE ejecutada y no puede ser reabierto."
+      "Este lote ya cuenta con Liquidación / Pago BSE ejecutado y no puede ser modificado."
     );
   }
 
@@ -906,8 +906,8 @@ export async function liquidarLotePrestaciones(
     const target = lotes.find((l) => l.id === loteId);
     if (target) {
       target.estado = "pagado_bse";
-      target.numero_orden_pago = payload.batchReceiptNumber;
-      target.fecha_orden_pago = payload.paymentDate || new Date().toISOString().split("T")[0];
+      target.comprobante_pago_bse = payload.batchReceiptNumber;
+      target.fecha_pago_bse = payload.paymentDate || new Date().toISOString().split("T")[0];
       target.updated = new Date().toISOString();
       saveLocalLotes(lotes);
 
@@ -916,8 +916,8 @@ export async function liquidarLotePrestaciones(
           target.id,
           {
             estado: "pagado_bse",
-            numero_orden_pago: payload.batchReceiptNumber,
-            fecha_orden_pago: payload.paymentDate || new Date().toISOString().split("T")[0],
+            comprobante_pago_bse: payload.batchReceiptNumber,
+            fecha_pago_bse: payload.paymentDate || new Date().toISOString().split("T")[0],
           },
           { requestKey: null }
         );

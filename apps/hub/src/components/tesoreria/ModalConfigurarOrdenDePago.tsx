@@ -87,9 +87,44 @@ export function ModalConfigurarOrdenDePago({
       maximumFractionDigits: 2,
     }).format(amount);
 
+  // Validación de que todos los campos requeridos estén completos
+  const camposIncompletos =
+    !numeroOP.trim() ||
+    !String(anioOP).trim() ||
+    !expedienteGDE.trim() ||
+    !numeroResolucion.trim() ||
+    !fechaResolucion.trim() ||
+    !jurisdiccion.trim() ||
+    !programa.trim() ||
+    !actividad.trim() ||
+    !partida.trim() ||
+    !fuenteFinanciamiento.trim() ||
+    !bancoNombre.trim() ||
+    !cuentaBancaria.trim();
+
   const handleGuardarYGenerar = async () => {
     if (!numeroOP.trim()) {
-      toast.error("Por favor ingrese el Número de Orden de Pago.");
+      toast.error("Por favor complete el Nº de Orden de Pago.");
+      return;
+    }
+    if (!expedienteGDE.trim()) {
+      toast.error("Por favor complete el Nº de Expediente GDE.");
+      return;
+    }
+    if (!numeroResolucion.trim()) {
+      toast.error("Por favor complete el Nº de Resolución / Disposición.");
+      return;
+    }
+    if (!fechaResolucion.trim()) {
+      toast.error("Por favor complete la Fecha de la Resolución.");
+      return;
+    }
+    if (!jurisdiccion.trim() || !programa.trim() || !actividad.trim() || !partida.trim()) {
+      toast.error("Por favor complete todos los datos de Imputación Presupuestaria (Jurisdicción, Programa, Actividad y Partida).");
+      return;
+    }
+    if (!bancoNombre.trim() || !cuentaBancaria.trim() || !fuenteFinanciamiento.trim()) {
+      toast.error("Por favor complete todos los datos Bancarios y de Financiamiento.");
       return;
     }
 
@@ -143,7 +178,7 @@ export function ModalConfigurarOrdenDePago({
             {lote.numero_lote} — {prestacionesDelLote.length} Prestadores
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Complete los datos contables, presupuestarios y bancarios emitidos en el expediente electrónico para emitir la Orden de Pago oficial.
+            Todos los campos marcados con (<span className="text-rose-500 font-bold">*</span>) son obligatorios para garantizar la validez legal y contable de la Orden de Pago.
           </DialogDescription>
         </div>
 
@@ -152,7 +187,7 @@ export function ModalConfigurarOrdenDePago({
           <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/70 flex items-start gap-2.5 text-xs text-sky-900 dark:text-sky-200">
             <Info className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
             <div>
-              <strong>Cierre Implícito del Lote:</strong> Al guardar y consolidar la Orden de Pago, el lote se cerrará automáticamente para evitar que se sigan incorporando o quitando prestaciones.
+              <strong>Cierre Implícito del Lote:</strong> Al consolidar la Orden de Pago con todos sus datos requeridos, el lote se cerrará automáticamente para resguardar la nómina de pagos.
             </div>
           </div>
 
@@ -188,19 +223,21 @@ export function ModalConfigurarOrdenDePago({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Nº Orden de Pago <span className="text-rose-500">*</span>
+                  Nº Orden de Pago <span className="text-rose-500 font-bold">*</span>
                 </Label>
                 <Input
                   placeholder="ej: 3930"
                   value={numeroOP}
                   onChange={(e) => setNumeroOP(e.target.value)}
-                  className="h-8 text-xs font-mono font-bold bg-white dark:bg-slate-900 mt-1"
+                  className={`h-8 text-xs font-mono font-bold bg-white dark:bg-slate-900 mt-1 ${
+                    !numeroOP.trim() ? "border-amber-400 dark:border-amber-600" : ""
+                  }`}
                 />
               </div>
 
               <div>
                 <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Año de Ejercicio
+                  Año de Ejercicio <span className="text-rose-500 font-bold">*</span>
                 </Label>
                 <Input
                   type="number"
@@ -212,13 +249,15 @@ export function ModalConfigurarOrdenDePago({
 
               <div>
                 <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Nº Expediente GDE
+                  Nº Expediente GDE <span className="text-rose-500 font-bold">*</span>
                 </Label>
                 <Input
                   placeholder="EX-2026-..."
                   value={expedienteGDE}
                   onChange={(e) => setExpedienteGDE(e.target.value)}
-                  className="h-8 text-xs font-mono bg-white dark:bg-slate-900 mt-1"
+                  className={`h-8 text-xs font-mono bg-white dark:bg-slate-900 mt-1 ${
+                    !expedienteGDE.trim() ? "border-amber-400 dark:border-amber-600" : ""
+                  }`}
                 />
               </div>
             </div>
@@ -226,25 +265,29 @@ export function ModalConfigurarOrdenDePago({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Nº Resolución / Disposición (Acto Administrativo)
+                  Nº Resolución / Disposición (Acto Administrativo) <span className="text-rose-500 font-bold">*</span>
                 </Label>
                 <Input
                   placeholder="ej: RESOL-2026-2157-E-GDESDE-CISB#MS"
                   value={numeroResolucion}
                   onChange={(e) => setNumeroResolucion(e.target.value)}
-                  className="h-8 text-xs font-mono bg-white dark:bg-slate-900 mt-1"
+                  className={`h-8 text-xs font-mono bg-white dark:bg-slate-900 mt-1 ${
+                    !numeroResolucion.trim() ? "border-amber-400 dark:border-amber-600" : ""
+                  }`}
                 />
               </div>
 
               <div>
                 <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Fecha de Resolución
+                  Fecha de Resolución <span className="text-rose-500 font-bold">*</span>
                 </Label>
                 <Input
                   type="date"
                   value={fechaResolucion}
                   onChange={(e) => setFechaResolucion(e.target.value)}
-                  className="h-8 text-xs bg-white dark:bg-slate-900 mt-1"
+                  className={`h-8 text-xs bg-white dark:bg-slate-900 mt-1 ${
+                    !fechaResolucion.trim() ? "border-amber-400 dark:border-amber-600" : ""
+                  }`}
                 />
               </div>
             </div>
@@ -260,48 +303,56 @@ export function ModalConfigurarOrdenDePago({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Jurisdicción
+                  Jurisdicción <span className="text-rose-500 font-bold">*</span>
                 </Label>
                 <Input
                   value={jurisdiccion}
                   onChange={(e) => setJurisdiccion(e.target.value)}
-                  className="h-8 text-xs font-mono bg-white dark:bg-slate-900 mt-1"
+                  className={`h-8 text-xs font-mono bg-white dark:bg-slate-900 mt-1 ${
+                    !jurisdiccion.trim() ? "border-amber-400 dark:border-amber-600" : ""
+                  }`}
                 />
               </div>
 
               <div>
                 <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Actividad Presupuestaria
+                  Actividad Presupuestaria <span className="text-rose-500 font-bold">*</span>
                 </Label>
                 <Input
                   placeholder="ej: ACT 1"
                   value={actividad}
                   onChange={(e) => setActividad(e.target.value)}
-                  className="h-8 text-xs font-mono bg-white dark:bg-slate-900 mt-1"
+                  className={`h-8 text-xs font-mono bg-white dark:bg-slate-900 mt-1 ${
+                    !actividad.trim() ? "border-amber-400 dark:border-amber-600" : ""
+                  }`}
                 />
               </div>
 
               <div>
                 <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Partida Presupuestaria
+                  Partida Presupuestaria <span className="text-rose-500 font-bold">*</span>
                 </Label>
                 <Input
                   placeholder="ej: PART 341"
                   value={partida}
                   onChange={(e) => setPartida(e.target.value)}
-                  className="h-8 text-xs font-mono bg-white dark:bg-slate-900 mt-1"
+                  className={`h-8 text-xs font-mono bg-white dark:bg-slate-900 mt-1 ${
+                    !partida.trim() ? "border-amber-400 dark:border-amber-600" : ""
+                  }`}
                 />
               </div>
             </div>
 
             <div>
               <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                Programa Presupuestario
+                Programa Presupuestario <span className="text-rose-500 font-bold">*</span>
               </Label>
               <Input
                 value={programa}
                 onChange={(e) => setPrograma(e.target.value)}
-                className="h-8 text-xs bg-white dark:bg-slate-900 mt-1"
+                className={`h-8 text-xs bg-white dark:bg-slate-900 mt-1 ${
+                  !programa.trim() ? "border-amber-400 dark:border-amber-600" : ""
+                }`}
               />
             </div>
           </div>
@@ -316,34 +367,40 @@ export function ModalConfigurarOrdenDePago({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Banco y Tipo de Cuenta
+                  Banco y Tipo de Cuenta <span className="text-rose-500 font-bold">*</span>
                 </Label>
                 <Input
                   value={bancoNombre}
                   onChange={(e) => setBancoNombre(e.target.value)}
-                  className="h-8 text-xs bg-white dark:bg-slate-900 mt-1"
+                  className={`h-8 text-xs bg-white dark:bg-slate-900 mt-1 ${
+                    !bancoNombre.trim() ? "border-amber-400 dark:border-amber-600" : ""
+                  }`}
                 />
               </div>
 
               <div>
                 <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Nº de Cuenta Débito
+                  Nº de Cuenta Débito <span className="text-rose-500 font-bold">*</span>
                 </Label>
                 <Input
                   value={cuentaBancaria}
                   onChange={(e) => setCuentaBancaria(e.target.value)}
-                  className="h-8 text-xs font-mono font-bold bg-white dark:bg-slate-900 mt-1"
+                  className={`h-8 text-xs font-mono font-bold bg-white dark:bg-slate-900 mt-1 ${
+                    !cuentaBancaria.trim() ? "border-amber-400 dark:border-amber-600" : ""
+                  }`}
                 />
               </div>
 
               <div>
                 <Label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Fuente de Financiamiento
+                  Fuente de Financiamiento <span className="text-rose-500 font-bold">*</span>
                 </Label>
                 <Input
                   value={fuenteFinanciamiento}
                   onChange={(e) => setFuenteFinanciamiento(e.target.value)}
-                  className="h-8 text-xs bg-white dark:bg-slate-900 mt-1"
+                  className={`h-8 text-xs bg-white dark:bg-slate-900 mt-1 ${
+                    !fuenteFinanciamiento.trim() ? "border-amber-400 dark:border-amber-600" : ""
+                  }`}
                 />
               </div>
             </div>
@@ -359,8 +416,12 @@ export function ModalConfigurarOrdenDePago({
             type="button"
             size="sm"
             onClick={handleGuardarYGenerar}
-            disabled={isSaving || !numeroOP.trim()}
-            className="text-xs bg-[#08487A] hover:bg-[#06375d] text-white font-bold flex items-center gap-1.5 shadow-sm"
+            disabled={isSaving || camposIncompletos}
+            className={`text-xs text-white font-bold flex items-center gap-1.5 shadow-sm transition-colors ${
+              camposIncompletos
+                ? "bg-slate-400 dark:bg-slate-700 cursor-not-allowed"
+                : "bg-[#08487A] hover:bg-[#06375d]"
+            }`}
           >
             {isSaving ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

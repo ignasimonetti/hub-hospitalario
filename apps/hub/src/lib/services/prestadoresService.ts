@@ -748,3 +748,309 @@ export async function aprobarMultiplesPrestaciones(
 
   return { exitosas, fallidas };
 }
+
+/* ============================================================
+   LISTADOS PAGINADOS + KPIs LIVIANOS
+   Reemplaza progresivamente a getFullList para escalabilidad.
+   ============================================================ */
+
+export type GrupoListadoPrestaciones =
+  | "activos" // todo menos aprobado/pagado (incluye borradores)
+  | "historial" // aprobado + pagado
+  | "borrador"
+  | "pendientes" // pendiente, en_revision, visado_adjunto
+  | "observadas" // observado, observado_tesoreria
+  | "aprobado"
+  | "pagado";
+
+export interface PrestacionPageOptions {
+  tenantId?: string;
+  grupo?: GrupoListadoPrestaciones;
+  page?: number; // 1-based
+  perPage?: number; // default 25, máx 50
+  sort?: string; // ej. "-created", "invoice_amount", "form_number"
+  /** Solo directores: búsqueda libre sobre trámite/factura/nombre */
+  search?: string;
+  servicio?: string;
+  periodoMes?: number;
+  periodoAnio?: number;
+  /** Filtro nominal de Director Adjunto asignado */
+  directorId?: string;
+}
+
+export interface PrestacionPageResult {
+  items: PrestacionPresentacion[];
+  totalItems: number;
+  totalPages: number;
+  page: number;
+  perPage: number;
+}
+
+const PAGE_EMPTY: PrestacionPageResult = {
+  items: [],
+  totalItems: 0,
+  totalPages: 0,
+  page: 1,
+  perPage: 25,
+};
+
+function filtroPorGrupo(grupo?: GrupoListadoPrestaciones): string {
+  switch (grupo) {
+    case "activos":
+      return '(status != "aprobado" && status != "pagado")';
+    case "historial":
+      return '(status = "aprobado" || status = "pagado")';
+    case "borrador":
+      return 'status = "borrador"';
+    case "pendientes":
+      return '(status = "pendiente" || status = "en_revision" || status = "visado_adjunto")';
+    case "observadas":
+      return '(status = "observado" || status = "observado_tesoreria")';
+    case "aprobado":
+      return 'status = "aprobado"';
+    case "pagado":
+      return 'status = "pagado"';
+    default:
+      return "";
+  }
+}
+
+/**
+ * Listado paginado de las prestaciones del usuario actual.
+ * Sustituye a getMisPrestaciones (getFullList) para las vistas de dashboard.
+ */
+export async function getMisPrestacionesPaginadas(
+  opts: PrestacionPageOptions = {}
+): Promise<PrestacionPageResult> {
+  const user = pocketbase.authStore.model;
+  if (!user) return { ...PAGE_EMPTY };
+
+  const page = Math.max(1, opts.page ?? 1);
+  const perPage = Math.min(50, Math.max(1, opts.perPage ?? 25));
+
+  const parts: string[] = [`user = "${user.id}"`];
+  if (opts.tenantId) parts.push(`tenant = "${opts.tenantId}"`);
+  const grupoFilter = filtroPorGrupo(opts.grupo);
+  if (grupoFilter) parts.push(grupoFilter);
+  if (opts.servicio) parts.push(`hospital_service = "${opts.servicio}"`);
+  if (opts.periodoMes) parts.push(`period_month = ${opts.periodoMes}`);
+  if (opts.periodoAnio) parts.push(`period_year = ${opts.periodoAnio}`);
+
+  try {
+    const result = await pocketbase
+      .collection("prestaciones_presentaciones")
+      .getList<PrestacionPresentacion>(page, perPage, {
+        filter: parts.join(" && "),
+        sort: opts.sort || "-created",
+        requestKey: null,
+      });
+
+    return {
+      items: result.items,
+      totalItems: result.totalItems,
+      totalPages: result.totalPages,
+      page: result.page,
+      perPage,
+    };
+  } catch (error: any) {
+    if (error?.isAbort || error?.message?.includes("autocancelled")) {
+      return { ...PAGE_EMPTY, page, perPage };
+    }
+    console.error("Error fetching mis prestaciones paginadas:", error);
+    return { ...PAGE_EMPTY, page, perPage };
+  }
+}
+
+/**
+ * Listado paginado de todas las prestaciones del tenant (Directores/Auditores).
+ * Siempre excluye borradores. Búsqueda y filtros se aplican server-side.
+ */
+export async function getTodasPrestacionesPaginadas(
+  opts: PrestacionPageOptions = {}
+): Promise<PrestacionPageResult> {
+  const page = Math.max(1, opts.page ?? 1);
+  const perPage = Math.min(50, Math.max(1, opts.perPage ?? 25));
+
+  const parts: string[] = ['status != "borrador"'];
+  if (opts.tenantId) parts.push(`tenant = "${opts.tenantId}"`);
+
+  if (
+    opts.grupo &&
+    opts.grupo !== "activos" &&
+    opts.grupo !== "historial"
+  ) {
+    const grupoFilter = filtroPorGrupo(opts.grupo);
+    if (grupoFilter) parts.push(grupoFilter);
+  }
+
+  if (opts.search?.trim()) {
+    const q = opts.search.trim().replace(/"/g, '\\"');
+    parts.push(
+      `(form_number ~ "${q}" || invoice_number ~ "${q}" || user.lastName ~ "${q}" || user.firstName ~ "${q}")`
+    );
+  }
+  if (opts.servicio) parts.push(`hospital_service = "${opts.servicio}"`);
+  if (opts.periodoMes) parts.push(`period_month = ${opts.periodoMes}`);
+  if (opts.periodoAnio) parts.push(`period_year = ${opts.periodoAnio}`);
+  if (opts.directorId)
+    parts.push(`director_adjunto_asignado = "${opts.directorId}"`);
+
+  try {
+    const result = await pocketbase
+      .collection("prestaciones_presentaciones")
+      .getList<PrestacionPresentacion>(page, perPage, {
+        filter: parts.join(" && "),
+        sort: opts.sort || "-created",
+        expand: "tenant,user",
+        requestKey: null,
+      });
+
+    return {
+      items: result.items,
+      totalItems: result.totalItems,
+      totalPages: result.totalPages,
+      page: result.page,
+      perPage,
+    };
+  } catch (error: any) {
+    if (error?.isAbort || error?.message?.includes("autocancelled")) {
+      return { ...PAGE_EMPTY, page, perPage };
+    }
+    // Fallback sin búsqueda relacional (por si el backend no filtra por expand)
+    if (opts.search?.trim()) {
+      try {
+        const retryParts = parts.filter((p) => !p.includes("user."));
+        const result = await pocketbase
+          .collection("prestaciones_presentaciones")
+          .getList<PrestacionPresentacion>(page, perPage, {
+            filter: retryParts.join(" && "),
+            sort: opts.sort || "-created",
+            expand: "tenant,user",
+            requestKey: null,
+          });
+        return {
+          items: result.items,
+          totalItems: result.totalItems,
+          totalPages: result.totalPages,
+          page: result.page,
+          perPage,
+        };
+      } catch {
+        return { ...PAGE_EMPTY, page, perPage };
+      }
+    }
+    console.error("Error fetching todas las prestaciones paginadas:", error);
+    return { ...PAGE_EMPTY, page, perPage };
+  }
+}
+
+/* ---------- KPIs livianos (proyección fields) ---------- */
+
+interface KpiProyectadaRow {
+  id: string;
+  status: string;
+  invoice_amount: number;
+}
+
+export interface ProyeccionKpisPrestaciones {
+  totalRecords: number;
+  /** suma de invoice_amount por status */
+  sumaPorEstado: Record<string, number>;
+  /** conteo por status */
+  conteoPorEstado: Record<string, number>;
+  /** años con actividad (desc), para filtros de historial */
+  anios: number[];
+  /** períodos únicos "M/YYYY" (desc), para filtro de dirección */
+  periodos: string[];
+  /** servicios únicos presentes, para filtro de dirección */
+  servicios: string[];
+}
+
+async function fetchKpisProyectadas(filter: string): Promise<ProyeccionKpisPrestaciones> {
+  const out: ProyeccionKpisPrestaciones = {
+    totalRecords: 0,
+    sumaPorEstado: {},
+    conteoPorEstado: {},
+    anios: [],
+    periodos: [],
+    servicios: [],
+  };
+
+  try {
+    const records = (await pocketbase
+      .collection("prestaciones_presentaciones")
+      .getFullList({
+        filter,
+        sort: "-created",
+        fields: "id,status,invoice_amount,period_year,period_month,hospital_service",
+        requestKey: null,
+      })) as unknown as (KpiProyectadaRow & {
+      period_year?: number;
+      period_month?: number;
+      hospital_service?: string;
+    })[];
+
+    out.totalRecords = records.length;
+    const aniosSet = new Set<number>();
+    const periodosSet = new Set<string>();
+    const serviciosSet = new Set<string>();
+    for (const r of records) {
+      const st = r.status || "?";
+      out.sumaPorEstado[st] =
+        (out.sumaPorEstado[st] || 0) + (Number(r.invoice_amount) || 0);
+      out.conteoPorEstado[st] = (out.conteoPorEstado[st] || 0) + 1;
+      if (r.period_year) aniosSet.add(Number(r.period_year));
+      if (r.period_month && r.period_year) {
+        periodosSet.add(`${r.period_month}/${r.period_year}`);
+      }
+      if (r.hospital_service) serviciosSet.add(r.hospital_service);
+    }
+    out.anios = Array.from(aniosSet).sort((a, b) => b - a);
+    out.periodos = Array.from(periodosSet).sort((a, b) => {
+      const [mA, yA] = a.split("/").map(Number);
+      const [mB, yB] = b.split("/").map(Number);
+      return yB * 100 + mB - (yA * 100 + mA);
+    });
+    out.servicios = Array.from(serviciosSet);
+  } catch (error: any) {
+    if (!error?.isAbort && !error?.message?.includes("autocancelled")) {
+      console.error("Error fetching KPIs proyectados:", error);
+    }
+  }
+
+  return out;
+}
+
+/** KPIs del prestador actual (payload liviano: solo id/status/monto/año) */
+export async function getMisKpisLivianos(
+  tenantId?: string
+): Promise<ProyeccionKpisPrestaciones> {
+  const user = pocketbase.authStore.model;
+  if (!user)
+    return {
+      totalRecords: 0,
+      sumaPorEstado: {},
+      conteoPorEstado: {},
+      anios: [],
+      periodos: [],
+      servicios: [],
+    };
+
+  let filter = `user = "${user.id}"`;
+  if (tenantId) filter += ` && tenant = "${tenantId}"`;
+
+  try {
+    return await fetchKpisProyectadas(filter);
+  } catch {
+    return await fetchKpisProyectadas(`user = "${user.id}"`);
+  }
+}
+
+/** KPIs globales del tenant para Dirección (excluye borradores) */
+export async function getDireccionKpisLivianos(
+  tenantId?: string
+): Promise<ProyeccionKpisPrestaciones> {
+  let filter = 'status != "borrador"';
+  if (tenantId) filter += ` && tenant = "${tenantId}"`;
+  return fetchKpisProyectadas(filter);
+}

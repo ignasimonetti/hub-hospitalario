@@ -6,7 +6,6 @@ import {
   ESTADOS_PRESTACION_CONFIG,
   SECTORES_SERVICIO_MAP,
   SectorServicio,
-  FormularioDigitalData,
 } from "@/types/prestadores";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -42,35 +41,31 @@ export function TarjetaPrestacion({ prestacion, onClick }: TarjetaPrestacionProp
   const isEH = prestacion.service_type === "extension_horaria";
   const isObservada = prestacion.status === "observado" || prestacion.status === "observado_tesoreria";
 
-  // Parsear datos de la planilla para extraer volumen prestacional
-  const digitalForm = useMemo<FormularioDigitalData | null>(() => {
-    if (!prestacion?.digital_form_data) return null;
-    try {
-      if (typeof prestacion.digital_form_data === "string") {
-        return JSON.parse(prestacion.digital_form_data);
-      }
-      return prestacion.digital_form_data;
-    } catch {
-      return null;
-    }
-  }, [prestacion?.digital_form_data]);
-
-  // Resumen del volumen de guardias u horas
+  // Resumen del volumen prestacional desde el campo plano service_days_detail
+  // (evita parsear digital_form_data — JSON pesado — en cada card del dashboard)
   const resumenVolumen = useMemo(() => {
-    if (!digitalForm?.renglones || digitalForm.renglones.length === 0) {
+    const detalle = prestacion?.service_days_detail?.trim();
+    if (!detalle) {
       return isGuardia ? "Guardias Médicas" : "Extensión Horaria";
     }
 
-    if (digitalForm.tipo_formulario === "guardia") {
-      const cantGuardias = digitalForm.renglones.length;
-      const totalHs = digitalForm.renglones.reduce((sum, r) => sum + (Number(r.duracion_horas) || 24), 0);
-      return `${cantGuardias} guardia${cantGuardias > 1 ? "s" : ""} (${totalHs} hs)`;
+    if (isGuardia) {
+      // Formato: "dd/mm (hh:mm-hh:mm Ordinaria), dd/mm (...)"
+      const cant = (detalle.match(/\(/g) || []).length || 1;
+      return `${cant} guardia${cant > 1 ? "s" : ""}`;
     } else {
-      const cantDias = digitalForm.renglones.length;
-      const totalHs = digitalForm.renglones.reduce((sum, r) => sum + (Number(r.horas_cumplidas) || 0), 0);
+      // Formato: "dd/mm (4 hs - 14:00 a 18:00), ..."
+      const matches = detalle.match(/(\d+(?:[.,]\d+)?)\s*hs/gi) || [];
+      let totalHs = 0;
+      let cantDias = 0;
+      for (const m of matches) {
+        totalHs += parseFloat(m.replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
+        cantDias++;
+      }
+      if (cantDias === 0) return "Extensión Horaria";
       return `${totalHs} hs en ${cantDias} día${cantDias > 1 ? "s" : ""}`;
     }
-  }, [digitalForm, isGuardia]);
+  }, [prestacion?.service_days_detail, isGuardia]);
 
   // Indicador de Paso en el Circuito (si no está observada)
   const pasoCircuito = useMemo(() => {

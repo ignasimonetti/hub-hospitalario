@@ -12,6 +12,7 @@ import {
   ESTADOS_LOTE_ABIERTO,
 } from "@/lib/services/tesoreriaService";
 import { ModalExportarDetalleLote } from "@/components/tesoreria/ModalExportarDetalleLote";
+import { ModalConfigurarOrdenDePago } from "@/components/tesoreria/ModalConfigurarOrdenDePago";
 import {
   Dialog,
   DialogContent,
@@ -57,8 +58,7 @@ export function ModalDetalleLoteGDE({
 }: ModalDetalleLoteGDEProps) {
   const [isPayingLote, setIsPayingLote] = useState(false);
   const [isTogglingCierre, setIsTogglingCierre] = useState(false);
-  const [isGeneratingOP, setIsGeneratingOP] = useState(false);
-  const [numeroOP, setNumeroOP] = useState("");
+  const [isConfigOPOpen, setIsConfigOPOpen] = useState(false);
   const [comprobantePagoBSE, setComprobantePagoBSE] = useState("");
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -97,35 +97,6 @@ export function ModalDetalleLoteGDE({
       toast.error(err?.message || "Error al conmutar estado del lote");
     } finally {
       setIsTogglingCierre(false);
-    }
-  };
-
-  const handleGenerarOrdenDePago = async () => {
-    if (!numeroOP.trim()) {
-      toast.error("Ingrese el número de Orden de Pago antes de generarla (ej: 3930).");
-      return;
-    }
-    try {
-      setIsGeneratingOP(true);
-
-      // Cierre implícito si el lote estaba abierto
-      if (estaAbierto) {
-        await toggleCierreLoteTesoreria(lote.id);
-        toast.info(`Lote "${lote.numero_lote}" cerrado automáticamente al generar la Orden de Pago.`);
-        await onRefresh();
-      }
-
-      const html = generarOrdenDePagoHTML(lote, prestacionesDelLote, numeroOP.trim());
-      const win = window.open("", "_blank");
-      if (win) {
-        win.document.write(html);
-        win.document.close();
-      }
-      toast.success(`Orden de Pago N° ${numeroOP.trim()} generada exitosamente para ${lote.numero_lote}.`);
-    } catch (err: any) {
-      toast.error(err?.message || "Error al generar la Orden de Pago");
-    } finally {
-      setIsGeneratingOP(false);
     }
   };
 
@@ -426,39 +397,28 @@ export function ModalDetalleLoteGDE({
 
           {/* Generar Orden de Pago (Documento para Expediente GDE) */}
           {!estaPagado && (
-            <div className="p-3.5 rounded-lg border-2 border-sky-200 dark:border-sky-800 bg-sky-50/70 dark:bg-sky-950/40 space-y-2.5">
-              <div className="text-xs font-bold text-sky-900 dark:text-sky-100 flex items-center gap-1.5">
-                <ClipboardList className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                Generar Orden de Pago (Documento para Expediente)
+            <div className="p-3.5 rounded-xl border-2 border-sky-200 dark:border-sky-800/80 bg-sky-50/70 dark:bg-sky-950/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="text-xs font-bold text-sky-900 dark:text-sky-100 flex items-center gap-1.5">
+                  <ClipboardList className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                  Orden de Pago Global (Documento Oficial GDE)
+                </div>
+                <p className="text-[11px] text-sky-800 dark:text-sky-300">
+                  {lote.numero_orden_pago
+                    ? `OP N° ${lote.numero_orden_pago} configurada. Puede editar los datos presupuestarios o volver a emitir el documento.`
+                    : "Complete los datos contables y presupuestarios del expediente para emitir la Orden de Pago oficial."}
+                </p>
               </div>
-              <p className="text-[11px] text-sky-800 dark:text-sky-300">
-                Genera el documento de Orden de Pago global con la nómina de beneficiarios, retenciones e importes.
-                {estaAbierto && (
-                  <span className="font-semibold"> El lote se cerrará automáticamente al generar la OP.</span>
-                )}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                <Input
-                  placeholder="Nº Orden de Pago (ej: 3930)"
-                  value={numeroOP}
-                  onChange={(e) => setNumeroOP(e.target.value)}
-                  className="h-8 text-xs font-mono bg-white dark:bg-slate-900 border-sky-200 dark:border-sky-800 w-48"
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleGenerarOrdenDePago}
-                  disabled={isGeneratingOP || !numeroOP.trim()}
-                  className="h-8 text-xs bg-sky-600 hover:bg-sky-700 text-white font-semibold flex items-center gap-1.5"
-                >
-                  {isGeneratingOP ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <ClipboardList className="h-3.5 w-3.5" />
-                  )}
-                  Generar Orden de Pago
-                </Button>
-              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setIsConfigOPOpen(true)}
+                className="h-8 text-xs bg-[#08487A] hover:bg-[#06375d] text-white font-bold flex items-center gap-1.5 shrink-0 shadow-sm"
+              >
+                <ClipboardList className="h-3.5 w-3.5" />
+                {lote.numero_orden_pago ? "Ver / Editar Orden de Pago" : "Generar Orden de Pago"}
+              </Button>
             </div>
           )}
 
@@ -504,6 +464,15 @@ export function ModalDetalleLoteGDE({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Modal Formulario Configurar Orden de Pago */}
+      <ModalConfigurarOrdenDePago
+        isOpen={isConfigOPOpen}
+        onClose={() => setIsConfigOPOpen(false)}
+        lote={lote}
+        prestacionesDelLote={prestacionesDelLote}
+        onRefresh={onRefresh}
+      />
 
       {/* Diálogo de exportación (modo + formato) */}
       <ModalExportarDetalleLote

@@ -17,6 +17,7 @@ import {
   ObservarFiscalPayload,
   CATEGORIAS_OBSERVACION_FISCAL,
   RegistroLoteBancarioExport,
+  OrdenDePagoConfigPayload,
 } from "@/types/tesoreria";
 import Papa from "papaparse";
 
@@ -597,6 +598,50 @@ export async function toggleCierreLoteTesoreria(
 }
 
 /**
+ * Guarda y consolida la configuración de la Orden de Pago en el Lote (número de OP, resolución, imputación y banco).
+ * Cierra automáticamente el lote si estaba abierto.
+ */
+export async function guardarOrdenDePagoConfigLote(
+  loteId: string,
+  config: OrdenDePagoConfigPayload,
+  tenantId?: string
+): Promise<LoteTesoreria> {
+  const lotes = await getLotesTesoreria(tenantId);
+  const targetLote = lotes.find((l) => l.id === loteId);
+  if (!targetLote) throw new Error("Lote no encontrado");
+
+  targetLote.numero_orden_pago = config.numero_op;
+  targetLote.numero_resolucion = config.numero_resolucion || targetLote.numero_resolucion;
+  targetLote.fecha_resolucion = config.fecha_resolucion || targetLote.fecha_resolucion;
+  targetLote.op_config = config;
+  
+  // Cerrar el lote si estaba abierto
+  if (ESTADOS_LOTE_ABIERTO.includes(targetLote.estado)) {
+    targetLote.estado = "cerrado";
+  }
+
+  targetLote.updated = new Date().toISOString();
+  saveLocalLotes(lotes);
+
+  try {
+    await pocketbase.collection("tesoreria_lotes").update(
+      targetLote.id,
+      {
+        numero_orden_pago: config.numero_op,
+        numero_resolucion: config.numero_resolucion || "",
+        fecha_resolucion: config.fecha_resolucion || "",
+        estado: targetLote.estado,
+      },
+      { requestKey: null }
+    );
+  } catch {
+    // Ignorar si PB no tiene la colección
+  }
+
+  return targetLote;
+}
+
+/**
  * Agrega prestaciones conformadas a un Lote ya existente.
  * Solo se permite si el lote está en estado abierto (borrador / en_tramite_gde).
  */
@@ -1134,14 +1179,41 @@ function importeEnLetras(monto: number): string {
 
 /**
  * Genera la Orden de Pago Global en formato HTML, replicando el formato oficial del CISB.
- * Adaptada para lotes con múltiples beneficiarios (ya no una OP por factura).
+ * Incluye el logo institucional oficial del CISB, datos de imputación presupuestaria,
+ * cuenta bancaria y nómina consolidada de beneficiarios con desglose de retenciones.
  */
 export function generarOrdenDePagoHTML(
   lote: LoteTesoreria,
   prestaciones: PrestacionTesoreriaItem[],
-  numeroOP: string,
+  configParam?: OrdenDePagoConfigPayload,
   hospitalName: string = 'Centro Integral de Salud La Banda - Dr. Ricardo "Pololo" Abdala'
 ): string {
+  const cfg = configParam || lote.op_config || {
+    numero_op: lote.numero_orden_pago || "S/N",
+    anio_op: lote.periodo_anio || new Date().getFullYear(),
+    expediente_gde: lote.numero_expediente_gde || "A CARATULAR",
+    numero_resolucion: lote.numero_resolucion || "PENDIENTE",
+    jurisdiccion: "63",
+    programa: "11 - PREVENCION, PROMOCION, PROTECCION, RECUPERACION Y REHABILITACION DE LA SALUD",
+    actividad: "ACT 1",
+    partida: "PART 341",
+    fuente_financiamiento: "REMESAS DEL TESORO",
+    banco_nombre: "BSE - CUENTA CORRIENTE",
+    cuenta_bancaria: "1255424/86",
+  };
+
+  const numeroOP = cfg.numero_op || lote.numero_orden_pago || "S/N";
+  const anio = cfg.anio_op || lote.periodo_anio || new Date().getFullYear();
+  const expedienteGDE = cfg.expediente_gde || lote.numero_expediente_gde || "A CARATULAR";
+  const resolucionNum = cfg.numero_resolucion || lote.numero_resolucion || "PENDIENTE";
+  const jurisdiccion = cfg.jurisdiccion || "63";
+  const programa = cfg.programa || "11 - PREVENCION, PROMOCION, PROTECCION, RECUPERACION Y REHABILITACION DE LA SALUD";
+  const actividad = cfg.actividad || "ACT 1";
+  const partida = cfg.partida || "PART 341";
+  const fuenteFinanciamiento = cfg.fuente_financiamiento || "REMESAS DEL TESORO";
+  const bancoNombre = cfg.banco_nombre || "BSE - CUENTA CORRIENTE";
+  const cuentaBancaria = cfg.cuenta_bancaria || "1255424/86";
+
   const formatMoney = (amount: number) =>
     new Intl.NumberFormat("es-AR", {
       style: "currency",
@@ -1155,7 +1227,6 @@ export function generarOrdenDePagoHTML(
     month: "2-digit",
     year: "numeric",
   });
-  const anio = hoy.getFullYear();
 
   // Cálculos totales
   let totalBruto = 0;
@@ -1195,38 +1266,38 @@ export function generarOrdenDePagoHTML(
 
   const filasRetenciones = `
     <tr>
-      <td style="padding: 6px 12px; font-size: 11px;">D.G.R. Prov. Sgo. del Estero — Ret. I.I.B.B</td>
-      <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetIIBB)}</td>
-      <td style="padding: 6px 12px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
+      <td style="padding: 5px 10px; font-size: 11px;">D.G.R. Prov. Sgo. del Estero — Ret. I.I.B.B</td>
+      <td style="padding: 5px 10px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetIIBB)}</td>
+      <td style="padding: 5px 10px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
     </tr>
     <tr>
-      <td style="padding: 6px 12px; font-size: 11px;">A.F.I.P. Ret. Aport. Previsional — RSS RG 1784/04 Art. 14</td>
-      <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetSUSS)}</td>
-      <td style="padding: 6px 12px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
+      <td style="padding: 5px 10px; font-size: 11px;">A.F.I.P. Ret. Aport. Previsional — RSS RG 1784/04 Art. 14</td>
+      <td style="padding: 5px 10px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetSUSS)}</td>
+      <td style="padding: 5px 10px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
     </tr>
     <tr>
-      <td style="padding: 6px 12px; font-size: 11px;">A.F.I.P. Ret. Imp. a las Ganancias — RG 830</td>
-      <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetGanancias)}</td>
-      <td style="padding: 6px 12px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
+      <td style="padding: 5px 10px; font-size: 11px;">A.F.I.P. Ret. Imp. a las Ganancias — RG 830</td>
+      <td style="padding: 5px 10px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetGanancias)}</td>
+      <td style="padding: 5px 10px; font-size: 10px; text-align: center; color: #64748b;">PAGO MENSUAL</td>
     </tr>
     ${totalRetOtras > 0 ? `
     <tr>
-      <td style="padding: 6px 12px; font-size: 11px;">Otras Retenciones</td>
-      <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetOtras)}</td>
-      <td style="padding: 6px 12px; font-size: 10px; text-align: center; color: #64748b;">CHEQUE N°</td>
+      <td style="padding: 5px 10px; font-size: 11px;">Otras Retenciones</td>
+      <td style="padding: 5px 10px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(totalRetOtras)}</td>
+      <td style="padding: 5px 10px; font-size: 10px; text-align: center; color: #64748b;">CHEQUE N°</td>
     </tr>` : ""}
   `;
 
   const filasBeneficiarios = beneficiarios
     .map((b) => `
       <tr style="border-bottom: 1px solid #e2e8f0;">
-        <td style="padding: 6px 12px; font-size: 11px; font-weight: 600;">${b.nombre}</td>
-        <td style="padding: 6px 12px; font-family: monospace; font-size: 11px;">${b.cuit}</td>
-        <td style="padding: 6px 12px; font-family: monospace; font-size: 11px;">${b.factura}</td>
-        <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px;">${formatMoney(b.montoBruto)}</td>
-        <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px; color: #dc2626;">${b.retTotal > 0 ? `-${formatMoney(b.retTotal)}` : "-"}</td>
-        <td style="padding: 6px 12px; font-family: monospace; text-align: right; font-size: 11px; font-weight: bold; color: #059669;">${formatMoney(b.montoNeto)}</td>
-        <td style="padding: 6px 12px; font-size: 10px; text-align: center; color: #64748b;">TRANSACCIÓN</td>
+        <td style="padding: 5px 8px; font-size: 10.5px; font-weight: 600;">${b.nombre}</td>
+        <td style="padding: 5px 8px; font-family: monospace; font-size: 10.5px;">${b.cuit}</td>
+        <td style="padding: 5px 8px; font-family: monospace; font-size: 10.5px;">${b.factura}</td>
+        <td style="padding: 5px 8px; font-family: monospace; text-align: right; font-size: 10.5px;">${formatMoney(b.montoBruto)}</td>
+        <td style="padding: 5px 8px; font-family: monospace; text-align: right; font-size: 10.5px; color: #dc2626;">${b.retTotal > 0 ? `-${formatMoney(b.retTotal)}` : "-"}</td>
+        <td style="padding: 5px 8px; font-family: monospace; text-align: right; font-size: 10.5px; font-weight: bold; color: #059669;">${formatMoney(b.montoNeto)}</td>
+        <td style="padding: 5px 8px; font-size: 9.5px; text-align: center; color: #64748b;">TRANSACCIÓN</td>
       </tr>
     `)
     .join("");
@@ -1239,111 +1310,152 @@ export function generarOrdenDePagoHTML(
     <title>Orden de Pago ${numeroOP} - ${anio} - CISB</title>
     <style>
       * { box-sizing: border-box; }
-      body { font-family: Arial, sans-serif; margin: 0; padding: 25mm 20mm; color: #0f172a; line-height: 1.35; font-size: 12px; }
-      .header-area { text-align: center; font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-      .op-title-row { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 14px; }
-      .op-title { font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-      .op-number { font-size: 18px; font-weight: 800; font-family: monospace; }
-      .meta-grid { display: grid; grid-template-columns: 140px 1fr; gap: 4px 12px; font-size: 11px; margin-bottom: 16px; }
-      .meta-label { font-weight: bold; color: #334155; }
-      .meta-value { font-family: monospace; }
-      .legal-text { font-size: 10.5px; text-transform: uppercase; border: 1px solid #cbd5e1; padding: 10px 14px; background-color: #f8fafc; text-align: center; margin: 14px 0; letter-spacing: 0.3px; line-height: 1.5; }
-      .importe-box { background-color: #f0fdf4; border: 2px solid #16a34a; border-radius: 6px; padding: 12px 16px; margin: 14px 0; }
-      .importe-label { font-size: 11px; font-weight: bold; color: #15803d; }
-      .importe-valor { font-size: 22px; font-weight: 800; font-family: monospace; color: #0f172a; }
-      .importe-letras { font-size: 11px; font-style: italic; margin-top: 4px; color: #334155; }
-      table.detail { width: 100%; border-collapse: collapse; margin-top: 10px; }
-      table.detail th { background-color: #f1f5f9; border-bottom: 2px solid #0f172a; border-top: 1px solid #cbd5e1; padding: 7px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
-      table.detail .total-row td { border-top: 2px solid #0f172a; font-weight: 800; font-size: 12px; padding: 8px 12px; background-color: #f8fafc; }
-      .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #334155; margin: 18px 0 8px 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
-      .bank-info { background-color: #eff6ff; border: 1px solid #93c5fd; border-radius: 6px; padding: 10px 14px; margin: 14px 0; font-size: 11px; }
-      .footer-sign { margin-top: 50px; display: flex; justify-content: space-between; text-align: center; font-size: 10px; }
-      .sign-box { border-top: 1px solid #94a3b8; width: 200px; padding-top: 6px; }
-      .footer-date { text-align: right; font-size: 11px; margin-top: 20px; color: #64748b; }
+      body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 20mm 15mm; color: #0f172a; line-height: 1.3; font-size: 11.5px; background: #fff; }
+      
+      .top-branding { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #08487A; padding-bottom: 12px; margin-bottom: 12px; }
+      .logo-box { display: flex; align-items: center; gap: 12px; }
+      .logo-img { height: 52px; width: auto; object-fit: contain; }
+      .institution-text { text-align: left; }
+      .institution-name { font-size: 13px; font-weight: 800; color: #08487A; text-transform: uppercase; letter-spacing: 0.5px; }
+      .institution-sub { font-size: 10px; font-weight: 600; color: #475569; text-transform: uppercase; }
+      .header-area { font-size: 12px; font-weight: 800; color: #08487A; text-transform: uppercase; letter-spacing: 1px; text-align: right; }
+
+      .op-title-row { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 8px 14px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 12px; }
+      .op-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #08487A; }
+      .op-number { font-size: 18px; font-weight: 900; font-family: monospace; color: #0f172a; }
+
+      .meta-grid { display: grid; grid-template-columns: 140px 1fr 120px 1fr; gap: 4px 10px; font-size: 10.5px; margin-bottom: 12px; background: #fafafa; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; }
+      .meta-label { font-weight: 700; color: #334155; }
+      .meta-value { font-family: monospace; color: #0f172a; }
+
+      .legal-text { font-size: 10px; text-transform: uppercase; border: 1px solid #cbd5e1; padding: 8px 12px; background-color: #f8fafc; text-align: center; margin: 10px 0; letter-spacing: 0.3px; line-height: 1.4; font-weight: 600; }
+      
+      .importe-box { background-color: #f0fdf4; border: 2px solid #16a34a; border-radius: 6px; padding: 10px 14px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+      .importe-left { flex: 1; }
+      .importe-label { font-size: 10.5px; font-weight: 800; color: #15803d; text-transform: uppercase; }
+      .importe-valor { font-size: 20px; font-weight: 900; font-family: monospace; color: #0f172a; }
+      .importe-letras { font-size: 10px; font-style: italic; margin-top: 2px; color: #334155; font-weight: 600; }
+
+      table.detail { width: 100%; border-collapse: collapse; margin-top: 6px; }
+      table.detail th { background-color: #f1f5f9; border-bottom: 2px solid #0f172a; border-top: 1px solid #cbd5e1; padding: 6px 8px; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.3px; }
+      table.detail .total-row td { border-top: 2px solid #0f172a; border-bottom: 2px solid #0f172a; font-weight: 800; font-size: 11px; padding: 6px 8px; background-color: #f8fafc; }
+      
+      .section-title { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #08487A; margin: 14px 0 6px 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; }
+
+      .bank-info { background-color: #eff6ff; border: 1px solid #93c5fd; border-radius: 6px; padding: 8px 12px; margin: 12px 0; font-size: 10.5px; display: flex; justify-content: space-between; align-items: center; }
+      
+      .footer-date { text-align: right; font-size: 10.5px; margin-top: 16px; color: #475569; font-weight: 600; }
+      .footer-sign { margin-top: 45px; display: flex; justify-content: space-between; text-align: center; font-size: 9.5px; }
+      .sign-box { border-top: 1px solid #94a3b8; width: 180px; padding-top: 5px; }
+
       @media print {
-        body { margin: 10mm; padding: 0; }
+        body { margin: 8mm 10mm; padding: 0; }
         .no-print { display: none !important; }
       }
     </style>
   </head>
   <body>
-    <div class="no-print" style="margin-bottom: 15px; text-align: right;">
-      <button onclick="window.print()" style="padding: 8px 16px; background-color: #0284c7; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
+    <div class="no-print" style="margin-bottom: 12px; text-align: right;">
+      <button onclick="window.print()" style="padding: 7px 14px; background-color: #08487A; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer;">
         🖨️ Imprimir / Guardar como PDF
       </button>
     </div>
 
-    <div class="header-area">Área Tesorería</div>
+    <!-- Encabezado con Logo Institucional Oficial del CISB -->
+    <div class="top-branding">
+      <div class="logo-box">
+        <img src="/assets/cisb.png" alt="Logo CISB" class="logo-img" onerror="this.style.display='none'" />
+        <div class="institution-text">
+          <div class="institution-name">Centro Integral de Salud La Banda</div>
+          <div class="institution-sub">Dr. Ricardo "Pololo" Abdala • Ministerio de Salud • Sgo. del Estero</div>
+        </div>
+      </div>
+      <div class="header-area">
+        Área Tesorería
+      </div>
+    </div>
 
     <div class="op-title-row">
-      <div class="op-title">Orden de Pago</div>
-      <div><span class="op-number">${numeroOP}</span> &nbsp; <span style="font-size: 14px; font-weight: bold;">${anio}</span></div>
+      <div class="op-title">ORDEN DE PAGO GLOBAL</div>
+      <div>
+        <span style="font-size: 11px; font-weight: bold; color: #475569;">N° </span>
+        <span class="op-number">${numeroOP}</span>
+        &nbsp;&nbsp;
+        <span style="font-size: 11px; font-weight: bold; color: #475569;">AÑO: </span>
+        <span style="font-size: 14px; font-weight: 800; font-family: monospace;">${anio}</span>
+      </div>
     </div>
 
     <div class="meta-grid">
-      <div class="meta-label">EXP:</div>
-      <div class="meta-value">${lote.numero_expediente_gde || "A CARATULAR"}</div>
+      <div class="meta-label">EXPEDIENTE GDE:</div>
+      <div class="meta-value">${expedienteGDE}</div>
 
       <div class="meta-label">RESOLUCIÓN N°:</div>
-      <div class="meta-value">${lote.numero_resolucion || "PENDIENTE"}</div>
+      <div class="meta-value">${resolucionNum}</div>
 
       <div class="meta-label">JURISDICCIÓN:</div>
-      <div class="meta-value">63</div>
-
-      <div class="meta-label">PROGRAMA:</div>
-      <div class="meta-value">11 — PREVENCIÓN, PROMOCIÓN, PROTECCIÓN, RECUPERACIÓN Y REHABILITACIÓN DE LA SALUD</div>
+      <div class="meta-value">${jurisdiccion}</div>
 
       <div class="meta-label">CÓDIGO DE PAGO:</div>
-      <div class="meta-value">ACT 1 &nbsp;/&nbsp; PART 341</div>
+      <div class="meta-value">${actividad} &nbsp;/&nbsp; ${partida}</div>
 
-      <div class="meta-label">REFERENCIA:</div>
-      <div class="meta-value">${lote.numero_lote} — ${lote.descripcion}</div>
+      <div class="meta-label">PROGRAMA:</div>
+      <div class="meta-value" style="grid-column: span 3;">${programa}</div>
+
+      <div class="meta-label">LOTE REFERENCIA:</div>
+      <div class="meta-value" style="grid-column: span 3;">${lote.numero_lote} — ${lote.descripcion}</div>
     </div>
 
     <div class="legal-text">
-      Cumplidos los trámites legales y reglamentarios sobre ejecución del presupuesto,<br>
-      se procede al pago de:
+      Cumplidos los trámites legales y reglamentarios sobre ejecución del presupuesto, se procede al pago de:
     </div>
 
     <div class="importe-box">
-      <div class="importe-label">EL IMPORTE:</div>
-      <div class="importe-valor">${formatMoney(totalBruto)}</div>
-      <div class="importe-letras">SON PESOS: ${importeEnLetras(totalBruto)}</div>
+      <div class="importe-left">
+        <div class="importe-label">El Importe Total a Liquidar:</div>
+        <div class="importe-valor">${formatMoney(totalBruto)}</div>
+        <div class="importe-letras">SON PESOS: ${importeEnLetras(totalBruto)}</div>
+      </div>
     </div>
 
     <!-- Sección de Retenciones Globales -->
-    <div class="section-title">Retenciones Aplicables</div>
+    <div class="section-title">Retenciones Impositivas y Aportes</div>
     <table class="detail">
       <thead>
         <tr>
-          <th style="text-align: left;">Concepto</th>
-          <th style="text-align: right;">Pesos</th>
-          <th style="text-align: center; width: 130px;">Mediante</th>
+          <th style="text-align: left;">Concepto de Retención</th>
+          <th style="text-align: right; width: 140px;">Monto Retenido</th>
+          <th style="text-align: center; width: 130px;">Forma de Pago</th>
         </tr>
       </thead>
       <tbody>
         ${filasRetenciones}
+        <tr style="border-top: 1px solid #cbd5e1; background: #fafafa; font-weight: bold;">
+          <td style="padding: 5px 10px; font-size: 10.5px;">TOTAL RETENCIONES:</td>
+          <td style="padding: 5px 10px; font-family: monospace; text-align: right; font-size: 11px; color: #dc2626;">${formatMoney(totalRetenciones)}</td>
+          <td></td>
+        </tr>
       </tbody>
     </table>
 
     <!-- Nómina de Beneficiarios -->
-    <div class="section-title">Nómina de Beneficiarios — Detalle por Prestador (${beneficiarios.length})</div>
+    <div class="section-title">Nómina Consolidada de Beneficiarios (${beneficiarios.length} Prestadores)</div>
     <table class="detail">
       <thead>
         <tr>
-          <th style="text-align: left;">Beneficiario</th>
-          <th style="text-align: left;">CUIT</th>
-          <th style="text-align: left;">Factura</th>
-          <th style="text-align: right;">Bruto</th>
-          <th style="text-align: right;">Retención</th>
-          <th style="text-align: right;">Neto</th>
-          <th style="text-align: center; width: 100px;">Mediante</th>
+          <th style="text-align: left;">Beneficiario / Profesional</th>
+          <th style="text-align: left; width: 100px;">CUIT</th>
+          <th style="text-align: left; width: 70px;">Factura</th>
+          <th style="text-align: right; width: 85px;">Bruto</th>
+          <th style="text-align: right; width: 80px;">Retención</th>
+          <th style="text-align: right; width: 90px;">Neto a Pagar</th>
+          <th style="text-align: center; width: 85px;">Mediante</th>
         </tr>
       </thead>
       <tbody>
         ${filasBeneficiarios}
         <tr class="total-row">
-          <td colspan="3" style="text-align: right; text-transform: uppercase;">Total General:</td>
+          <td colspan="3" style="text-align: right; text-transform: uppercase;">Totales Generales:</td>
           <td style="text-align: right; font-family: monospace;">${formatMoney(totalBruto)}</td>
           <td style="text-align: right; font-family: monospace; color: #dc2626;">${totalRetenciones > 0 ? `-${formatMoney(totalRetenciones)}` : "-"}</td>
           <td style="text-align: right; font-family: monospace; color: #059669;">${formatMoney(totalNeto)}</td>
@@ -1352,11 +1464,15 @@ export function generarOrdenDePagoHTML(
       </tbody>
     </table>
 
-    <!-- Datos Bancarios -->
+    <!-- Datos Bancarios e Imputación de Fondos -->
     <div class="bank-info">
-      <strong>A PAGARSE MEDIANTE CUENTA BANCARIA (CUENTA DÉBITO):</strong><br>
-      BSE — CUENTA CORRIENTE &nbsp;&nbsp; <span style="font-family: monospace; font-weight: bold;">1255424/86</span>
-      &nbsp;&nbsp;&nbsp; REMESAS DEL TESORO
+      <div>
+        <strong>CUENTA BANCARIA DEBITADA:</strong> ${bancoNombre} &nbsp; 
+        <span style="font-family: monospace; font-weight: bold; color: #08487A;">N° ${cuentaBancaria}</span>
+      </div>
+      <div>
+        <strong>FUENTE DE FINANCIAMIENTO:</strong> ${fuenteFinanciamiento}
+      </div>
     </div>
 
     <div class="footer-date">

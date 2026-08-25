@@ -20,6 +20,22 @@ export type EstadoLoteTesoreria =
   | 'pagado_bse'
   | 'archivado';
 
+export interface OrdenDePagoConfigPayload {
+  numero_op: string; // Ej: "3930"
+  anio_op?: number; // Ej: 2026
+  expediente_gde?: string; // Ej: "EX-2026-03181067- -GDESDE-CISB#MS"
+  numero_resolucion?: string; // Ej: "RESOL-2026-2157-E-GDESDE-CISB#MS"
+  fecha_resolucion?: string;
+  jurisdiccion?: string; // Ej: "63"
+  programa?: string; // Ej: "11 - PREVENCION, PROMOCION, PROTECCION, RECUPERACION Y REHABILITACION DE LA SALUD"
+  actividad?: string; // Ej: "ACT 1"
+  partida?: string; // Ej: "PART 341"
+  fuente_financiamiento?: string; // Ej: "11 - TESORO PROVINCIAL" o "REMESAS DEL TESORO"
+  banco_nombre?: string; // Ej: "BSE - CUENTA CORRIENTE"
+  cuenta_bancaria?: string; // Ej: "1255424/86"
+  observaciones?: string;
+}
+
 export interface LoteTesoreria {
   id: string;
   tenant: string;
@@ -30,10 +46,11 @@ export interface LoteTesoreria {
   periodo_mes: number;
   periodo_anio: number;
   estado: EstadoLoteTesoreria;
-  numero_orden_pago?: string; // Ej: "OP-2026-00142" o Comprobante BSE
+  numero_orden_pago?: string; // Ej: "3930" o Comprobante BSE
   fecha_orden_pago?: string;
   numero_resolucion?: string; // Ej: "RESOL-2026-2244-E-GDESDE-CISB#MS"
   fecha_resolucion?: string;
+  op_config?: OrdenDePagoConfigPayload; // Datos presupuestarios y bancarios configurados
   monto_bruto_total: number;
   monto_retenciones_total: number;
   monto_neto_total: number;

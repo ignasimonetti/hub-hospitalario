@@ -21,11 +21,15 @@ import {
 } from "@/components/ui/select";
 import {
   getPrestadorPerfil,
-  getMisPrestaciones,
-  getTodasLasPrestaciones,
   getDirectoresAdjuntosDisponibles,
   visarMultiplesPrestaciones,
   aprobarMultiplesPrestaciones,
+  getMisPrestacionesPaginadas,
+  getTodasPrestacionesPaginadas,
+  getMisKpisLivianos,
+  getDireccionKpisLivianos,
+  type PrestacionPageResult,
+  type ProyeccionKpisPrestaciones,
 } from "@/lib/services/prestadoresService";
 import { ModalPerfilPrestador } from "@/components/prestadores/ModalPerfilPrestador";
 import { ModalSeleccionarTipoTramite } from "@/components/prestadores/ModalSeleccionarTipoTramite";
@@ -62,6 +66,7 @@ import {
   ChevronUp,
   ChevronDown,
   X,
+  History,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { motion, AnimatePresence } from "framer-motion";
@@ -80,13 +85,39 @@ export default function PrestadoresPage() {
 
   // Estado de Datos
   const [perfil, setPerfil] = useState<PrestadorPerfil | null>(null);
-  const [misPrestaciones, setMisPrestaciones] = useState<PrestacionPresentacion[]>([]);
-  const [todasPrestaciones, setTodasPrestaciones] = useState<PrestacionPresentacion[]>([]);
+  const [totalActivos, setTotalActivos] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Filtros
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
+
+  // Tabs del listado del prestador: activos (cards) vs historial (tabla)
+  const [tabListado, setTabListado] = useState<"activos" | "historial">("activos");
+  const [misActivos, setMisActivos] = useState<PrestacionPresentacion[]>([]);
+  const [historialData, setHistorialData] = useState<PrestacionPageResult>({
+    items: [],
+    totalItems: 0,
+    totalPages: 0,
+    page: 1,
+    perPage: 25,
+  });
+  const [histPage, setHistPage] = useState(1);
+  const [histAnio, setHistAnio] = useState<string>("todos");
+  const [histEstado, setHistEstado] = useState<"todos" | "aprobado" | "pagado">("todos");
+  const [kpisLivianos, setKpisLivianos] = useState<ProyeccionKpisPrestaciones | null>(null);
+
+  // Bandeja de Dirección (server-driven)
+  const [dirData, setDirData] = useState<PrestacionPageResult>({
+    items: [],
+    totalItems: 0,
+    totalPages: 0,
+    page: 1,
+    perPage: 25,
+  });
+  const [dirPage, setDirPage] = useState(1);
+  const [kpisDireccionData, setKpisDireccionData] = useState<ProyeccionKpisPrestaciones | null>(null);
+
   const [filtroDireccionEstado, setFiltroDireccionEstado] = useState<string>("pendientes");
   const [filtroDirectorId, setFiltroDirectorId] = useState<string>("todos");
   const [filtroServicio, setFiltroServicio] = useState<string>("todos");
@@ -150,23 +181,119 @@ export default function PrestadoresPage() {
     }
   }, [currentTenant]);
 
+  // Bandeja Dirección: recargar al cambiar filtros server-side
+  useEffect(() => {
+    if (loading) return;
+    setSelectedIds(new Set());
+    cargarBandejaDireccion(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtroDireccionEstado, filtroDirectorId, filtroServicio, filtroPeriodo]);
+
+  // Ordenamiento server-side (solo columnas directas de PB)
+  const serverSortKey =
+    sortColumn && ["form_number", "monto", "periodo"].includes(sortColumn)
+      ? `${sortColumn}:${sortDirection}`
+      : null;
+  useEffect(() => {
+    if (loading) return;
+    if (!serverSortKey) return;
+    setSelectedIds(new Set());
+    cargarBandejaDireccion(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverSortKey]);
+
+  // Búsqueda con debounce (350ms)
+  useEffect(() => {
+    if (loading) return;
+    const t = setTimeout(() => {
+      setSelectedIds(new Set());
+      cargarBandejaDireccion(1, { search: searchDireccion });
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchDireccion]);
+
+  const cargarBandejaDireccion = async (
+    page = dirPage,
+    overrides?: {
+      estado?: string;
+      directorId?: string;
+      servicio?: string;
+      periodo?: string;
+      search?: string;
+    }
+  ) => {
+    const estado = overrides?.estado ?? filtroDireccionEstado;
+    const directorId = overrides?.directorId ?? filtroDirectorId;
+    const servicio = overrides?.servicio ?? filtroServicio;
+    const periodo = overrides?.periodo ?? filtroPeriodo;
+    const search = overrides?.search ?? searchDireccion;
+
+    // Grupo de estados según filtro de bandeja
+    let grupo: "pendientes" | "aprobado" | "observadas" | undefined;
+    if (estado === "pendientes") grupo = "pendientes";
+    else if (estado === "aprobadas") grupo = "aprobado";
+    else if (estado === "observadas") grupo = "observadas";
+
+    // Ordenamiento server-side cuando el campo es columna directa de PB
+    let sort = "-created";
+    const dir = sortDirection === "asc" ? "" : "-";
+    if (sortColumn === "form_number") sort = `${dir}form_number`;
+    else if (sortColumn === "monto") sort = `${dir}invoice_amount`;
+    else if (sortColumn === "periodo")
+      sort = `${dir}period_year,${dir}period_month`;
+
+    const [mes, anio] =
+      periodo !== "todos" ? periodo.split("/") : [undefined, undefined];
+
+    const res = await getTodasPrestacionesPaginadas({
+      tenantId: currentTenant?.id,
+      grupo,
+      page,
+      perPage: 25,
+      sort,
+      search: search.trim() || undefined,
+      servicio: servicio !== "todos" ? servicio : undefined,
+      periodoMes: mes ? Number(mes) : undefined,
+      periodoAnio: anio ? Number(anio) : undefined,
+      directorId: directorId !== "todos" ? directorId : undefined,
+    });
+
+    setDirData(res);
+    setDirPage(res.page);
+  };
+
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      const [perfilData, misData, todasData, dirsData] = await Promise.all([
-        getPrestadorPerfil(),
-        getMisPrestaciones(currentTenant?.id),
-        getTodasLasPrestaciones(currentTenant?.id),
-        getDirectoresAdjuntosDisponibles(currentTenant?.id),
-      ]);
+      const [perfilData, kpis, activosPage, historialPage, dirsData, kpisDir] =
+        await Promise.all([
+          getPrestadorPerfil(),
+          getMisKpisLivianos(currentTenant?.id),
+          getMisPrestacionesPaginadas({ tenantId: currentTenant?.id, grupo: "activos", perPage: 50 }),
+          getMisPrestacionesPaginadas({ tenantId: currentTenant?.id, grupo: "historial", page: histPage }),
+          getDirectoresAdjuntosDisponibles(currentTenant?.id),
+          getDireccionKpisLivianos(currentTenant?.id),
+        ]);
 
       setPerfil(perfilData);
-      setMisPrestaciones(misData);
-      setTodasPrestaciones(todasData);
+      setKpisLivianos(kpis);
+      setMisActivos(activosPage.items);
+      setTotalActivos(activosPage.totalItems);
+      setHistorialData(historialPage);
       setDirectoresList(dirsData);
+      setKpisDireccionData(kpisDir);
+
+      // Bandeja de dirección server-driven
+      await cargarBandejaDireccion(1);
 
       // Si es director y no tiene prestaciones propias cargadas, por defecto mostrar auditoría
-      if (isDirector && misData.length === 0 && todasData.length > 0) {
+      if (
+        isDirector &&
+        activosPage.totalItems === 0 &&
+        historialPage.totalItems === 0 &&
+        kpisDir.totalRecords > 0
+      ) {
         setVistaActiva("auditoria_direccion");
       }
     } catch (error) {
@@ -176,206 +303,144 @@ export default function PrestadoresPage() {
     }
   };
 
+  const cargarListadoPrestador = async (
+    tab: "activos" | "historial" = tabListado,
+    page = tab === "historial" ? histPage : 1
+  ) => {
+    if (tab === "activos") {
+      const res = await getMisPrestacionesPaginadas({
+        tenantId: currentTenant?.id,
+        grupo: "activos",
+        perPage: 50,
+      });
+      setMisActivos(res.items);
+      setTotalActivos(res.totalItems);
+      const kpis = await getMisKpisLivianos(currentTenant?.id);
+      setKpisLivianos(kpis);
+    } else {
+      const res = await getMisPrestacionesPaginadas({
+        tenantId: currentTenant?.id,
+        grupo: "historial",
+        page,
+        periodoAnio: histAnio !== "todos" ? Number(histAnio) : undefined,
+      });
+      setHistorialData(res);
+      setHistPage(res.page);
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      const [misData, todasData] = await Promise.all([
-        getMisPrestaciones(currentTenant?.id),
-        getTodasLasPrestaciones(currentTenant?.id),
+      const [kpis, kpisDir] = await Promise.all([
+        getMisKpisLivianos(currentTenant?.id),
+        getDireccionKpisLivianos(currentTenant?.id),
+        cargarListadoPrestador(),
       ]);
-      setMisPrestaciones(misData);
-      setTodasPrestaciones(todasData);
+      setKpisLivianos(kpis);
+      setKpisDireccionData(kpisDir);
+      await cargarBandejaDireccion(dirPage);
     } finally {
       setRefreshing(false);
     }
   };
 
-  // KPIs Financieros (Mis Prestaciones)
+  // KPIs Financieros (Mis Prestaciones) — desde proyección liviana (sin payloads pesados)
   const kpis = useMemo(() => {
-    // Total en Trámite: todo lo presentado que aún no fue pagado y no es borrador
-    const pendiente = misPrestaciones
-      .filter((p) =>
-        [
-          "pendiente",
-          "en_revision",
-          "visado_adjunto",
-          "aprobado",
-          "observado",
-          "observado_tesoreria",
-        ].includes(p.status)
-      )
-      .reduce((sum, p) => sum + (p.invoice_amount || 0), 0);
-
-    // Cobrado: liquidado y pagado efectivamente
-    const cobrado = misPrestaciones
-      .filter((p) => p.status === "pagado")
-      .reduce((sum, p) => sum + (p.invoice_amount || 0), 0);
-
-    // Trámites que requieren subsanación/corrección del prestador
-    const observadasCount = misPrestaciones.filter(
-      (p) => p.status === "observado" || p.status === "observado_tesoreria"
-    ).length;
-
+    const suma = kpisLivianos?.sumaPorEstado || {};
+    const conteo = kpisLivianos?.conteoPorEstado || {};
+    const enTramiteEstados = [
+      "pendiente",
+      "en_revision",
+      "visado_adjunto",
+      "aprobado",
+      "observado",
+      "observado_tesoreria",
+    ];
+    const pendiente = enTramiteEstados.reduce((sum, st) => sum + (suma[st] || 0), 0);
+    const cobrado = suma["pagado"] || 0;
+    const observadasCount =
+      (conteo["observado"] || 0) + (conteo["observado_tesoreria"] || 0);
     return { pendiente, cobrado, observadasCount };
-  }, [misPrestaciones]);
+  }, [kpisLivianos]);
 
-  // KPIs de Dirección (Auditoría Hospitalaria)
+  // KPIs de Dirección (desde proyección liviana)
   const kpisDireccion = useMemo(() => {
-    const pendientesCount = todasPrestaciones.filter((p) => ["pendiente", "en_revision", "visado_adjunto"].includes(p.status)).length;
-    const aprobadasCount = todasPrestaciones.filter((p) => p.status === "aprobado").length;
-    const montoPendiente = todasPrestaciones
-      .filter((p) => ["pendiente", "en_revision", "visado_adjunto"].includes(p.status))
-      .reduce((sum, p) => sum + (p.invoice_amount || 0), 0);
-
+    const conteo = kpisDireccionData?.conteoPorEstado || {};
+    const suma = kpisDireccionData?.sumaPorEstado || {};
+    const estadosTramite = ["pendiente", "en_revision", "visado_adjunto"];
+    const pendientesCount = estadosTramite.reduce((s, st) => s + (conteo[st] || 0), 0);
+    const aprobadasCount = conteo["aprobado"] || 0;
+    const montoPendiente = estadosTramite.reduce((s, st) => s + (suma[st] || 0), 0);
     return { pendientesCount, aprobadasCount, montoPendiente };
-  }, [todasPrestaciones]);
+  }, [kpisDireccionData]);
 
-  // Cantidad de borradores
-  const borradoresCount = useMemo(() => {
-    return misPrestaciones.filter((p) => p.status === "borrador").length;
-  }, [misPrestaciones]);
+  // Cantidad de borradores (global, desde proyección liviana)
+  const borradoresCount = kpisLivianos?.conteoPorEstado?.["borrador"] || 0;
 
-  // Lista filtrada (Mis Prestaciones)
+  // Lista de Activos refinada client-side (ya viene server-filtrada, ≤50 items)
   const misPrestacionesFiltradas = useMemo(() => {
-    if (filtroEstado === "todos") return misPrestaciones;
-    if (filtroEstado === "borradores") {
-      return misPrestaciones.filter((p) => p.status === "borrador");
-    }
-    if (filtroEstado === "pendientes") {
-      return misPrestaciones.filter((p) =>
+    if (filtroEstado === "borradores")
+      return misActivos.filter((p) => p.status === "borrador");
+    if (filtroEstado === "pendientes")
+      return misActivos.filter((p) =>
         ["pendiente", "en_revision", "visado_adjunto"].includes(p.status)
       );
-    }
-    if (filtroEstado === "observadas") {
-      return misPrestaciones.filter((p) =>
+    if (filtroEstado === "observadas")
+      return misActivos.filter((p) =>
         ["observado", "observado_tesoreria"].includes(p.status)
       );
-    }
-    return misPrestaciones.filter((p) => p.status === filtroEstado);
-  }, [misPrestaciones, filtroEstado]);
+    return misActivos;
+  }, [misActivos, filtroEstado]);
 
-  // Lista filtrada (Auditoría Dirección)
+  // Filas del Historial: filtro de estado aplicado sobre la página actual
+  const historialFilas = useMemo(() => {
+    if (histEstado === "todos") return historialData.items;
+    return historialData.items.filter((p) => p.status === histEstado);
+  }, [historialData.items, histEstado]);
+
+  // Lista de la bandeja de Dirección: ya viene filtrada/paginada desde PocketBase.
+  // Orden client-side residual solo para columnas no ordenables server-side (prestador, servicio, estado).
   const prestacionesDireccionFiltradas = useMemo(() => {
-    let result = todasPrestaciones.filter((p) => {
-      // Excluir borradores de la bandeja de dirección
-      if (p.status === "borrador") return false;
-
-      // Filtro de estado
-      if (filtroDireccionEstado === "pendientes" && !["pendiente", "en_revision", "visado_adjunto"].includes(p.status)) {
-        return false;
-      }
-      if (filtroDireccionEstado === "aprobadas" && p.status !== "aprobado") {
-        return false;
-      }
-      if (filtroDireccionEstado === "observadas" && !["observado", "observado_tesoreria"].includes(p.status)) {
-        return false;
-      }
-
-      // Filtro de Director Adjunto nominal asignado
-      if (filtroDirectorId !== "todos" && p.director_adjunto_asignado && p.director_adjunto_asignado !== filtroDirectorId) {
-        return false;
-      }
-
-      // Filtro por Servicio / Sector
-      if (filtroServicio !== "todos") {
-        const svc = p.hospital_service || "";
-        if (svc !== filtroServicio) return false;
-      }
-
-      // Filtro por Período (mes/año)
-      if (filtroPeriodo !== "todos") {
-        const periodoKey = `${p.period_month}/${p.period_year}`;
-        if (periodoKey !== filtroPeriodo) return false;
-      }
-
-      // Buscador por nombre, formulario, factura o sector
-      if (searchDireccion.trim()) {
-        const query = searchDireccion.toLowerCase();
-        const userName = `${p.expand?.user?.firstName || ""} ${p.expand?.user?.lastName || ""}`.toLowerCase();
-        const formNum = (p.form_number || "").toLowerCase();
-        const invoiceNum = (p.invoice_number || "").toLowerCase();
-        const sector = (p.hospital_service || "").toLowerCase();
-        const sectorLabel = (SECTORES_SERVICIO_MAP[p.hospital_service as SectorServicio] || "").toLowerCase();
-        return userName.includes(query) || formNum.includes(query) || invoiceNum.includes(query) || sector.includes(query) || sectorLabel.includes(query);
-      }
-
-      return true;
-    });
-
-    // Ordenamiento
-    if (sortColumn) {
-      result = [...result].sort((a, b) => {
-        let valA: string | number = "";
-        let valB: string | number = "";
-
-        switch (sortColumn) {
-          case "form_number":
-            valA = a.form_number || "";
-            valB = b.form_number || "";
-            break;
-          case "prestador":
-            valA = `${a.expand?.user?.firstName || ""} ${a.expand?.user?.lastName || ""}`.trim().toLowerCase();
-            valB = `${b.expand?.user?.firstName || ""} ${b.expand?.user?.lastName || ""}`.trim().toLowerCase();
-            break;
-          case "servicio":
-            valA = (SECTORES_SERVICIO_MAP[a.hospital_service as SectorServicio] || a.hospital_service || "").toLowerCase();
-            valB = (SECTORES_SERVICIO_MAP[b.hospital_service as SectorServicio] || b.hospital_service || "").toLowerCase();
-            break;
-          case "periodo":
-            valA = (a.period_year || 0) * 100 + (a.period_month || 0);
-            valB = (b.period_year || 0) * 100 + (b.period_month || 0);
-            break;
-          case "monto":
-            valA = a.invoice_amount || 0;
-            valB = b.invoice_amount || 0;
-            break;
-          case "estado":
-            valA = a.status;
-            valB = b.status;
-            break;
-        }
-
-        if (typeof valA === "number" && typeof valB === "number") {
-          return sortDirection === "asc" ? valA - valB : valB - valA;
-        }
-        const strA = String(valA);
-        const strB = String(valB);
-        return sortDirection === "asc" ? strA.localeCompare(strB) : strB.localeCompare(strA);
-      });
+    if (!sortColumn || ["form_number", "periodo", "monto"].includes(sortColumn)) {
+      return dirData.items;
     }
-
-    return result;
-  }, [todasPrestaciones, filtroDireccionEstado, filtroDirectorId, filtroServicio, filtroPeriodo, searchDireccion, sortColumn, sortDirection]);
-
-  // Períodos únicos disponibles para el filtro
-  const periodosDisponibles = useMemo(() => {
-    const periodos = new Set<string>();
-    todasPrestaciones.forEach((p) => {
-      if (p.status !== "borrador" && p.period_month && p.period_year) {
-        periodos.add(`${p.period_month}/${p.period_year}`);
+    const items = [...dirData.items];
+    const dir = sortDirection === "asc" ? 1 : -1;
+    items.sort((a, b) => {
+      let valA: string | number = "";
+      let valB: string | number = "";
+      switch (sortColumn) {
+        case "prestador":
+          valA = `${a.expand?.user?.lastName || ""} ${a.expand?.user?.firstName || ""}`.trim().toLowerCase();
+          valB = `${b.expand?.user?.lastName || ""} ${b.expand?.user?.firstName || ""}`.trim().toLowerCase();
+          break;
+        case "servicio":
+          valA = (SECTORES_SERVICIO_MAP[a.hospital_service as SectorServicio] || a.hospital_service || "").toLowerCase();
+          valB = (SECTORES_SERVICIO_MAP[b.hospital_service as SectorServicio] || b.hospital_service || "").toLowerCase();
+          break;
+        case "estado":
+          valA = a.status;
+          valB = b.status;
+          break;
       }
+      if (typeof valA === "number" && typeof valB === "number") return (valA - valB) * dir;
+      return String(valA).localeCompare(String(valB)) * dir;
     });
-    return Array.from(periodos).sort((a, b) => {
-      const [mA, yA] = a.split("/").map(Number);
-      const [mB, yB] = b.split("/").map(Number);
-      return (yB * 100 + mB) - (yA * 100 + mA);
-    });
-  }, [todasPrestaciones]);
+    return items;
+  }, [dirData.items, sortColumn, sortDirection]);
 
-  // Servicios únicos presentes en los datos para el filtro
+  // Períodos únicos disponibles (desde proyección liviana)
+  const periodosDisponibles = kpisDireccionData?.periodos || [];
+
+  // Servicios únicos presentes en los datos (ordenados por etiqueta)
   const serviciosDisponibles = useMemo(() => {
-    const servicios = new Set<string>();
-    todasPrestaciones.forEach((p) => {
-      if (p.status !== "borrador" && p.hospital_service) {
-        servicios.add(p.hospital_service);
-      }
-    });
-    return Array.from(servicios).sort((a, b) => {
+    return [...(kpisDireccionData?.servicios || [])].sort((a, b) => {
       const labelA = SECTORES_SERVICIO_MAP[a as SectorServicio] || a;
       const labelB = SECTORES_SERVICIO_MAP[b as SectorServicio] || b;
       return labelA.localeCompare(labelB);
     });
-  }, [todasPrestaciones]);
+  }, [kpisDireccionData]);
 
   // Helpers de selección
   const toggleSelect = (id: string) => {
@@ -460,12 +525,12 @@ export default function PrestadoresPage() {
     }
   };
 
-  // Monto total de seleccionadas
+  // Monto total de seleccionadas (sobre la página visible de la bandeja)
   const montoSeleccionado = useMemo(() => {
-    return todasPrestaciones
+    return dirData.items
       .filter((p) => selectedIds.has(p.id))
       .reduce((sum, p) => sum + (p.invoice_amount || 0), 0);
-  }, [selectedIds, todasPrestaciones]);
+  }, [selectedIds, dirData.items]);
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
@@ -612,7 +677,7 @@ export default function PrestadoresPage() {
                 }`}
               >
                 <UserCheck className="w-4 h-4 text-emerald-600" />
-                <span>Mis Presentaciones Personales ({misPrestaciones.length})</span>
+                <span>Mis Presentaciones Personales ({totalActivos})</span>
               </button>
             </div>
           )}
@@ -706,7 +771,7 @@ export default function PrestadoresPage() {
                           : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                       }`}
                     >
-                      Todas ({todasPrestaciones.filter(p => p.status !== "borrador").length})
+                      Todas ({kpisDireccionData?.totalRecords ?? 0})
                     </button>
                   </div>
 
@@ -794,7 +859,7 @@ export default function PrestadoresPage() {
 
                   {/* Conteo de resultados */}
                   <span className="ml-auto text-[11px] text-slate-400">
-                    {prestacionesDireccionFiltradas.length} resultado{prestacionesDireccionFiltradas.length !== 1 ? "s" : ""}
+                    {dirData.totalItems} resultado{dirData.totalItems !== 1 ? "s" : ""}
                   </span>
                 </div>
               </div>
@@ -818,6 +883,7 @@ export default function PrestadoresPage() {
                     </p>
                   </div>
                 ) : (
+                  <>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs text-left">
                       <thead className="bg-slate-50/80 dark:bg-slate-950/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
@@ -943,6 +1009,57 @@ export default function PrestadoresPage() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Paginación Bandeja Dirección */}
+                  {dirData.totalPages > 1 && (
+                    <div className="flex items-center justify-between px-3 py-2 border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-xs text-slate-400">
+                        Página {dirData.page} de {dirData.totalPages} •{" "}
+                        {dirData.totalItems} registros
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={dirData.page <= 1}
+                          onClick={() => cargarBandejaDireccion(dirData.page - 1)}
+                          className="h-7 px-2.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          ‹ Anterior
+                        </button>
+                        {(() => {
+                          const total = dirData.totalPages;
+                          const cur = dirData.page;
+                          const start = Math.max(1, Math.min(cur - 2, total - 4));
+                          const end = Math.min(total, start + 4);
+                          const paginas = [];
+                          for (let i = start; i <= end; i++) paginas.push(i);
+                          return paginas.map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => cargarBandejaDireccion(n)}
+                              className={`h-7 w-7 rounded-lg text-xs font-semibold transition-colors ${
+                                n === cur
+                                  ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                                  : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              {n}
+                            </button>
+                          ));
+                        })()}
+                        <button
+                          type="button"
+                          disabled={dirData.page >= dirData.totalPages}
+                          onClick={() => cargarBandejaDireccion(dirData.page + 1)}
+                          className="h-7 px-2.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Siguiente ›
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  </>
                 )}
 
                 {/* Barra flotante de Acciones Masivas */}
@@ -1008,9 +1125,12 @@ export default function PrestadoresPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* 1. Pendiente */}
                 <Card
-                  onClick={() => setFiltroEstado("pendientes")}
+                  onClick={() => {
+                    setTabListado("activos");
+                    setFiltroEstado("pendientes");
+                  }}
                   className={`border transition-all rounded-2xl cursor-pointer hover:shadow-md ${
-                    filtroEstado === "pendientes"
+                    tabListado === "activos" && filtroEstado === "pendientes"
                       ? "ring-2 ring-amber-500 border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-slate-900"
                       : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs"
                   }`}
@@ -1031,9 +1151,12 @@ export default function PrestadoresPage() {
 
                 {/* 2. Cobrado */}
                 <Card
-                  onClick={() => setFiltroEstado("pagado")}
+                  onClick={() => {
+                    setTabListado("historial");
+                    setHistEstado("pagado");
+                  }}
                   className={`border transition-all rounded-2xl cursor-pointer hover:shadow-md ${
-                    filtroEstado === "pagado"
+                    tabListado === "historial" && histEstado === "pagado"
                       ? "ring-2 ring-emerald-500 border-emerald-300 dark:border-emerald-700 bg-emerald-50/40 dark:bg-slate-900"
                       : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs"
                   }`}
@@ -1054,9 +1177,12 @@ export default function PrestadoresPage() {
 
                 {/* 3. Observaciones */}
                 <Card
-                  onClick={() => setFiltroEstado("observadas")}
+                  onClick={() => {
+                    setTabListado("activos");
+                    setFiltroEstado("observadas");
+                  }}
                   className={`border transition-all rounded-2xl cursor-pointer hover:shadow-md ${
-                    filtroEstado === "observadas"
+                    tabListado === "activos" && filtroEstado === "observadas"
                       ? "ring-2 ring-rose-500 border-rose-300 dark:border-rose-700 bg-rose-50/40 dark:bg-slate-900"
                       : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs"
                   }`}
@@ -1076,87 +1202,137 @@ export default function PrestadoresPage() {
                 </Card>
               </div>
 
-              {/* Filtros Tabs */}
+              {/* Tabs de nivel superior: Mis Trámites | Historial */}
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
                   <button
                     type="button"
-                    onClick={() => setFiltroEstado("todos")}
+                    onClick={() => setTabListado("activos")}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                      filtroEstado === "todos"
+                      tabListado === "activos"
                         ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-2xs"
                         : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
                     }`}
                   >
-                    Todas ({misPrestaciones.length})
+                    Mis Trámites ({totalActivos})
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setFiltroEstado("borradores")}
+                    onClick={() => setTabListado("historial")}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                      filtroEstado === "borradores"
-                        ? "bg-slate-600 text-white shadow-2xs"
+                      tabListado === "historial"
+                        ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-2xs"
                         : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
                     }`}
                   >
-                    Borradores ({borradoresCount})
+                    Historial ({historialData.totalItems})
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setFiltroEstado("pendientes")}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                      filtroEstado === "pendientes"
-                        ? "bg-amber-500 text-white shadow-2xs"
-                        : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-                    }`}
-                  >
-                    En Trámite
-                  </button>
+                  {tabListado === "activos" && (
+                    <>
+                      <span className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1 shrink-0" />
 
-                  <button
-                    type="button"
-                    onClick={() => setFiltroEstado("aprobado")}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                      filtroEstado === "aprobado"
-                        ? "bg-emerald-600 text-white shadow-2xs"
-                        : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-                    }`}
-                  >
-                    Aprobadas
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => setFiltroEstado("todos")}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                          filtroEstado === "todos"
+                            ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-2xs"
+                            : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                        }`}
+                      >
+                        Todas ({misActivos.length})
+                      </button>
 
-                  {kpis.observadasCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setFiltroEstado("observadas")}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 ${
-                        filtroEstado === "observadas"
-                          ? "bg-rose-600 text-white shadow-2xs"
-                          : "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                      }`}
-                    >
-                      <span>Observadas</span>
-                      <span className={`px-1.5 py-0.2 text-[10px] font-bold rounded-full ${
-                        filtroEstado === "observadas" ? "bg-white text-rose-600" : "bg-rose-100 text-rose-700"
-                      }`}>
-                        {kpis.observadasCount}
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setFiltroEstado("borradores")}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                          filtroEstado === "borradores"
+                            ? "bg-slate-600 text-white shadow-2xs"
+                            : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                        }`}
+                      >
+                        Borradores ({borradoresCount})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFiltroEstado("pendientes")}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                          filtroEstado === "pendientes"
+                            ? "bg-amber-500 text-white shadow-2xs"
+                            : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                        }`}
+                      >
+                        En Trámite
+                      </button>
+
+                      {kpis.observadasCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setFiltroEstado("observadas")}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 ${
+                            filtroEstado === "observadas"
+                              ? "bg-rose-600 text-white shadow-2xs"
+                              : "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                          }`}
+                        >
+                          <span>Observadas</span>
+                          <span className={`px-1.5 py-0.2 text-[10px] font-bold rounded-full ${
+                            filtroEstado === "observadas" ? "bg-white text-rose-600" : "bg-rose-100 text-rose-700"
+                          }`}>
+                            {kpis.observadasCount}
+                          </span>
+                        </button>
+                      )}
+                    </>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => setFiltroEstado("pagado")}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                      filtroEstado === "pagado"
-                        ? "bg-blue-600 text-white shadow-2xs"
-                        : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-                    }`}
-                  >
-                    Pagadas
-                  </button>
+                  {tabListado === "historial" && (
+                    <>
+                      <span className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1 shrink-0" />
+
+                      <Select
+                        value={histAnio}
+                        onValueChange={(v) => {
+                          setHistAnio(v);
+                          setHistPage(1);
+                          getMisPrestacionesPaginadas({
+                            tenantId: currentTenant?.id,
+                            grupo: "historial",
+                            page: 1,
+                            periodoAnio: v !== "todos" ? Number(v) : undefined,
+                          }).then(setHistorialData);
+                        }}
+                      >
+                        <SelectTrigger className="h-7 w-[110px] text-xs bg-white dark:bg-slate-900">
+                          <SelectValue placeholder="Año" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos" className="text-xs">Todos los años</SelectItem>
+                          {(kpisLivianos?.anios || []).map((a) => (
+                            <SelectItem key={a} value={String(a)} className="text-xs">{a}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={histEstado}
+                        onValueChange={(v) => setHistEstado(v as "todos" | "aprobado" | "pagado")}
+                      >
+                        <SelectTrigger className="h-7 w-[120px] text-xs bg-white dark:bg-slate-900">
+                          <SelectValue placeholder="Estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos" className="text-xs">Todos</SelectItem>
+                          <SelectItem value="aprobado" className="text-xs">Aprobadas</SelectItem>
+                          <SelectItem value="pagado" className="text-xs">Pagadas</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </>
+                  )}
                 </div>
 
                 <Button
@@ -1171,41 +1347,186 @@ export default function PrestadoresPage() {
                 </Button>
               </div>
 
-              {/* Lista de Tarjetas */}
+              {/* Contenido según tab */}
               {loading ? (
                 <div className="p-16 text-center text-slate-400 flex items-center justify-center gap-2">
                   <Loader2 className="w-5 h-5 animate-spin" /> Cargando tus prestaciones...
                 </div>
-              ) : misPrestacionesFiltradas.length === 0 ? (
-                <div className="p-16 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-white/50 dark:bg-slate-900/50 space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center">
-                    <FileSpreadsheet className="w-6 h-6" />
+              ) : tabListado === "activos" ? (
+                misPrestacionesFiltradas.length === 0 ? (
+                  <div className="p-16 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-white/50 dark:bg-slate-900/50 space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center">
+                      <FileSpreadsheet className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                      No hay trámites activos en este filtro
+                    </h4>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                      Iniciá una nueva solicitud de guardias o extensión horaria presionando el botón superior.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => setModalSelectorOpen(true)}
+                      className="h-8 px-3 bg-[#08487A] hover:bg-[#06375d] text-white text-xs rounded-xl"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Crear Solicitud
+                    </Button>
                   </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {misPrestacionesFiltradas.map((p) => (
+                      <TarjetaPrestacion
+                        key={p.id}
+                        prestacion={p}
+                        onClick={() => setPrestacionSeleccionada(p)}
+                      />
+                    ))}
+                  </div>
+                )
+              ) : historialFilas.length === 0 ? (
+                <div className="p-16 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-white/50 dark:bg-slate-900/50 space-y-2">
+                  <History className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600" />
                   <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">
-                    No hay presentaciones en este estado
+                    Sin resultados en el Historial
                   </h4>
                   <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                    Iniciá una nueva solicitud de guardias o extensión horaria presionando el botón superior.
+                    Probá cambiando el año o el estado. Las presentaciones aprobadas y pagadas se archivan aquí.
                   </p>
-                  <Button
-                    size="sm"
-                    onClick={() => setModalSelectorOpen(true)}
-                    className="h-8 px-3 bg-[#08487A] hover:bg-[#06375d] text-white text-xs rounded-xl"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" /> Crear Solicitud
-                  </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {misPrestacionesFiltradas.map((p) => (
-                    <TarjetaPrestacion
-                      key={p.id}
-                      prestacion={p}
-                      onClick={() => setPrestacionSeleccionada(p)}
-                      
-                    />
-                  ))}
-                </div>
+                <>
+                  <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-gray-500 dark:text-slate-400 uppercase font-semibold text-[11px] tracking-wider">
+                          <tr>
+                            <th className="py-2.5 px-3">Trámite</th>
+                            <th className="py-2.5 px-3">Período</th>
+                            <th className="py-2.5 px-3">Tipo</th>
+                            <th className="py-2.5 px-3 text-right">Monto</th>
+                            <th className="py-2.5 px-3 text-center">Estado</th>
+                            <th className="py-2.5 px-3">Fecha de Pago</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                          {historialFilas.map((p) => {
+                            const cfg = ESTADOS_PRESTACION_CONFIG[p.status];
+                            return (
+                              <tr
+                                key={p.id}
+                                onClick={() => setPrestacionSeleccionada(p)}
+                                className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 cursor-pointer transition-colors"
+                              >
+                                <td className="py-2.5 px-3 font-mono font-semibold text-gray-800 dark:text-slate-200">
+                                  {p.form_number || "—"}
+                                </td>
+                                <td className="py-2.5 px-3 text-gray-600 dark:text-slate-400">
+                                  {String(p.period_month).padStart(2, "0")}/{p.period_year}
+                                </td>
+                                <td className="py-2.5 px-3 text-gray-600 dark:text-slate-400">
+                                  {p.service_type === "guardia" ? "Guardias (G)" : "Extensión Horaria (EH)"}
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-mono font-bold text-gray-800 dark:text-slate-200">
+                                  {formatMoney(p.invoice_amount)}
+                                </td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <span
+                                    className={`inline-block px-2 py-0.5 rounded-full border text-[10px] font-semibold ${cfg?.bgLight || "bg-slate-100 border-slate-200"} ${cfg?.textDark || "text-slate-600"}`}
+                                  >
+                                    {cfg?.label || p.status}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-gray-500 dark:text-slate-400">
+                                  {(p.paid_at || p.treasury_paid_at)
+                                    ? (p.paid_at || p.treasury_paid_at)!.split("T")[0].split("-").reverse().join("/")
+                                    : "—"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Card>
+
+                  {/* Paginación */}
+                  {historialData.totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-slate-400">
+                        Página {historialData.page} de {historialData.totalPages} •{" "}
+                        {historialData.totalItems} registros
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={historialData.page <= 1}
+                          onClick={() => {
+                            const target = historialData.page - 1;
+                            setHistPage(target);
+                            getMisPrestacionesPaginadas({
+                              tenantId: currentTenant?.id,
+                              grupo: "historial",
+                              page: target,
+                              periodoAnio: histAnio !== "todos" ? Number(histAnio) : undefined,
+                            }).then(setHistorialData);
+                          }}
+                          className="h-7 px-2.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          ‹ Anterior
+                        </button>
+
+                        {(() => {
+                          const total = historialData.totalPages;
+                          const cur = historialData.page;
+                          const start = Math.max(1, Math.min(cur - 2, total - 4));
+                          const end = Math.min(total, start + 4);
+                          const paginas = [];
+                          for (let i = start; i <= end; i++) paginas.push(i);
+                          return paginas.map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => {
+                                setHistPage(n);
+                                getMisPrestacionesPaginadas({
+                                  tenantId: currentTenant?.id,
+                                  grupo: "historial",
+                                  page: n,
+                                  periodoAnio: histAnio !== "todos" ? Number(histAnio) : undefined,
+                                }).then(setHistorialData);
+                              }}
+                              className={`h-7 w-7 rounded-lg text-xs font-semibold transition-colors ${
+                                n === cur
+                                  ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                                  : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              {n}
+                            </button>
+                          ));
+                        })()}
+
+                        <button
+                          type="button"
+                          disabled={historialData.page >= historialData.totalPages}
+                          onClick={() => {
+                            const target = historialData.page + 1;
+                            setHistPage(target);
+                            getMisPrestacionesPaginadas({
+                              tenantId: currentTenant?.id,
+                              grupo: "historial",
+                              page: target,
+                              periodoAnio: histAnio !== "todos" ? Number(histAnio) : undefined,
+                            }).then(setHistorialData);
+                          }}
+                          className="h-7 px-2.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Siguiente ›
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -1254,8 +1575,8 @@ export default function PrestadoresPage() {
           prestacion={prestacionSeleccionada}
           perfil={perfil}
           onEliminarBorrador={(id) => {
-            setMisPrestaciones((prev) => prev.filter((p) => p.id !== id));
-            setTodasPrestaciones((prev) => prev.filter((p) => p.id !== id));
+            setMisActivos((prev) => prev.filter((p) => p.id !== id));
+            getMisKpisLivianos(currentTenant?.id).then(setKpisLivianos);
             setPrestacionSeleccionada(null);
           }}
           onRetomarBorrador={(borrador) => {
@@ -1281,12 +1602,18 @@ export default function PrestadoresPage() {
           prestacion={prestacionParaAuditar}
           currentUserName={firstName || "Director Asistencial"}
           onActualizado={(actualizada) => {
-            setTodasPrestaciones((prev) =>
+            setMisActivos((prev) =>
               prev.map((p) => (p.id === actualizada.id ? actualizada : p))
             );
-            setMisPrestaciones((prev) =>
-              prev.map((p) => (p.id === actualizada.id ? actualizada : p))
-            );
+            setHistorialData((prev) => ({
+              ...prev,
+              items: prev.items.map((p) =>
+                p.id === actualizada.id ? actualizada : p
+              ),
+            }));
+            getMisKpisLivianos(currentTenant?.id).then(setKpisLivianos);
+            getDireccionKpisLivianos(currentTenant?.id).then(setKpisDireccionData);
+            cargarBandejaDireccion(dirPage);
             setPrestacionParaAuditar(null);
           }}
         />

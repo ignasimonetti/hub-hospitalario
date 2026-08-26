@@ -18,6 +18,7 @@ import {
   CATEGORIAS_OBSERVACION_FISCAL,
   RegistroLoteBancarioExport,
   OrdenDePagoConfigPayload,
+  ComprobanteBancarioAdjunto,
 } from "@/types/tesoreria";
 import Papa from "papaparse";
 
@@ -643,6 +644,123 @@ export async function guardarOrdenDePagoConfigLote(
     );
   } catch {
     // Ignorar si PB no tiene la colección
+  }
+
+  return targetLote;
+}
+
+/**
+ * Sube uno o varios comprobantes bancarios en formato PDF al Lote.
+ * Guarda en PocketBase si la colección existe y almacena referencias locales.
+ */
+export async function subirComprobantesBancariosLote(
+  loteId: string,
+  archivos: File[],
+  tenantId?: string
+): Promise<LoteTesoreria> {
+  const lotes = await getLotesTesoreria(tenantId);
+  const targetLote = lotes.find((l) => l.id === loteId);
+  if (!targetLote) throw new Error("Lote no encontrado");
+
+  const now = new Date().toISOString();
+  const nuevosAdjuntos: { id: string; name: string; url: string; size: number; uploaded_at: string }[] = [];
+
+  for (const file of archivos) {
+    const fileId = `comp-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    
+    // Crear una URL de objeto local / base64 para previsualización inmediata si PB no estuviese disponible
+    const localUrl = URL.createObjectURL(file);
+    nuevosAdjuntos.push({
+      id: fileId,
+      name: file.name,
+      url: localUrl,
+      size: file.size,
+      uploaded_at: now,
+    });
+  }
+
+  // Combinar comprobantes existentes con los nuevos
+  const comprobantesActuales: ComprobanteBancarioAdjunto[] = Array.isArray(targetLote.comprobantes_bancarios)
+    ? (targetLote.comprobantes_bancarios as any[]).map((c) =>
+        typeof c === "string"
+          ? { id: c, name: c, url: "#", uploaded_at: now }
+          : c
+      )
+    : [];
+
+  targetLote.comprobantes_bancarios = [...comprobantesActuales, ...nuevosAdjuntos];
+  targetLote.updated = now;
+  saveLocalLotes(lotes);
+
+  // Intentar sincronizar multipart en PocketBase
+  try {
+    const formData = new FormData();
+    for (const file of archivos) {
+      formData.append("comprobantes_bancarios", file);
+    }
+    const updatedPB = await pocketbase
+      .collection("tesoreria_lotes")
+      .update<LoteTesoreria>(targetLote.id, formData, { requestKey: null });
+
+    if (updatedPB && updatedPB.comprobantes_bancarios) {
+      // Si PB devuelve nombres de archivos, mapear URLs oficiales de PocketBase
+      const pbFileNames = Array.isArray(updatedPB.comprobantes_bancarios)
+        ? updatedPB.comprobantes_bancarios
+        : [updatedPB.comprobantes_bancarios];
+
+      const pbAdjuntos: ComprobanteBancarioAdjunto[] = pbFileNames.map((fn: any) => {
+        if (typeof fn === "string") {
+          return {
+            id: fn,
+            name: fn,
+            url: pocketbase.files.getUrl(updatedPB, fn),
+            uploaded_at: now,
+          };
+        }
+        return fn;
+      });
+      targetLote.comprobantes_bancarios = pbAdjuntos;
+      saveLocalLotes(lotes);
+    }
+  } catch (pbErr) {
+    console.warn("Sincronización de comprobantes en PB (fallback local activo):", pbErr);
+  }
+
+  return targetLote;
+}
+
+/**
+ * Elimina un comprobante bancario adjunto de un Lote.
+ */
+export async function eliminarComprobanteBancarioLote(
+  loteId: string,
+  comprobanteId: string,
+  tenantId?: string
+): Promise<LoteTesoreria> {
+  const lotes = await getLotesTesoreria(tenantId);
+  const targetLote = lotes.find((l) => l.id === loteId);
+  if (!targetLote) throw new Error("Lote no encontrado");
+
+  if (Array.isArray(targetLote.comprobantes_bancarios)) {
+    targetLote.comprobantes_bancarios = (targetLote.comprobantes_bancarios as any[]).filter((c) => {
+      if (typeof c === "string") return c !== comprobanteId;
+      return c.id !== comprobanteId && c.name !== comprobanteId;
+    });
+  }
+
+  targetLote.updated = new Date().toISOString();
+  saveLocalLotes(lotes);
+
+  try {
+    await pocketbase.collection("tesoreria_lotes").update(
+      targetLote.id,
+      {
+        comprobantes_bancarios: targetLote.comprobantes_bancarios,
+      },
+      { requestKey: null }
+    );
+  } catch {
+    // Ignorar si no está en PB
   }
 
   return targetLote;

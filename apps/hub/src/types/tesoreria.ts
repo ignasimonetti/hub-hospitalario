@@ -36,6 +36,14 @@ export interface OrdenDePagoConfigPayload {
   observaciones?: string;
 }
 
+export interface ComprobanteBancarioAdjunto {
+  id: string;
+  name: string;
+  url: string;
+  size?: number;
+  uploaded_at: string;
+}
+
 export interface LoteTesoreria {
   id: string;
   tenant: string;
@@ -53,6 +61,7 @@ export interface LoteTesoreria {
   numero_resolucion?: string; // Ej: "RESOL-2026-2244-E-GDESDE-CISB#MS"
   fecha_resolucion?: string;
   op_config?: OrdenDePagoConfigPayload; // Datos presupuestarios y bancarios configurados
+  comprobantes_bancarios?: string[] | ComprobanteBancarioAdjunto[]; // Archivos PDF de acreditación bancaria
   monto_bruto_total: number;
   monto_retenciones_total: number;
   monto_neto_total: number;

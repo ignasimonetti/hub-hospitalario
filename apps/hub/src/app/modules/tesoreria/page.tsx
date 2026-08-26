@@ -78,6 +78,7 @@ import {
   FileCheck2,
   ChevronRight,
   ArrowLeft,
+  FileText,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 
@@ -1019,6 +1020,13 @@ export default function TesoreriaPage() {
                                 {lote.numero_resolucion && (
                                   <div className="p-1.5 rounded bg-purple-50 dark:bg-purple-950/30 text-[10px] text-purple-800 dark:text-purple-300 font-mono truncate">
                                     📜 {lote.numero_resolucion}
+                                  </div>
+                                )}
+
+                                {Array.isArray(lote.comprobantes_bancarios) && lote.comprobantes_bancarios.length > 0 && (
+                                  <div className="flex items-center gap-1 text-[10px] text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 p-1.5 rounded border border-blue-200/50 dark:border-blue-900/50">
+                                    <FileText className="w-3 h-3 text-blue-600" />
+                                    <span>{lote.comprobantes_bancarios.length} comprobante(s) bancario(s) adjunto(s)</span>
                                   </div>
                                 )}
                               </CardContent>

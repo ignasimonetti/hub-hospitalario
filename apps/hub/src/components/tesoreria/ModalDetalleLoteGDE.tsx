@@ -11,6 +11,8 @@ import {
   quitarPrestacionDeLote,
   eliminarLoteTesoreria,
   toggleCierreLoteTesoreria,
+  subirComprobantesBancariosLote,
+  eliminarComprobanteBancarioLote,
   ESTADOS_LOTE_ABIERTO,
 } from "@/lib/services/tesoreriaService";
 import { ModalExportarDetalleLote } from "@/components/tesoreria/ModalExportarDetalleLote";
@@ -43,6 +45,9 @@ import {
   FileText,
   Pencil,
   RotateCcw,
+  UploadCloud,
+  Paperclip,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -240,6 +245,54 @@ export function ModalDetalleLoteGDE({
 
   const handleExportarBSE = () => {
     setIsExportOpen(true);
+  };
+
+  const [isUploadingComprobantes, setIsUploadingComprobantes] = useState(false);
+  const [deletingComprobanteId, setDeletingComprobanteId] = useState<string | null>(null);
+
+  const handleSubirComprobantes = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileList = Array.from(files);
+    const validFiles = fileList.filter((f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"));
+
+    if (validFiles.length === 0) {
+      toast.error("Solo se permiten archivos en formato PDF");
+      return;
+    }
+
+    try {
+      setIsUploadingComprobantes(true);
+      await subirComprobantesBancariosLote(lote.id, validFiles);
+      toast.success(
+        validFiles.length === 1
+          ? "Comprobante bancario adjuntado con éxito"
+          : `${validFiles.length} comprobantes bancarios adjuntados con éxito`
+      );
+      await onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || "Error al subir comprobantes bancarios");
+    } finally {
+      setIsUploadingComprobantes(false);
+      // Reset input
+      e.target.value = "";
+    }
+  };
+
+  const handleEliminarComprobante = async (comprobanteId: string) => {
+    if (!confirm("¿Está seguro de que desea quitar este comprobante bancario del lote?")) return;
+
+    try {
+      setDeletingComprobanteId(comprobanteId);
+      await eliminarComprobanteBancarioLote(lote.id, comprobanteId);
+      toast.success("Comprobante eliminado");
+      await onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || "Error al eliminar comprobante");
+    } finally {
+      setDeletingComprobanteId(null);
+    }
   };
 
   const handleQuitarPrestacion = async (prestacionId: string, nombreMedico: string) => {
@@ -723,6 +776,115 @@ export function ModalDetalleLoteGDE({
               </Button>
             </div>
           )}
+
+          {/* Sección de Comprobantes Bancarios de Acreditación / Transferencia */}
+          <div className="p-4 rounded-xl border border-blue-200/80 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-950/20 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="space-y-0.5">
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <Paperclip className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  Comprobantes Bancarios de Acreditación / Transferencia (Home Banking PDF)
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Adjunte los comprobantes oficiales descargados del banco (individuales o unificados en PDF) como respaldo documental del lote.
+                </p>
+              </div>
+
+              {/* Botón de Subida Múltiple */}
+              <div className="relative">
+                <input
+                  type="file"
+                  id={`upload-comprobantes-${lote.id}`}
+                  multiple
+                  accept="application/pdf"
+                  onChange={handleSubirComprobantes}
+                  disabled={isUploadingComprobantes}
+                  className="hidden"
+                />
+                <label htmlFor={`upload-comprobantes-${lote.id}`}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={isUploadingComprobantes}
+                    className="h-8 text-xs font-semibold bg-white dark:bg-slate-900 border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 cursor-pointer flex items-center gap-1.5 pointer-events-none"
+                  >
+                    {isUploadingComprobantes ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <UploadCloud className="h-3.5 w-3.5" />
+                    )}
+                    Adjuntar Comprobantes (PDF)
+                  </Button>
+                </label>
+              </div>
+            </div>
+
+            {/* Listado de Comprobantes Adjuntos */}
+            {Array.isArray(lote.comprobantes_bancarios) && lote.comprobantes_bancarios.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                {lote.comprobantes_bancarios.map((comp: any, idx: number) => {
+                  const compId = typeof comp === "string" ? comp : comp.id || String(idx);
+                  const compName = typeof comp === "string" ? comp : comp.name || `Comprobante_${idx + 1}.pdf`;
+                  const compUrl = typeof comp === "string" ? "#" : comp.url || "#";
+                  const compSize = typeof comp === "object" && comp.size ? `${(comp.size / (1024 * 1024)).toFixed(2)} MB` : null;
+
+                  return (
+                    <div
+                      key={compId}
+                      className="flex items-center justify-between gap-2 p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="h-4 w-4 text-red-500 shrink-0" />
+                        <div className="truncate">
+                          <p className="font-semibold text-slate-800 dark:text-slate-200 truncate" title={compName}>
+                            {compName}
+                          </p>
+                          {compSize && (
+                            <span className="text-[10px] text-slate-400 font-mono">{compSize}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {compUrl && compUrl !== "#" && (
+                          <a
+                            href={compUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-md transition-colors"
+                            title="Ver / Descargar PDF"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleEliminarComprobante(compId)}
+                          disabled={deletingComprobanteId === compId}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-md transition-colors"
+                          title="Quitar archivo"
+                        >
+                          {deletingComprobanteId === compId ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-3 border border-dashed border-blue-200 dark:border-blue-900/60 rounded-lg bg-white/50 dark:bg-slate-900/50">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  No hay comprobantes bancarios adjuntos a este lote aún.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">

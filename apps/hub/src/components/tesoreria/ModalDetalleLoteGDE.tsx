@@ -77,6 +77,10 @@ export function ModalDetalleLoteGDE({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isMarkingPaid, setIsMarkingPaid] = useState<string | null>(null); // 'bulk' o ID específico
   const [isRevertingId, setIsRevertingId] = useState<string | null>(null);
+  const [isUploadingComprobantes, setIsUploadingComprobantes] = useState(false);
+  const [deletingComprobanteId, setDeletingComprobanteId] = useState<string | null>(null);
+  const [isUploadingRetenciones, setIsUploadingRetenciones] = useState(false);
+  const [deletingRetencionId, setDeletingRetencionId] = useState<string | null>(null);
 
   if (!lote) return null;
 
@@ -249,9 +253,6 @@ export function ModalDetalleLoteGDE({
     setIsExportOpen(true);
   };
 
-  const [isUploadingComprobantes, setIsUploadingComprobantes] = useState(false);
-  const [deletingComprobanteId, setDeletingComprobanteId] = useState<string | null>(null);
-
   const handleSubirComprobantes = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -296,9 +297,6 @@ export function ModalDetalleLoteGDE({
       setDeletingComprobanteId(null);
     }
   };
-
-  const [isUploadingRetenciones, setIsUploadingRetenciones] = useState(false);
-  const [deletingRetencionId, setDeletingRetencionId] = useState<string | null>(null);
 
   const handleSubirRetenciones = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

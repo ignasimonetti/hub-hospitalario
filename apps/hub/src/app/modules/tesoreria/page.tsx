@@ -1311,7 +1311,7 @@ export default function TesoreriaPage() {
         onClose={() => setLoteDetalle(null)}
         lote={loteDetalle}
         prestacionesDelLote={prestaciones.filter((p) =>
-          loteDetalle?.prestaciones_ids.includes(p.id)
+          loteDetalle?.prestaciones_ids?.includes(p.id)
         )}
         onRefresh={cargarDatos}
       />

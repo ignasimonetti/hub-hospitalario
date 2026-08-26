@@ -767,6 +767,119 @@ export async function eliminarComprobanteBancarioLote(
 }
 
 /**
+ * Sube uno o varios comprobantes de retenciones fiscales (DGR, AFIP/ARCA, etc.) en formato PDF al Lote.
+ * Guarda en PocketBase si la colección existe y almacena referencias locales.
+ */
+export async function subirComprobantesRetencionesLote(
+  loteId: string,
+  archivos: File[],
+  tenantId?: string
+): Promise<LoteTesoreria> {
+  const lotes = await getLotesTesoreria(tenantId);
+  const targetLote = lotes.find((l) => l.id === loteId);
+  if (!targetLote) throw new Error("Lote no encontrado");
+
+  const now = new Date().toISOString();
+  const nuevosAdjuntos: ComprobanteBancarioAdjunto[] = [];
+
+  for (const file of archivos) {
+    const fileId = `ret-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    const localUrl = URL.createObjectURL(file);
+    nuevosAdjuntos.push({
+      id: fileId,
+      name: file.name,
+      url: localUrl,
+      size: file.size,
+      uploaded_at: now,
+    });
+  }
+
+  const comprobantesActuales: ComprobanteBancarioAdjunto[] = Array.isArray(targetLote.comprobantes_retenciones)
+    ? (targetLote.comprobantes_retenciones as any[]).map((c) =>
+        typeof c === "string"
+          ? { id: c, name: c, url: "#", uploaded_at: now }
+          : c
+      )
+    : [];
+
+  targetLote.comprobantes_retenciones = [...comprobantesActuales, ...nuevosAdjuntos];
+  targetLote.updated = now;
+  saveLocalLotes(lotes);
+
+  // Intentar sincronizar multipart en PocketBase
+  try {
+    const formData = new FormData();
+    for (const file of archivos) {
+      formData.append("comprobantes_retenciones", file);
+    }
+    const updatedPB = await pocketbase
+      .collection("tesoreria_lotes")
+      .update<LoteTesoreria>(targetLote.id, formData, { requestKey: null });
+
+    if (updatedPB && updatedPB.comprobantes_retenciones) {
+      const pbFileNames = Array.isArray(updatedPB.comprobantes_retenciones)
+        ? updatedPB.comprobantes_retenciones
+        : [updatedPB.comprobantes_retenciones];
+
+      const pbAdjuntos: ComprobanteBancarioAdjunto[] = pbFileNames.map((fn: any) => {
+        if (typeof fn === "string") {
+          return {
+            id: fn,
+            name: fn,
+            url: pocketbase.files.getUrl(updatedPB, fn),
+            uploaded_at: now,
+          };
+        }
+        return fn;
+      });
+      targetLote.comprobantes_retenciones = pbAdjuntos;
+      saveLocalLotes(lotes);
+    }
+  } catch (pbErr) {
+    console.warn("Sincronización de comprobantes de retenciones en PB (fallback local activo):", pbErr);
+  }
+
+  return targetLote;
+}
+
+/**
+ * Elimina un comprobante de retenciones fiscales adjunto de un Lote.
+ */
+export async function eliminarComprobanteRetencionLote(
+  loteId: string,
+  comprobanteId: string,
+  tenantId?: string
+): Promise<LoteTesoreria> {
+  const lotes = await getLotesTesoreria(tenantId);
+  const targetLote = lotes.find((l) => l.id === loteId);
+  if (!targetLote) throw new Error("Lote no encontrado");
+
+  if (Array.isArray(targetLote.comprobantes_retenciones)) {
+    targetLote.comprobantes_retenciones = (targetLote.comprobantes_retenciones as any[]).filter((c) => {
+      if (typeof c === "string") return c !== comprobanteId;
+      return c.id !== comprobanteId && c.name !== comprobanteId;
+    });
+  }
+
+  targetLote.updated = new Date().toISOString();
+  saveLocalLotes(lotes);
+
+  try {
+    await pocketbase.collection("tesoreria_lotes").update(
+      targetLote.id,
+      {
+        comprobantes_retenciones: targetLote.comprobantes_retenciones,
+      },
+      { requestKey: null }
+    );
+  } catch {
+    // Ignorar si no está en PB
+  }
+
+  return targetLote;
+}
+
+/**
  * Agrega prestaciones conformadas a un Lote ya existente.
  * Solo se permite si el lote está en estado abierto (borrador / en_tramite_gde).
  */

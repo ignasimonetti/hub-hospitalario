@@ -13,6 +13,8 @@ import {
   toggleCierreLoteTesoreria,
   subirComprobantesBancariosLote,
   eliminarComprobanteBancarioLote,
+  subirComprobantesRetencionesLote,
+  eliminarComprobanteRetencionLote,
   ESTADOS_LOTE_ABIERTO,
 } from "@/lib/services/tesoreriaService";
 import { ModalExportarDetalleLote } from "@/components/tesoreria/ModalExportarDetalleLote";
@@ -292,6 +294,53 @@ export function ModalDetalleLoteGDE({
       toast.error(err.message || "Error al eliminar comprobante");
     } finally {
       setDeletingComprobanteId(null);
+    }
+  };
+
+  const [isUploadingRetenciones, setIsUploadingRetenciones] = useState(false);
+  const [deletingRetencionId, setDeletingRetencionId] = useState<string | null>(null);
+
+  const handleSubirRetenciones = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileList = Array.from(files);
+    const validFiles = fileList.filter((f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"));
+
+    if (validFiles.length === 0) {
+      toast.error("Solo se permiten archivos en formato PDF");
+      return;
+    }
+
+    try {
+      setIsUploadingRetenciones(true);
+      await subirComprobantesRetencionesLote(lote.id, validFiles);
+      toast.success(
+        validFiles.length === 1
+          ? "Comprobante de retención adjuntado con éxito"
+          : `${validFiles.length} comprobantes de retención adjuntados con éxito`
+      );
+      await onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || "Error al subir comprobantes de retenciones");
+    } finally {
+      setIsUploadingRetenciones(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleEliminarRetencion = async (retencionId: string) => {
+    if (!confirm("¿Está seguro de que desea quitar este comprobante de retención del lote?")) return;
+
+    try {
+      setDeletingRetencionId(retencionId);
+      await eliminarComprobanteRetencionLote(lote.id, retencionId);
+      toast.success("Comprobante de retención eliminado");
+      await onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || "Error al eliminar comprobante de retención");
+    } finally {
+      setDeletingRetencionId(null);
     }
   };
 
@@ -881,6 +930,115 @@ export function ModalDetalleLoteGDE({
               <div className="text-center py-3 border border-dashed border-blue-200 dark:border-blue-900/60 rounded-lg bg-white/50 dark:bg-slate-900/50">
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   No hay comprobantes bancarios adjuntos a este lote aún.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Sección de Comprobantes de Retenciones Fiscales */}
+          <div className="p-4 rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-950/20 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="space-y-0.5">
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <FileCheck2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  Comprobantes de Retenciones Fiscales
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Adjunte los certificados y constancias oficiales emitidos por los aplicativos fiscales (DGR Santiago del Estero, AFIP / ARCA, etc.) correspondientes a las retenciones practicadas en este lote.
+                </p>
+              </div>
+
+              {/* Botón de Subida Múltiple de Retenciones */}
+              <div className="relative">
+                <input
+                  type="file"
+                  id={`upload-retenciones-${lote.id}`}
+                  multiple
+                  accept="application/pdf"
+                  onChange={handleSubirRetenciones}
+                  disabled={isUploadingRetenciones}
+                  className="hidden"
+                />
+                <label htmlFor={`upload-retenciones-${lote.id}`}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={isUploadingRetenciones}
+                    className="h-8 text-xs font-semibold bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-50 cursor-pointer flex items-center gap-1.5 pointer-events-none"
+                  >
+                    {isUploadingRetenciones ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <UploadCloud className="h-3.5 w-3.5" />
+                    )}
+                    Adjuntar Certificados (PDF)
+                  </Button>
+                </label>
+              </div>
+            </div>
+
+            {/* Listado de Comprobantes de Retenciones Adjuntos */}
+            {Array.isArray(lote.comprobantes_retenciones) && lote.comprobantes_retenciones.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                {lote.comprobantes_retenciones.map((ret: any, idx: number) => {
+                  const retId = typeof ret === "string" ? ret : ret.id || String(idx);
+                  const retName = typeof ret === "string" ? ret : ret.name || `Certificado_Retencion_${idx + 1}.pdf`;
+                  const retUrl = typeof ret === "string" ? "#" : ret.url || "#";
+                  const retSize = typeof ret === "object" && ret.size ? `${(ret.size / (1024 * 1024)).toFixed(2)} MB` : null;
+
+                  return (
+                    <div
+                      key={retId}
+                      className="flex items-center justify-between gap-2 p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="h-4 w-4 text-amber-600 shrink-0" />
+                        <div className="truncate">
+                          <p className="font-semibold text-slate-800 dark:text-slate-200 truncate" title={retName}>
+                            {retName}
+                          </p>
+                          {retSize && (
+                            <span className="text-[10px] text-slate-400 font-mono">{retSize}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {retUrl && retUrl !== "#" && (
+                          <a
+                            href={retUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 text-amber-700 hover:text-amber-900 hover:bg-amber-50 dark:hover:bg-amber-950 rounded-md transition-colors"
+                            title="Ver / Descargar PDF"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleEliminarRetencion(retId)}
+                          disabled={deletingRetencionId === retId}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-md transition-colors"
+                          title="Quitar archivo"
+                        >
+                          {deletingRetencionId === retId ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-3 border border-dashed border-amber-200 dark:border-amber-900/60 rounded-lg bg-white/50 dark:bg-slate-900/50">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  No hay comprobantes de retenciones fiscales adjuntos a este lote aún.
                 </p>
               </div>
             )}

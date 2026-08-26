@@ -1026,7 +1026,14 @@ export default function TesoreriaPage() {
                                 {Array.isArray(lote.comprobantes_bancarios) && lote.comprobantes_bancarios.length > 0 && (
                                   <div className="flex items-center gap-1 text-[10px] text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 p-1.5 rounded border border-blue-200/50 dark:border-blue-900/50">
                                     <FileText className="w-3 h-3 text-blue-600" />
-                                    <span>{lote.comprobantes_bancarios.length} comprobante(s) bancario(s) adjunto(s)</span>
+                                    <span>{lote.comprobantes_bancarios.length} comprobante(s) bancario(s)</span>
+                                  </div>
+                                )}
+
+                                {Array.isArray(lote.comprobantes_retenciones) && lote.comprobantes_retenciones.length > 0 && (
+                                  <div className="flex items-center gap-1 text-[10px] text-amber-800 dark:text-amber-300 bg-amber-50/80 dark:bg-amber-950/40 p-1.5 rounded border border-amber-200/50 dark:border-amber-900/50">
+                                    <FileCheck2 className="w-3 h-3 text-amber-600" />
+                                    <span>{lote.comprobantes_retenciones.length} certificado(s) de retención</span>
                                   </div>
                                 )}
                               </CardContent>

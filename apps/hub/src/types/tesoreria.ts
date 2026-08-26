@@ -62,6 +62,7 @@ export interface LoteTesoreria {
   fecha_resolucion?: string;
   op_config?: OrdenDePagoConfigPayload; // Datos presupuestarios y bancarios configurados
   comprobantes_bancarios?: string[] | ComprobanteBancarioAdjunto[]; // Archivos PDF de acreditación bancaria
+  comprobantes_retenciones?: string[] | ComprobanteBancarioAdjunto[]; // Certificados y constancias oficiales de retenciones (DGR, AFIP/ARCA, etc.)
   monto_bruto_total: number;
   monto_retenciones_total: number;
   monto_neto_total: number;

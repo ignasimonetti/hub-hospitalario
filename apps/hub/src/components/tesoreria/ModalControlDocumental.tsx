@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { PrestacionTesoreriaItem } from "@/types/tesoreria";
 import {
   CONDICIONES_FISCALES_MAP,
   SECTORES_SERVICIO_MAP,
   SectorServicio,
+  FormularioDigitalData,
+  ConfiguracionModuloPrestadores,
+  DEFAULT_CONFIGURACION_PRESTADORES,
 } from "@/types/prestadores";
+import { getPrestadoresConfig } from "@/lib/services/parametersService";
 import {
   getPresentacionFileUrl,
   getPerfilFileUrl,
@@ -98,7 +102,61 @@ export function ModalControlDocumental({
     SECTORES_SERVICIO_MAP[srvKey as SectorServicio] ||
     (srvKey ? srvKey.replace(/_/g, " ") : "Servicio Asistencial");
 
-  const montoBruto = Number(prestacion.invoice_amount) || 0;
+  // Parsear digital_form_data para calcular el Monto Devengado por el sistema
+  const digitalForm = useMemo<FormularioDigitalData | null>(() => {
+    if (!prestacion?.digital_form_data) return null;
+    try {
+      if (typeof prestacion.digital_form_data === "string") {
+        return JSON.parse(prestacion.digital_form_data);
+      }
+      return prestacion.digital_form_data;
+    } catch {
+      return null;
+    }
+  }, [prestacion?.digital_form_data]);
+
+  // Cargar aranceles vigentes
+  const [configPrestadores, setConfigPrestadores] = useState<ConfiguracionModuloPrestadores>(DEFAULT_CONFIGURACION_PRESTADORES);
+
+  useEffect(() => {
+    getPrestadoresConfig(prestacion.tenant).then(setConfigPrestadores);
+  }, [prestacion.tenant]);
+
+  // Calcular total devengado según la certificación asistencial cargada
+  const montoDevengado = useMemo(() => {
+    if (!digitalForm) {
+      return Number(prestacion.invoice_amount) || 0;
+    }
+    if (digitalForm.tipo_formulario === "guardia") {
+      return (digitalForm.renglones || []).reduce((sum, g) => {
+        if (!g.fecha) return sum;
+        // Si el renglón ya tiene valor precalculado
+        if (typeof g.valor === "number" && g.valor > 0) return sum + g.valor;
+        const horas = Math.max(1, Math.min(24, Number(g.duracion_horas) || 24));
+        const dateObj = new Date(g.fecha + "T12:00:00Z");
+        const dayOfWeek = dateObj.getUTCDay();
+        const isInhabil = dayOfWeek === 0 || dayOfWeek === 6;
+        let valor24hs = 0;
+        if (g.tipo === "critica") {
+          valor24hs = isInhabil ? configPrestadores.valor_guardia_critica_inhabil : configPrestadores.valor_guardia_critica_habil;
+        } else {
+          valor24hs = isInhabil ? configPrestadores.valor_guardia_ordinaria_inhabil : configPrestadores.valor_guardia_ordinaria_habil;
+        }
+        return sum + (valor24hs / 24) * horas;
+      }, 0);
+    } else if (digitalForm.tipo_formulario === "extension_horaria") {
+      return (digitalForm.renglones || []).reduce((sum, r) => {
+        if (typeof r.valor === "number" && r.valor > 0) return sum + r.valor;
+        const horas = Number(r.horas_cumplidas) || 0;
+        return sum + horas * configPrestadores.valor_hora_extension;
+      }, 0);
+    }
+    return Number(prestacion.invoice_amount) || 0;
+  }, [digitalForm, configPrestadores, prestacion.invoice_amount]);
+
+  const montoFacturado = Number(prestacion.invoice_amount) || 0;
+  const montoBruto = montoFacturado;
+  const hayInconsistencia = montoDevengado > 0 && Math.abs(montoDevengado - montoFacturado) > 0.01;
   const totalRetenciones =
     (Number(retencionIibb) || 0) +
     (Number(retencionGanancias) || 0) +
@@ -212,15 +270,33 @@ export function ModalControlDocumental({
               </div>
             </div>
             <div className="text-right shrink-0">
-              <div className="text-xs text-slate-500 dark:text-slate-400">Total Facturado</div>
-              <div className="text-lg font-extrabold text-slate-900 dark:text-slate-100 font-mono">
-                {formatMoney(montoBruto)}
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Devengado</div>
+              <div className="text-lg font-extrabold text-blue-700 dark:text-blue-400 font-mono">
+                {formatMoney(montoDevengado)}
               </div>
+              {hayInconsistencia && (
+                <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-800 mt-0.5">
+                  ⚠️ Difiere de Factura ({formatMoney(montoFacturado)})
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <div className="p-5 space-y-4">
+          {/* Banner de Advertencia por Inconsistencia */}
+          {hayInconsistencia && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <strong>Inconsistencia detectada entre Factura y Devengado:</strong>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
+                  El importe devengado según la certificación asistencial cargada es de <strong>{formatMoney(montoDevengado)}</strong>, mientras que el importe declarado en la factura adjunta es de <strong>{formatMoney(montoFacturado)}</strong> (diferencia: <strong>{formatMoney(Math.abs(montoDevengado - montoFacturado))}</strong>). Puede observar el trámite para que el prestador adjunte la factura correcta o rectifique los días.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* 1. Checklist de Control Documental */}
           <div className="space-y-2.5">
             <div className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
@@ -229,7 +305,11 @@ export function ModalControlDocumental({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Factura ARCA */}
-              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 space-y-2 text-xs">
+              <div className={`p-3 rounded-lg border space-y-2 text-xs ${
+                hayInconsistencia
+                  ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800"
+                  : "border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50"
+              }`}>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1.5">
                     <Receipt className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" /> Factura Electrónica ARCA
@@ -239,7 +319,12 @@ export function ModalControlDocumental({
                   </Badge>
                 </div>
                 <div className="text-gray-500 space-y-0.5 text-[11px]">
-                  <div><strong>Monto:</strong> {formatMoney(montoBruto)}</div>
+                  <div>
+                    <strong>Monto Factura:</strong>{" "}
+                    <span className={`font-mono font-bold ${hayInconsistencia ? "text-amber-700 dark:text-amber-300" : "text-gray-800 dark:text-slate-200"}`}>
+                      {formatMoney(montoFacturado)}
+                    </span>
+                  </div>
                   <div><strong>Fecha Emisión:</strong> {formatDate(prestacion.invoice_date)}</div>
                 </div>
                 {facturaUrl ? (

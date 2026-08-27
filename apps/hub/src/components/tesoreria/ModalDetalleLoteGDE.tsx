@@ -27,6 +27,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +91,21 @@ export function ModalDetalleLoteGDE({
   const [deletingComprobanteId, setDeletingComprobanteId] = useState<string | null>(null);
   const [isUploadingRetenciones, setIsUploadingRetenciones] = useState(false);
   const [deletingRetencionId, setDeletingRetencionId] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText?: string;
+    variant?: "destructive" | "default";
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    description: "",
+    confirmText: "Confirmar",
+    variant: "destructive",
+    onConfirm: () => {},
+  });
 
   if (!lote) return null;
 
@@ -143,23 +168,25 @@ export function ModalDetalleLoteGDE({
   };
 
   const handleRevertirPago = async (id: string, nombreMedico: string) => {
-    if (
-      !window.confirm(
-        `¿Desea revertir el estado de pago de ${nombreMedico}? Su estado volverá a Conformado/Pendiente de Pago en el sistema.`
-      )
-    ) {
-      return;
-    }
-    try {
-      setIsRevertingId(id);
-      await revertirPagoIndividual(id, lote.id, "Corrección de clic involuntario en Tesorería");
-      toast.success(`Pago de ${nombreMedico} revertido a Pendiente de Pago.`);
-      await onRefresh();
-    } catch (err: any) {
-      toast.error(err?.message || "Error al revertir pago");
-    } finally {
-      setIsRevertingId(null);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "¿Revertir estado de pago?",
+      description: `¿Desea revertir el estado de pago de ${nombreMedico}? La prestación volverá al estado "Conformado / Pendiente de Pago" en el sistema.`,
+      confirmText: "Revertir Pago",
+      variant: "destructive",
+      onConfirm: async () => {
+        try {
+          setIsRevertingId(id);
+          await revertirPagoIndividual(id, lote.id, "Corrección de clic involuntario en Tesorería");
+          toast.success(`Pago de ${nombreMedico} revertido a Pendiente de Pago.`);
+          await onRefresh();
+        } catch (err: any) {
+          toast.error(err?.message || "Error al revertir pago");
+        } finally {
+          setIsRevertingId(null);
+        }
+      },
+    });
   };
 
   const handleMarcarSeleccionadosPagados = async () => {
@@ -189,24 +216,27 @@ export function ModalDetalleLoteGDE({
       toast.info("Todas las prestaciones de este lote ya están pagadas.");
       return;
     }
-    if (
-      !window.confirm(
-        `¿Confirmar que se transfirió el pago a los ${pendientes.length} prestadores pendientes? Se actualizará su estado a "Pagado" en el sistema.`
-      )
-    ) {
-      return;
-    }
-    try {
-      setIsMarkingPaid("bulk");
-      const res = await marcarPrestacionesPagadas(pendientes, lote.id);
-      toast.success(`Se marcaron ${res.exitosas} prestaciones como Pagadas. Lote liquidado.`);
-      setSelectedIds([]);
-      await onRefresh();
-    } catch (err: any) {
-      toast.error(err?.message || "Error al liquidar prestaciones");
-    } finally {
-      setIsMarkingPaid(null);
-    }
+
+    setConfirmDialog({
+      isOpen: true,
+      title: "¿Marcar todos como pagados?",
+      description: `¿Confirmar que se transfirió el pago a los ${pendientes.length} prestadores pendientes? Se actualizará el estado de todas las prestaciones a "Pagado".`,
+      confirmText: `Marcar ${pendientes.length} como Pagados`,
+      variant: "default",
+      onConfirm: async () => {
+        try {
+          setIsMarkingPaid("bulk");
+          const res = await marcarPrestacionesPagadas(pendientes, lote.id);
+          toast.success(`Se marcaron ${res.exitosas} prestaciones como Pagadas. Lote liquidado.`);
+          setSelectedIds([]);
+          await onRefresh();
+        } catch (err: any) {
+          toast.error(err?.message || "Error al liquidar prestaciones");
+        } finally {
+          setIsMarkingPaid(null);
+        }
+      },
+    });
   };
 
   const handleToggleCierre = async () => {
@@ -283,19 +313,26 @@ export function ModalDetalleLoteGDE({
     }
   };
 
-  const handleEliminarComprobante = async (comprobanteId: string) => {
-    if (!confirm("¿Está seguro de que desea quitar este comprobante bancario del lote?")) return;
-
-    try {
-      setDeletingComprobanteId(comprobanteId);
-      await eliminarComprobanteBancarioLote(lote.id, comprobanteId);
-      toast.success("Comprobante eliminado");
-      await onRefresh();
-    } catch (err: any) {
-      toast.error(err.message || "Error al eliminar comprobante");
-    } finally {
-      setDeletingComprobanteId(null);
-    }
+  const handleEliminarComprobante = (comprobanteId: string, nombreArchivo?: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "¿Eliminar comprobante bancario?",
+      description: `¿Está seguro de que desea quitar "${nombreArchivo || "este comprobante"}" de este lote? Esta acción no se puede deshacer.`,
+      confirmText: "Eliminar Comprobante",
+      variant: "destructive",
+      onConfirm: async () => {
+        try {
+          setDeletingComprobanteId(comprobanteId);
+          await eliminarComprobanteBancarioLote(lote.id, comprobanteId);
+          toast.success("Comprobante eliminado");
+          await onRefresh();
+        } catch (err: any) {
+          toast.error(err.message || "Error al eliminar comprobante");
+        } finally {
+          setDeletingComprobanteId(null);
+        }
+      },
+    });
   };
 
   const handleSubirRetenciones = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -327,50 +364,68 @@ export function ModalDetalleLoteGDE({
     }
   };
 
-  const handleEliminarRetencion = async (retencionId: string) => {
-    if (!confirm("¿Está seguro de que desea quitar este comprobante de retención del lote?")) return;
-
-    try {
-      setDeletingRetencionId(retencionId);
-      await eliminarComprobanteRetencionLote(lote.id, retencionId);
-      toast.success("Comprobante de retención eliminado");
-      await onRefresh();
-    } catch (err: any) {
-      toast.error(err.message || "Error al eliminar comprobante de retención");
-    } finally {
-      setDeletingRetencionId(null);
-    }
+  const handleEliminarRetencion = (retencionId: string, nombreArchivo?: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "¿Eliminar certificado de retención?",
+      description: `¿Está seguro de que desea quitar "${nombreArchivo || "este certificado"}" de este lote?`,
+      confirmText: "Eliminar Certificado",
+      variant: "destructive",
+      onConfirm: async () => {
+        try {
+          setDeletingRetencionId(retencionId);
+          await eliminarComprobanteRetencionLote(lote.id, retencionId);
+          toast.success("Comprobante de retención eliminado");
+          await onRefresh();
+        } catch (err: any) {
+          toast.error(err.message || "Error al eliminar comprobante de retención");
+        } finally {
+          setDeletingRetencionId(null);
+        }
+      },
+    });
   };
 
   const handleQuitarPrestacion = async (prestacionId: string, nombreMedico: string) => {
-    try {
-      setRemovingId(prestacionId);
-      await quitarPrestacionDeLote(prestacionId, lote.id);
-      toast.success(`${nombreMedico} desvinculado del lote y devuelto a la bandeja general.`);
-      await onRefresh();
-    } catch (err: any) {
-      toast.error(err?.message || "Error al quitar prestación del lote");
-    } finally {
-      setRemovingId(null);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "¿Desvincular profesional del lote?",
+      description: `¿Desea quitar la prestación de ${nombreMedico} de este lote? Volverá a estar disponible en el buzón general de conformadas.`,
+      confirmText: "Desvincular",
+      variant: "destructive",
+      onConfirm: async () => {
+        try {
+          setRemovingId(prestacionId);
+          await quitarPrestacionDeLote(prestacionId, lote.id);
+          toast.success(`${nombreMedico} desvinculado del lote y devuelto a la bandeja general.`);
+          await onRefresh();
+        } catch (err: any) {
+          toast.error(err?.message || "Error al quitar prestación del lote");
+        } finally {
+          setRemovingId(null);
+        }
+      },
+    });
   };
 
-  const handleEliminarLote = async () => {
-    if (
-      !window.confirm(
-        `¿Está seguro de desarmar el lote "${lote.numero_lote}"? Todas las prestaciones volverán al buzón de conformadas sin perder sus retenciones.`
-      )
-    ) {
-      return;
-    }
-    try {
-      await eliminarLoteTesoreria(lote.id);
-      toast.success("Lote desarmado exitosamente.");
-      await onRefresh();
-      onClose();
-    } catch (err: any) {
-      toast.error(err?.message || "Error al eliminar lote");
-    }
+  const handleEliminarLote = () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "¿Desarmar lote de expedientes?",
+      description: `¿Está seguro de desarmar el lote "${lote.numero_lote}"? Todas las prestaciones volverán al buzón de conformadas sin perder sus retenciones calculadas.`,
+      confirmText: "Desarmar Lote",
+      variant: "destructive",
+      onConfirm: async () => {
+        try {
+          await eliminarLoteTesoreria(lote.id);
+          toast.success("Lote desarmado exitosamente.");
+          await onRefresh();
+          onClose();
+        } catch (err: any) {
+          toast.error(err?.message || "Error al eliminar lote");
+        }
+      },
+    });
   };
 
   const handleConfirmarPagoLote = async () => {
@@ -908,7 +963,7 @@ export function ModalDetalleLoteGDE({
 
                         <button
                           type="button"
-                          onClick={() => handleEliminarComprobante(compId)}
+                          onClick={() => handleEliminarComprobante(compId, compName)}
                           disabled={deletingComprobanteId === compId}
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-md transition-colors"
                           title="Quitar archivo"
@@ -1017,7 +1072,7 @@ export function ModalDetalleLoteGDE({
 
                         <button
                           type="button"
-                          onClick={() => handleEliminarRetencion(retId)}
+                          onClick={() => handleEliminarRetencion(retId, retName)}
                           disabled={deletingRetencionId === retId}
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-md transition-colors"
                           title="Quitar archivo"
@@ -1066,6 +1121,43 @@ export function ModalDetalleLoteGDE({
         lote={lote}
         prestacionesDelLote={prestacionesDelLote}
       />
+
+      {/* Diálogo Elegante de Confirmación in-app */}
+      <AlertDialog
+        open={confirmDialog.isOpen}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        }}
+      >
+        <AlertDialogContent className="max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+              {confirmDialog.title}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-600 dark:text-slate-400">
+              {confirmDialog.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-2 flex gap-2">
+            <AlertDialogCancel className="text-xs h-8">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                confirmDialog.onConfirm();
+                setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+              }}
+              className={`text-xs h-8 font-semibold text-white ${
+                confirmDialog.variant === "destructive"
+                  ? "bg-rose-600 hover:bg-rose-700"
+                  : "bg-emerald-600 hover:bg-emerald-700"
+              }`}
+            >
+              {confirmDialog.confirmText || "Confirmar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

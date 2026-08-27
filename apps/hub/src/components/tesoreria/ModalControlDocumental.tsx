@@ -72,6 +72,7 @@ export function ModalControlDocumental({
   const [retencionOtras, setRetencionOtras] = useState<number>(0);
   const [retencionOtrasConcepto, setRetencionOtrasConcepto] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [configPrestadores, setConfigPrestadores] = useState<ConfiguracionModuloPrestadores>(DEFAULT_CONFIGURACION_PRESTADORES);
 
   useEffect(() => {
     if (isOpen && prestacion) {
@@ -89,18 +90,11 @@ export function ModalControlDocumental({
     }
   }, [isOpen, prestacion]);
 
-  if (!prestacion) return null;
-
-  const perfil = prestacion.perfilPrestador;
-  const user = prestacion.expand?.user;
-  const nombrePrestador = user
-    ? `${user.lastName || ""} ${user.firstName || ""}`.trim() || user.email
-    : "Prestador Asistencial";
-
-  const srvKey = (prestacion.hospital_service as string) || "";
-  const srvLabel =
-    SECTORES_SERVICIO_MAP[srvKey as SectorServicio] ||
-    (srvKey ? srvKey.replace(/_/g, " ") : "Servicio Asistencial");
+  useEffect(() => {
+    if (prestacion?.tenant) {
+      getPrestadoresConfig(prestacion.tenant).then(setConfigPrestadores);
+    }
+  }, [prestacion?.tenant]);
 
   // Parsear digital_form_data para calcular el Monto Devengado por el sistema
   const digitalForm = useMemo<FormularioDigitalData | null>(() => {
@@ -115,15 +109,9 @@ export function ModalControlDocumental({
     }
   }, [prestacion?.digital_form_data]);
 
-  // Cargar aranceles vigentes
-  const [configPrestadores, setConfigPrestadores] = useState<ConfiguracionModuloPrestadores>(DEFAULT_CONFIGURACION_PRESTADORES);
-
-  useEffect(() => {
-    getPrestadoresConfig(prestacion.tenant).then(setConfigPrestadores);
-  }, [prestacion.tenant]);
-
   // Calcular total devengado según la certificación asistencial cargada
   const montoDevengado = useMemo(() => {
+    if (!prestacion) return 0;
     if (!digitalForm) {
       return Number(prestacion.invoice_amount) || 0;
     }
@@ -152,7 +140,20 @@ export function ModalControlDocumental({
       }, 0);
     }
     return Number(prestacion.invoice_amount) || 0;
-  }, [digitalForm, configPrestadores, prestacion.invoice_amount]);
+  }, [digitalForm, configPrestadores, prestacion]);
+
+  if (!prestacion) return null;
+
+  const perfil = prestacion.perfilPrestador;
+  const user = prestacion.expand?.user;
+  const nombrePrestador = user
+    ? `${user.lastName || ""} ${user.firstName || ""}`.trim() || user.email
+    : "Prestador Asistencial";
+
+  const srvKey = (prestacion.hospital_service as string) || "";
+  const srvLabel =
+    SECTORES_SERVICIO_MAP[srvKey as SectorServicio] ||
+    (srvKey ? srvKey.replace(/_/g, " ") : "Servicio Asistencial");
 
   const montoFacturado = Number(prestacion.invoice_amount) || 0;
   const montoBruto = montoFacturado;

@@ -331,21 +331,21 @@ export function ModalAuditoriaDirector({
               </span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Factura ARCA</span>
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Factura</span>
               <span className="font-semibold font-mono text-slate-800 dark:text-slate-200">
                 {prestacion.invoice_number ? `N° ${prestacion.invoice_number}` : "Sin número"}
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Total Devengado</span>
-              <span className="text-sm font-extrabold text-blue-700 dark:text-blue-400 font-mono block">
-                {formatMoney(montoDevengado)}
               </span>
             </div>
             <div>
               <span className="text-slate-400 block text-[10px] uppercase font-bold">Total Facturado</span>
               <span className={`text-sm font-extrabold font-mono block ${hayInconsistencia ? "text-amber-600 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}`}>
                 {formatMoney(montoFacturado)}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Total Devengado</span>
+              <span className="text-sm font-extrabold text-blue-700 dark:text-blue-400 font-mono block">
+                {formatMoney(montoDevengado)}
               </span>
             </div>
           </div>
@@ -357,7 +357,7 @@ export function ModalAuditoriaDirector({
               <div>
                 <strong>Diferencia entre Planilla Asistencial y Factura Adjunta:</strong>
                 <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
-                  El cálculo asistencial según guardias/horas cargadas da <strong>{formatMoney(montoDevengado)}</strong>, mientras que el importe facturado es <strong>{formatMoney(montoFacturado)}</strong> (Diferencia: <strong>{formatMoney(Math.abs(montoDevengado - montoFacturado))}</strong>). Puede verificar la planilla o solicitar rectificación al médico antes de elevar a Tesorería.
+                  El cálculo asistencial según guardias/horas cargadas da <strong>{formatMoney(montoDevengado)}</strong>, mientras que el importe facturado es <strong>{formatMoney(montoFacturado)}</strong> (Diferencia: <strong>{formatMoney(Math.abs(montoDevengado - montoFacturado))}</strong>). Puede verificar la planilla o solicitar rectificación al profesional antes de elevar a Tesorería.
                 </p>
               </div>
             </div>

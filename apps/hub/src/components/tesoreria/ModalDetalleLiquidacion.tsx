@@ -88,9 +88,10 @@ export function ModalDetalleLiquidacion({
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "-";
     try {
-      const parts = dateStr.split("T")[0].split("-");
+      const clean = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.split(" ")[0];
+      const parts = clean.split("-");
       if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-      return dateStr;
+      return clean;
     } catch {
       return dateStr;
     }

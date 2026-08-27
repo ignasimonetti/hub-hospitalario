@@ -548,7 +548,7 @@ export function ModalDetalleLoteGDE({
                 <div>
                   <span className="font-bold">Lote Cerrado con Orden de Pago Emitida (OP N° {lote.numero_orden_pago})</span>
                   <p className="text-[11px] text-purple-700 dark:text-purple-300">
-                    La nómina de prestadores y montos es definitiva e inmutable. Puede actualizar los datos administrativos/presupuestarios si fuera necesario.
+                    La nómina de prestadores y montos es definitiva e inmutable. Solo puede editar los datos administrativos/presupuestarios si fuera necesario.
                   </p>
                 </div>
               </div>
@@ -858,7 +858,7 @@ export function ModalDetalleLoteGDE({
                   Liquidación Total de Pendientes
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Si ya ejecutó todas las transferencias de este lote en Home Banking, puede marcarlas todas juntas en 1 clic.
+                  Si ya ejecutó todas las transferencias de este lote, puede marcarlas todas juntas en 1 clic.
                 </p>
               </div>
 
@@ -997,7 +997,7 @@ export function ModalDetalleLoteGDE({
                   Comprobantes de Retenciones Fiscales
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Adjunte los certificados y constancias oficiales emitidos por los aplicativos fiscales (DGR Santiago del Estero, AFIP / ARCA, etc.) correspondientes a las retenciones practicadas en este lote.
+                  Adjunte los certificados y constancias oficiales emitidos por los aplicativos fiscales correspondientes a las retenciones practicadas en este lote.
                 </p>
               </div>
 

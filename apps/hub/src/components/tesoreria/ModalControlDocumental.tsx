@@ -149,6 +149,18 @@ export function ModalControlDocumental({
     }
   };
 
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "-";
+    try {
+      const clean = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.split(" ")[0];
+      const parts = clean.split("-");
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      return clean;
+    } catch {
+      return dateStr;
+    }
+  };
+
   const facturaUrl = prestacion.file_invoice
     ? getPresentacionFileUrl(prestacion, prestacion.file_invoice)
     : "";
@@ -228,7 +240,7 @@ export function ModalControlDocumental({
                 </div>
                 <div className="text-gray-500 space-y-0.5 text-[11px]">
                   <div><strong>Monto:</strong> {formatMoney(montoBruto)}</div>
-                  <div><strong>Fecha Emisión:</strong> {prestacion.invoice_date || "-"}</div>
+                  <div><strong>Fecha Emisión:</strong> {formatDate(prestacion.invoice_date)}</div>
                 </div>
                 {facturaUrl ? (
                   <a
@@ -251,7 +263,7 @@ export function ModalControlDocumental({
                     <FileCheck2 className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" /> Conducta Fiscal (DGR SDE)
                   </span>
                   <Badge variant="outline" className="text-[10px]">
-                    {prestacion.conducta_fiscal_due_date ? `Vto: ${prestacion.conducta_fiscal_due_date}` : "Sin fecha"}
+                    {prestacion.conducta_fiscal_due_date ? `Vto: ${formatDate(prestacion.conducta_fiscal_due_date)}` : "Sin fecha"}
                   </Badge>
                 </div>
                 <div className="text-gray-500 space-y-0.5 text-[11px]">

@@ -20,7 +20,10 @@ import {
   SECTORES_SERVICIO_MAP,
   SectorServicio,
   FormularioDigitalData,
+  ConfiguracionModuloPrestadores,
+  DEFAULT_CONFIGURACION_PRESTADORES,
 } from "@/types/prestadores";
+import { getPrestadoresConfig } from "@/lib/services/parametersService";
 import {
   aprobarPrestacionDirector,
   visarPrestacionAdjunto,
@@ -80,6 +83,14 @@ export function ModalAuditoriaDirector({
   const [motivoDerivacion, setMotivoDerivacion] = useState("");
   const [directoresAdjuntosLista, setDirectoresAdjuntosLista] = useState<{ id: string; nombre: string; email: string; rol?: string }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [configPrestadores, setConfigPrestadores] = useState<ConfiguracionModuloPrestadores>(DEFAULT_CONFIGURACION_PRESTADORES);
+
+  // Cargar aranceles vigentes
+  useEffect(() => {
+    if (prestacion?.tenant) {
+      getPrestadoresConfig(prestacion.tenant).then(setConfigPrestadores);
+    }
+  }, [prestacion?.tenant]);
 
   // Cargar lista de directores adjuntos para derivación (excluyendo al usuario actual y solo roles adjuntos)
   useEffect(() => {
@@ -108,7 +119,42 @@ export function ModalAuditoriaDirector({
     }
   }, [prestacion?.digital_form_data]);
 
+  // Calcular total devengado según la certificación asistencial cargada
+  const montoDevengado = useMemo(() => {
+    if (!prestacion) return 0;
+    if (!digitalForm) {
+      return Number(prestacion.invoice_amount) || 0;
+    }
+    if (digitalForm.tipo_formulario === "guardia") {
+      return (digitalForm.renglones || []).reduce((sum, g) => {
+        if (!g.fecha) return sum;
+        if (typeof g.valor === "number" && g.valor > 0) return sum + g.valor;
+        const horas = Math.max(1, Math.min(24, Number(g.duracion_horas) || 24));
+        const dateObj = new Date(g.fecha + "T12:00:00Z");
+        const dayOfWeek = dateObj.getUTCDay();
+        const isInhabil = dayOfWeek === 0 || dayOfWeek === 6;
+        let valor24hs = 0;
+        if (g.tipo === "critica") {
+          valor24hs = isInhabil ? configPrestadores.valor_guardia_critica_inhabil : configPrestadores.valor_guardia_critica_habil;
+        } else {
+          valor24hs = isInhabil ? configPrestadores.valor_guardia_ordinaria_inhabil : configPrestadores.valor_guardia_ordinaria_habil;
+        }
+        return sum + (valor24hs / 24) * horas;
+      }, 0);
+    } else if (digitalForm.tipo_formulario === "extension_horaria") {
+      return (digitalForm.renglones || []).reduce((sum, r) => {
+        if (typeof r.valor === "number" && r.valor > 0) return sum + r.valor;
+        const horas = Number(r.horas_cumplidas) || 0;
+        return sum + horas * configPrestadores.valor_hora_extension;
+      }, 0);
+    }
+    return Number(prestacion.invoice_amount) || 0;
+  }, [digitalForm, configPrestadores, prestacion]);
+
   if (!prestacion) return null;
+
+  const montoFacturado = Number(prestacion.invoice_amount) || 0;
+  const hayInconsistencia = montoDevengado > 0 && Math.abs(montoDevengado - montoFacturado) > 0.01;
 
   const estadoCfg = ESTADOS_PRESTACION_CONFIG[prestacion.status];
   const mesNombre = MESES[prestacion.period_month - 1] || `Mes ${prestacion.period_month}`;
@@ -118,16 +164,17 @@ export function ModalAuditoriaDirector({
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "-";
     try {
-      const parts = dateStr.split("-");
+      const clean = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.split(" ")[0];
+      const parts = clean.split("-");
       if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-      return new Date(dateStr).toLocaleDateString("es-AR");
+      return clean;
     } catch {
       return dateStr;
     }
@@ -273,29 +320,48 @@ export function ModalAuditoriaDirector({
 
         {/* Cuerpo Scrolleable */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4 text-left">
-          {/* Card Resumen Rápido */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs">
+          {/* Card Resumen Rápido con Devengado vs Facturado */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs">
             <div>
               <span className="text-slate-400 block text-[10px] uppercase font-bold">Servicio / Sector</span>
-              <span className="font-semibold text-slate-800 dark:text-slate-200">
+              <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block" title={prestacion.hospital_service || "Servicio Asistencial"}>
                 {prestacion.hospital_service
                   ? (SECTORES_SERVICIO_MAP[prestacion.hospital_service as SectorServicio] || prestacion.hospital_service)
                   : "Servicio Asistencial"}
               </span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Factura AFIP</span>
-              <span className="font-semibold text-slate-800 dark:text-slate-200">
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Factura ARCA</span>
+              <span className="font-semibold font-mono text-slate-800 dark:text-slate-200">
                 {prestacion.invoice_number ? `N° ${prestacion.invoice_number}` : "Sin número"}
               </span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Total Reclamado</span>
-              <span className="text-sm font-extrabold text-[#08487A] dark:text-sky-400">
-                {formatMoney(prestacion.invoice_amount || 0)}
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Total Devengado</span>
+              <span className="text-sm font-extrabold text-blue-700 dark:text-blue-400 font-mono block">
+                {formatMoney(montoDevengado)}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Total Facturado</span>
+              <span className={`text-sm font-extrabold font-mono block ${hayInconsistencia ? "text-amber-600 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}`}>
+                {formatMoney(montoFacturado)}
               </span>
             </div>
           </div>
+
+          {/* Banner de Advertencia en Dirección si hay discrepancia */}
+          {hayInconsistencia && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <strong>Diferencia entre Planilla Asistencial y Factura Adjunta:</strong>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
+                  El cálculo asistencial según guardias/horas cargadas da <strong>{formatMoney(montoDevengado)}</strong>, mientras que el importe facturado es <strong>{formatMoney(montoFacturado)}</strong> (Diferencia: <strong>{formatMoney(Math.abs(montoDevengado - montoFacturado))}</strong>). Puede verificar la planilla o solicitar rectificación al médico antes de elevar a Tesorería.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Si ya fue aprobado o visado */}
           {prestacion.director_approved_at && (

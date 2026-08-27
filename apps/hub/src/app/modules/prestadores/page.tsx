@@ -67,6 +67,7 @@ import {
   ChevronDown,
   X,
   History,
+  FileEdit,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1149,28 +1150,28 @@ export default function PrestadoresPage() {
                   </CardContent>
                 </Card>
 
-                {/* 2. Cobrado */}
+                {/* 2. Borradores */}
                 <Card
                   onClick={() => {
-                    setTabListado("historial");
-                    setHistEstado("pagado");
+                    setTabListado("activos");
+                    setFiltroEstado("borradores");
                   }}
                   className={`border transition-all rounded-2xl cursor-pointer hover:shadow-md ${
-                    tabListado === "historial" && histEstado === "pagado"
-                      ? "ring-2 ring-emerald-500 border-emerald-300 dark:border-emerald-700 bg-emerald-50/40 dark:bg-slate-900"
+                    tabListado === "activos" && filtroEstado === "borradores"
+                      ? "ring-2 ring-slate-600 border-slate-400 dark:border-slate-600 bg-slate-100/60 dark:bg-slate-900"
                       : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs"
                   }`}
                 >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-medium text-slate-500">Cobrado este Período</p>
-                      <h3 className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                        {formatMoney(kpis.cobrado)}
+                      <p className="text-xs font-medium text-slate-500">Borradores</p>
+                      <h3 className="text-2xl font-extrabold text-slate-700 dark:text-slate-200 mt-0.5">
+                        {borradoresCount}
                       </h3>
-                      <p className="text-[11px] text-slate-400 mt-0.5">Liquidado por Tesorería</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Pendientes de envío</p>
                     </div>
-                    <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
-                      <CheckCircle2 className="w-5 h-5" />
+                    <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                      <FileEdit className="w-5 h-5" />
                     </div>
                   </CardContent>
                 </Card>
@@ -1402,6 +1403,7 @@ export default function PrestadoresPage() {
                           <tr>
                             <th className="py-2.5 px-3">Trámite</th>
                             <th className="py-2.5 px-3">Período</th>
+                            <th className="py-2.5 px-3">Factura</th>
                             <th className="py-2.5 px-3">Tipo</th>
                             <th className="py-2.5 px-3 text-right">Monto</th>
                             <th className="py-2.5 px-3 text-center">Estado</th>
@@ -1411,6 +1413,20 @@ export default function PrestadoresPage() {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                           {historialFilas.map((p) => {
                             const cfg = ESTADOS_PRESTACION_CONFIG[p.status];
+                            
+                            // Formateo seguro de fecha
+                            const rawFecha = p.paid_at || p.treasury_paid_at;
+                            let fechaPagoDisplay = "—";
+                            if (rawFecha) {
+                              const datePart = rawFecha.includes("T") ? rawFecha.split("T")[0] : rawFecha.split(" ")[0];
+                              const parts = datePart.split("-");
+                              if (parts.length === 3) {
+                                fechaPagoDisplay = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                              } else {
+                                fechaPagoDisplay = datePart;
+                              }
+                            }
+
                             return (
                               <tr
                                 key={p.id}
@@ -1422,6 +1438,11 @@ export default function PrestadoresPage() {
                                 </td>
                                 <td className="py-2.5 px-3 text-gray-600 dark:text-slate-400">
                                   {String(p.period_month).padStart(2, "0")}/{p.period_year}
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                    {p.invoice_number || "—"}
+                                  </span>
                                 </td>
                                 <td className="py-2.5 px-3 text-gray-600 dark:text-slate-400">
                                   {p.service_type === "guardia" ? "Guardias (G)" : "Extensión Horaria (EH)"}
@@ -1436,10 +1457,8 @@ export default function PrestadoresPage() {
                                     {cfg?.label || p.status}
                                   </span>
                                 </td>
-                                <td className="py-2.5 px-3 text-gray-500 dark:text-slate-400">
-                                  {(p.paid_at || p.treasury_paid_at)
-                                    ? (p.paid_at || p.treasury_paid_at)!.split("T")[0].split("-").reverse().join("/")
-                                    : "—"}
+                                <td className="py-2.5 px-3 font-mono text-gray-600 dark:text-slate-300">
+                                  {fechaPagoDisplay}
                                 </td>
                               </tr>
                             );

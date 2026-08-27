@@ -1844,10 +1844,6 @@ export function generarOrdenDePagoHTML(
         <strong>FUENTE DE FINANCIAMIENTO:</strong> ${fuenteFinanciamiento}
       </div>
     </div>
-
-    <div class="footer-date">
-      Santiago del Estero — La Banda, ${fechaEmision}
-    </div>
   </body>
   </html>
   `;

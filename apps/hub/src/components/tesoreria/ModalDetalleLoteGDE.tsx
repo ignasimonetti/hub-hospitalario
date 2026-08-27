@@ -154,14 +154,14 @@ export function ModalDetalleLoteGDE({
       setIsMarkingPaid(id);
       const res = await marcarPrestacionesPagadas([id], lote.id);
       if (res.loteCompleto) {
-        toast.success(`Pago registrado para ${nombreMedico}. ¡Todo el lote quedó pagado y cerrado!`);
+        toast.success(`Pago registrado para ${nombreMedico}. Lote completado y liquidado.`);
       } else {
-        toast.success(`Pago registrado para ${nombreMedico}. Estado actualizado a "Pagado".`);
+        toast.success(`Pago registrado para ${nombreMedico}.`);
       }
       setSelectedIds((prev) => prev.filter((item) => item !== id));
       await onRefresh();
     } catch (err: any) {
-      toast.error(err?.message || "Error al registrar el pago");
+      toast.error(err?.message || "No se pudo registrar el pago");
     } finally {
       setIsMarkingPaid(null);
     }
@@ -178,10 +178,10 @@ export function ModalDetalleLoteGDE({
         try {
           setIsRevertingId(id);
           await revertirPagoIndividual(id, lote.id, "Corrección de clic involuntario en Tesorería");
-          toast.success(`Pago de ${nombreMedico} revertido a Pendiente de Pago.`);
+          toast.success(`Pago de ${nombreMedico} revertido exitosamente.`);
           await onRefresh();
         } catch (err: any) {
-          toast.error(err?.message || "Error al revertir pago");
+          toast.error(err?.message || "No se pudo revertir el pago");
         } finally {
           setIsRevertingId(null);
         }
@@ -195,14 +195,14 @@ export function ModalDetalleLoteGDE({
       setIsMarkingPaid("bulk");
       const res = await marcarPrestacionesPagadas(selectedIds, lote.id);
       if (res.loteCompleto) {
-        toast.success(`Se registraron ${res.exitosas} pagos. ¡Todo el lote quedó liquidado!`);
+        toast.success(`Se registraron ${res.exitosas} pagos. Lote completado y cerrado.`);
       } else {
         toast.success(`Se registraron ${res.exitosas} pagos exitosamente.`);
       }
       setSelectedIds([]);
       await onRefresh();
     } catch (err: any) {
-      toast.error(err?.message || "Error al registrar pagos masivos");
+      toast.error(err?.message || "No se pudieron registrar los pagos masivos");
     } finally {
       setIsMarkingPaid(null);
     }
@@ -213,7 +213,7 @@ export function ModalDetalleLoteGDE({
       .filter((p) => p.status !== "pagado")
       .map((p) => p.id);
     if (pendientes.length === 0) {
-      toast.info("Todas las prestaciones de este lote ya están pagadas.");
+      toast.info("Todas las prestaciones de este lote ya se encuentran pagadas.");
       return;
     }
 
@@ -227,11 +227,11 @@ export function ModalDetalleLoteGDE({
         try {
           setIsMarkingPaid("bulk");
           const res = await marcarPrestacionesPagadas(pendientes, lote.id);
-          toast.success(`Se marcaron ${res.exitosas} prestaciones como Pagadas. Lote liquidado.`);
+          toast.success(`Se marcaron ${res.exitosas} prestaciones como Pagadas.`);
           setSelectedIds([]);
           await onRefresh();
         } catch (err: any) {
-          toast.error(err?.message || "Error al liquidar prestaciones");
+          toast.error(err?.message || "No se pudieron liquidar las prestaciones");
         } finally {
           setIsMarkingPaid(null);
         }
@@ -245,13 +245,13 @@ export function ModalDetalleLoteGDE({
       setIsTogglingCierre(true);
       const updated = await toggleCierreLoteTesoreria(lote.id);
       if (updated.estado === "cerrado") {
-        toast.success(`Lote "${lote.numero_lote}" cerrado. Ya no admite agregar ni quitar prestaciones.`);
+        toast.success(`Lote "${lote.numero_lote}" cerrado para modificaciones.`);
       } else {
-        toast.success(`Lote "${lote.numero_lote}" reabierto. Ya puede volver a incorporar prestaciones.`);
+        toast.success(`Lote "${lote.numero_lote}" reabierto.`);
       }
       await onRefresh();
     } catch (err: any) {
-      toast.error(err?.message || "Error al conmutar estado del lote");
+      toast.error(err?.message || "Error al cambiar el estado del lote");
     } finally {
       setIsTogglingCierre(false);
     }
@@ -291,7 +291,7 @@ export function ModalDetalleLoteGDE({
     const validFiles = fileList.filter((f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"));
 
     if (validFiles.length === 0) {
-      toast.error("Solo se permiten archivos en formato PDF");
+      toast.error("Solo se admiten archivos en formato PDF.");
       return;
     }
 
@@ -300,12 +300,12 @@ export function ModalDetalleLoteGDE({
       await subirComprobantesBancariosLote(lote.id, validFiles);
       toast.success(
         validFiles.length === 1
-          ? "Comprobante bancario adjuntado con éxito"
-          : `${validFiles.length} comprobantes bancarios adjuntados con éxito`
+          ? "Comprobante bancario adjuntado exitosamente."
+          : `${validFiles.length} comprobantes bancarios adjuntados exitosamente.`
       );
       await onRefresh();
     } catch (err: any) {
-      toast.error(err.message || "Error al subir comprobantes bancarios");
+      toast.error(err.message || "No se pudo subir el comprobante bancario");
     } finally {
       setIsUploadingComprobantes(false);
       // Reset input
@@ -324,10 +324,10 @@ export function ModalDetalleLoteGDE({
         try {
           setDeletingComprobanteId(comprobanteId);
           await eliminarComprobanteBancarioLote(lote.id, comprobanteId);
-          toast.success("Comprobante eliminado");
+          toast.success("Comprobante bancario eliminado correctamente.");
           await onRefresh();
         } catch (err: any) {
-          toast.error(err.message || "Error al eliminar comprobante");
+          toast.error(err.message || "No se pudo eliminar el comprobante bancario");
         } finally {
           setDeletingComprobanteId(null);
         }
@@ -343,7 +343,7 @@ export function ModalDetalleLoteGDE({
     const validFiles = fileList.filter((f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"));
 
     if (validFiles.length === 0) {
-      toast.error("Solo se permiten archivos en formato PDF");
+      toast.error("Solo se admiten archivos en formato PDF.");
       return;
     }
 
@@ -352,12 +352,12 @@ export function ModalDetalleLoteGDE({
       await subirComprobantesRetencionesLote(lote.id, validFiles);
       toast.success(
         validFiles.length === 1
-          ? "Comprobante de retención adjuntado con éxito"
-          : `${validFiles.length} comprobantes de retención adjuntados con éxito`
+          ? "Certificado de retención adjuntado exitosamente."
+          : `${validFiles.length} certificados de retención adjuntados exitosamente.`
       );
       await onRefresh();
     } catch (err: any) {
-      toast.error(err.message || "Error al subir comprobantes de retenciones");
+      toast.error(err.message || "No se pudo subir el certificado de retención");
     } finally {
       setIsUploadingRetenciones(false);
       e.target.value = "";
@@ -375,10 +375,10 @@ export function ModalDetalleLoteGDE({
         try {
           setDeletingRetencionId(retencionId);
           await eliminarComprobanteRetencionLote(lote.id, retencionId);
-          toast.success("Comprobante de retención eliminado");
+          toast.success("Certificado de retención eliminado correctamente.");
           await onRefresh();
         } catch (err: any) {
-          toast.error(err.message || "Error al eliminar comprobante de retención");
+          toast.error(err.message || "No se pudo eliminar el certificado de retención");
         } finally {
           setDeletingRetencionId(null);
         }
@@ -397,10 +397,10 @@ export function ModalDetalleLoteGDE({
         try {
           setRemovingId(prestacionId);
           await quitarPrestacionDeLote(prestacionId, lote.id);
-          toast.success(`${nombreMedico} desvinculado del lote y devuelto a la bandeja general.`);
+          toast.success(`${nombreMedico} desvinculado del lote.`);
           await onRefresh();
         } catch (err: any) {
-          toast.error(err?.message || "Error al quitar prestación del lote");
+          toast.error(err?.message || "No se pudo quitar la prestación del lote");
         } finally {
           setRemovingId(null);
         }
@@ -418,11 +418,11 @@ export function ModalDetalleLoteGDE({
       onConfirm: async () => {
         try {
           await eliminarLoteTesoreria(lote.id);
-          toast.success("Lote desarmado exitosamente.");
+          toast.success(`Lote "${lote.numero_lote}" desarmado exitosamente.`);
           await onRefresh();
           onClose();
         } catch (err: any) {
-          toast.error(err?.message || "Error al eliminar lote");
+          toast.error(err?.message || "No se pudo desarmar el lote");
         }
       },
     });
@@ -444,11 +444,11 @@ export function ModalDetalleLoteGDE({
         },
         lote.id
       );
-      toast.success("Pago de lote registrado y todas las prestaciones pasaron a Pagado.");
+      toast.success("Pago del lote registrado exitosamente.");
       await onRefresh();
       onClose();
     } catch (err: any) {
-      toast.error(err?.message || "Error al liquidar lote");
+      toast.error(err?.message || "No se pudo registrar la liquidación del lote");
     } finally {
       setIsPayingLote(false);
     }

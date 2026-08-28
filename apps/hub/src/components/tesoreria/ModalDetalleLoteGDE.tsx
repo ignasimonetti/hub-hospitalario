@@ -628,22 +628,41 @@ export function ModalDetalleLoteGDE({
                 </Badge>
               </div>
 
-              {/* Botón de acción masiva para seleccionados */}
-              {!estaPagado && selectedIds.length > 0 && (
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleMarcarSeleccionadosPagados}
-                  disabled={Boolean(isMarkingPaid)}
-                  className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-xs animate-in fade-in duration-200"
-                >
-                  {isMarkingPaid === "bulk" ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                  )}
-                  Marcar {selectedIds.length} seleccionados como Pagados
-                </Button>
+              {/* Botón de acción masiva */}
+              {!estaPagado && !todosPagados && (
+                selectedIds.length > 0 ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleMarcarSeleccionadosPagados}
+                    disabled={Boolean(isMarkingPaid)}
+                    className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-xs animate-in fade-in duration-200"
+                  >
+                    {isMarkingPaid === "bulk" ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    )}
+                    Marcar {selectedIds.length} seleccionados como Pagados
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleMarcarTodosPagados}
+                    disabled={Boolean(isMarkingPaid)}
+                    className="h-7 text-xs border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 font-semibold flex items-center gap-1.5"
+                    title="Marcar todas las prestaciones pendientes de este lote como pagadas"
+                  >
+                    {isMarkingPaid === "bulk" ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Check className="h-3.5 w-3.5" />
+                    )}
+                    Marcar todos como pagados ({totalPrestacionesCount - prestacionesPagadasCount})
+                  </Button>
+                )
               )}
             </div>
 
@@ -846,36 +865,6 @@ export function ModalDetalleLoteGDE({
                   </Button>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* Liquidación Rápida Masiva de Pendientes */}
-          {!estaPagado && !todosPagados && (
-            <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 flex items-center justify-between gap-3">
-              <div className="space-y-0.5">
-                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <Receipt className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  Liquidación Total de Pendientes
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Si ya ejecutó todas las transferencias de este lote, puede marcarlas todas juntas en 1 clic.
-                </p>
-              </div>
-
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleMarcarTodosPagados}
-                disabled={Boolean(isMarkingPaid)}
-                className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shrink-0"
-              >
-                {isMarkingPaid === "bulk" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Check className="h-3.5 w-3.5" />
-                )}
-                Marcar Todos como Pagados ({totalPrestacionesCount - prestacionesPagadasCount})
-              </Button>
             </div>
           )}
 

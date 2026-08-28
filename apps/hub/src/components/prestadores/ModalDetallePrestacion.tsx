@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,10 @@ import {
   SECTORES_SERVICIO_MAP,
   SectorServicio,
   FormularioDigitalData,
+  ConfiguracionModuloPrestadores,
+  DEFAULT_CONFIGURACION_PRESTADORES,
 } from "@/types/prestadores";
+import { getPrestadoresConfig } from "@/lib/services/parametersService";
 import { getPrestacionFileUrl, getPerfilFileUrl, deletePrestacion } from "@/lib/services/prestadoresService";
 import { abrirPlanillaOficialEnNuevaPestana } from "@/lib/services/pdfPrestacionService";
 import { toast } from "sonner";
@@ -69,6 +72,14 @@ export function ModalDetallePrestacion({
 }: ModalDetallePrestacionProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [configPrestadores, setConfigPrestadores] = useState<ConfiguracionModuloPrestadores>(DEFAULT_CONFIGURACION_PRESTADORES);
+
+  // Cargar aranceles vigentes
+  useEffect(() => {
+    if (prestacion?.tenant) {
+      getPrestadoresConfig(prestacion.tenant).then(setConfigPrestadores);
+    }
+  }, [prestacion?.tenant]);
 
   // Parsear digital_form_data (siempre antes de returns condicionales para respetar reglas de hooks)
   const digitalForm = useMemo<FormularioDigitalData | null>(() => {
@@ -96,7 +107,40 @@ export function ModalDetallePrestacion({
     }
   }, [prestacion?.historial_observaciones]);
 
+  // Calcular total devengado según la certificación asistencial cargada
+  const montoDevengado = useMemo(() => {
+    if (!prestacion) return 0;
+    if (!digitalForm) return Number(prestacion.invoice_amount) || 0;
+    if (digitalForm.tipo_formulario === "guardia") {
+      return (digitalForm.renglones || []).reduce((sum, g) => {
+        if (!g.fecha) return sum;
+        if (typeof g.valor === "number" && g.valor > 0) return sum + g.valor;
+        const horas = Math.max(1, Math.min(24, Number(g.duracion_horas) || 24));
+        const dateObj = new Date(g.fecha + "T12:00:00Z");
+        const dayOfWeek = dateObj.getUTCDay();
+        const isInhabil = dayOfWeek === 0 || dayOfWeek === 6;
+        let valor24hs = 0;
+        if (g.tipo === "critica") {
+          valor24hs = isInhabil ? configPrestadores.valor_guardia_critica_inhabil : configPrestadores.valor_guardia_critica_habil;
+        } else {
+          valor24hs = isInhabil ? configPrestadores.valor_guardia_ordinaria_inhabil : configPrestadores.valor_guardia_ordinaria_habil;
+        }
+        return sum + (valor24hs / 24) * horas;
+      }, 0);
+    } else if (digitalForm.tipo_formulario === "extension_horaria") {
+      return (digitalForm.renglones || []).reduce((sum, r) => {
+        if (typeof r.valor === "number" && r.valor > 0) return sum + r.valor;
+        const horas = Number(r.horas_cumplidas) || 0;
+        return sum + horas * configPrestadores.valor_hora_extension;
+      }, 0);
+    }
+    return Number(prestacion.invoice_amount) || 0;
+  }, [digitalForm, configPrestadores, prestacion]);
+
   if (!prestacion) return null;
+
+  const montoFacturado = Number(prestacion.invoice_amount) || 0;
+  const hayInconsistencia = montoDevengado > 0 && Math.abs(montoDevengado - montoFacturado) > 0.01;
 
   const estadoCfg = ESTADOS_PRESTACION_CONFIG[prestacion.status];
   const mesNombre = MESES[prestacion.period_month - 1] || `Mes ${prestacion.period_month}`;
@@ -183,7 +227,14 @@ export function ModalDetallePrestacion({
                     Período: {mesNombre} {prestacion.period_year}
                   </span>
                   <span>•</span>
-                  <span>{prestacion.invoice_number ? `Factura ${prestacion.invoice_number}` : "Sin factura adjunta (Borrador)"}</span>
+                  <span className={`font-semibold font-mono ${hayInconsistencia ? "text-amber-600 dark:text-amber-400" : "text-blue-700 dark:text-blue-400"}`}>
+                    Devengado: {formatMoney(montoDevengado)}
+                  </span>
+                  {hayInconsistencia && (
+                    <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-800">
+                      ⚠️ Difiere de Factura ({formatMoney(montoFacturado)})
+                    </span>
+                  )}
                 </DialogDescription>
               </div>
             </div>

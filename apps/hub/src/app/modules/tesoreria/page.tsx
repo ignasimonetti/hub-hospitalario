@@ -1087,6 +1087,7 @@ export default function TesoreriaPage() {
                               <th className="py-3 px-3">Trámite & Período</th>
                               <th className="py-3 px-3">Beneficiario & CUIT</th>
                               <th className="py-3 px-3">Factura</th>
+                              <th className="py-3 px-3">Lote Asignado</th>
                               <th className="py-3 px-3 text-right">Importe Bruto</th>
                               <th className="py-3 px-3 text-right">Importe Neto</th>
                               <th className="py-3 px-3 text-center">Estado</th>
@@ -1113,6 +1114,8 @@ export default function TesoreriaPage() {
                                   : montoBruto - retMonto;
 
                               const isConformado = item.treasury_check_status === "conformado";
+                              const loteAsociado = lotes.find((l) => l.id === item.lote_id);
+                              const numeroLoteDisplay = item.lote_numero || loteAsociado?.numero_lote;
 
                               return (
                                 <tr
@@ -1173,6 +1176,27 @@ export default function TesoreriaPage() {
                                     </div>
                                   </td>
 
+                                  {/* Lote Asignado */}
+                                  <td className="py-3 px-3">
+                                    {numeroLoteDisplay ? (
+                                      <div>
+                                        <Badge
+                                          variant="outline"
+                                          className="font-mono text-[10px] bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold"
+                                        >
+                                          {numeroLoteDisplay}
+                                        </Badge>
+                                        {item.numero_expediente_gde && (
+                                          <div className="text-[10px] text-slate-400 font-mono truncate max-w-[130px]" title={item.numero_expediente_gde}>
+                                            {item.numero_expediente_gde}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400 text-[11px]">—</span>
+                                    )}
+                                  </td>
+
                                   {/* Bruto Facturado */}
                                   <td className="py-3 px-3 text-right">
                                     <span className="font-mono font-medium text-gray-900 dark:text-slate-100 text-xs">
@@ -1207,9 +1231,9 @@ export default function TesoreriaPage() {
                                     ) : item.status === "pagado" ? (
                                       <Badge
                                         variant="outline"
-                                        className="bg-teal-50 text-teal-800 border-teal-300 text-[10px] mx-auto w-fit"
+                                        className="bg-teal-50 text-teal-800 border-teal-300 text-[10px] mx-auto w-fit font-semibold"
                                       >
-                                        Pagado BSE
+                                        Pagado
                                       </Badge>
                                     ) : (
                                       <Badge

@@ -178,7 +178,7 @@ export function ModalDetalleLiquidacion({
             <TabsList className="grid grid-cols-3 w-full h-9 bg-slate-200/70 dark:bg-slate-800/70">
               <TabsTrigger value="liquidacion" className="text-xs flex items-center gap-1.5">
                 <CreditCard className="h-3.5 w-3.5" />
-                Liquidación & Banco
+                Liquidación & Pago
               </TabsTrigger>
               <TabsTrigger value="asistencial" className="text-xs flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5" />
@@ -192,7 +192,7 @@ export function ModalDetalleLiquidacion({
           </div>
 
           <div className="p-5">
-            {/* TAB 1: DATOS DE LIQUIDACIÓN Y BANCO */}
+            {/* TAB 1: DATOS DE LIQUIDACIÓN Y PAGO */}
             <TabsContent value="liquidacion" className="space-y-4 m-0">
               {/* Datos Bancarios y Fiscales */}
               <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 space-y-3">
@@ -318,11 +318,6 @@ export function ModalDetalleLiquidacion({
                       </div>
                     </div>
                   </div>
-                  {prestacion.treasury_observation && (
-                    <p className="text-xs text-emerald-950 dark:text-emerald-200 pt-1 border-t border-emerald-200/50">
-                      <strong>Detalle:</strong> {prestacion.treasury_observation}
-                    </p>
-                  )}
                   {comprobantePagoUrl && (
                     <div className="pt-1">
                       <a

@@ -1129,7 +1129,7 @@ export async function marcarPrestacionesPagadas(
       await registrarPagoLiquidacion(id, {
         receiptNumber: "TRANSFERENCIA_HB",
         paymentDate: fechaHoy,
-        notes: "Transferencia bancaria individual ejecutada vía Home Banking",
+        notes: "Liquidación cancelada",
       });
       exitosas++;
     } catch (err) {

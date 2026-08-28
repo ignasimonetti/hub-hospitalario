@@ -191,6 +191,10 @@ export default function TesoreriaPage() {
     const pendientesControl = filtradas.filter(
       (p) => p.status === "aprobado" && !p.lote_id && p.treasury_check_status !== "conformado"
     );
+    const montoPendientesControl = pendientesControl.reduce(
+      (acc, cur) => acc + (Number(cur.invoice_amount) || 0),
+      0
+    );
 
     // 2. Conformadas listas para enviar a Lote (aprobadas, sin asignar a lote y ya conformadas)
     const listasParaLote = filtradas.filter(
@@ -217,6 +221,7 @@ export default function TesoreriaPage() {
 
     return {
       pendientesControlCount: pendientesControl.length,
+      montoPendientesControl,
       listasParaLoteCount: listasParaLote.length,
       montoListasParaLote,
       enLotesCount: enLotesPendientesPago.length,
@@ -684,9 +689,11 @@ export default function TesoreriaPage() {
                     <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 block uppercase tracking-wider">
                       Pendientes de Control
                     </span>
-                    <span className="text-xl font-extrabold text-amber-900 dark:text-amber-100">
+                    <span className="text-xl font-extrabold text-amber-900 dark:text-amber-100 font-mono">
                       {metricasSimples.pendientesControlCount}{" "}
-                      <span className="text-xs font-normal text-amber-700">profesionales</span>
+                      <span className="text-xs font-normal text-amber-700 dark:text-amber-300">
+                        ({formatMoney(metricasSimples.montoPendientesControl)})
+                      </span>
                     </span>
                   </div>
                   <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg text-amber-700 dark:text-amber-300">

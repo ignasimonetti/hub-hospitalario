@@ -16,7 +16,11 @@ import {
   SECTORES_SERVICIO_MAP,
   SectorServicio,
   ESTADOS_PRESTACION_CONFIG,
+  FormularioDigitalData,
+  ConfiguracionModuloPrestadores,
+  DEFAULT_CONFIGURACION_PRESTADORES,
 } from "@/types/prestadores";
+import { getPrestadoresConfig } from "@/lib/services/parametersService";
 import {
   getPrestacionesParaTesoreria,
   getLotesTesoreria,
@@ -169,6 +173,55 @@ export default function TesoreriaPage() {
     }
   };
 
+  // Configuración de aranceles vigente
+  const [configPrestadores, setConfigPrestadores] = useState<ConfiguracionModuloPrestadores>(DEFAULT_CONFIGURACION_PRESTADORES);
+
+  useEffect(() => {
+    getPrestadoresConfig(currentTenant?.id).then(setConfigPrestadores);
+  }, [currentTenant?.id]);
+
+  // Helper para calcular devengado de una prestación
+  const calcularDevengadoPrestacion = (p: PrestacionTesoreriaItem): number => {
+    if (!p.digital_form_data) return Number(p.invoice_amount) || 0;
+    try {
+      const digitalForm: FormularioDigitalData =
+        typeof p.digital_form_data === "string"
+          ? JSON.parse(p.digital_form_data)
+          : p.digital_form_data;
+
+      if (digitalForm.tipo_formulario === "guardia") {
+        return (digitalForm.renglones || []).reduce((sum, g) => {
+          if (!g.fecha) return sum;
+          if (typeof g.valor === "number" && g.valor > 0) return sum + g.valor;
+          const horas = Math.max(1, Math.min(24, Number(g.duracion_horas) || 24));
+          const dateObj = new Date(g.fecha + "T12:00:00Z");
+          const dayOfWeek = dateObj.getUTCDay();
+          const isInhabil = dayOfWeek === 0 || dayOfWeek === 6;
+          let valor24hs = 0;
+          if (g.tipo === "critica") {
+            valor24hs = isInhabil
+              ? configPrestadores.valor_guardia_critica_inhabil
+              : configPrestadores.valor_guardia_critica_habil;
+          } else {
+            valor24hs = isInhabil
+              ? configPrestadores.valor_guardia_ordinaria_inhabil
+              : configPrestadores.valor_guardia_ordinaria_habil;
+          }
+          return sum + (valor24hs / 24) * horas;
+        }, 0);
+      } else if (digitalForm.tipo_formulario === "extension_horaria") {
+        return (digitalForm.renglones || []).reduce((sum, r) => {
+          if (typeof r.valor === "number" && r.valor > 0) return sum + r.valor;
+          const horas = Number(r.horas_cumplidas) || 0;
+          return sum + horas * configPrestadores.valor_hora_extension;
+        }, 0);
+      }
+    } catch {
+      // Fallback
+    }
+    return Number(p.invoice_amount) || 0;
+  };
+
   // KPIs dinámicos
   const kpisData = useMemo(() => {
     const mesNum = filtroMes === "todos" ? undefined : parseInt(filtroMes, 10);
@@ -187,12 +240,12 @@ export default function TesoreriaPage() {
       return true;
     });
 
-    // 1. Pendientes de Control (aprobadas, sin asignar a lote y no conformadas aún)
+    // 1. Pendientes de Control (aprobadas, sin asignar a lote y no conformadas aún) -> Calculado con Total Devengado
     const pendientesControl = filtradas.filter(
       (p) => p.status === "aprobado" && !p.lote_id && p.treasury_check_status !== "conformado"
     );
     const montoPendientesControl = pendientesControl.reduce(
-      (acc, cur) => acc + (Number(cur.invoice_amount) || 0),
+      (acc, cur) => acc + calcularDevengadoPrestacion(cur),
       0
     );
 
@@ -228,7 +281,7 @@ export default function TesoreriaPage() {
       montoEnLotes,
       observadasCount: observadas.length,
     };
-  }, [prestaciones, filtroMes, filtroAnio]);
+  }, [prestaciones, filtroMes, filtroAnio, configPrestadores]);
 
   // Lista filtrada según pestaña y criterios (REGLA CLAVE: enviadas a lote NO aparecen en control_documental)
   const itemsFiltrados = useMemo(() => {

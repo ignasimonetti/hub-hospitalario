@@ -17,6 +17,11 @@ import {
   eliminarComprobanteRetencionLote,
   ESTADOS_LOTE_ABIERTO,
 } from "@/lib/services/tesoreriaService";
+import {
+  descargarDocumentacionRespaldatoriaLotePDF,
+  descargarDocumentacionRespaldatoriaLoteZIP,
+  ProgresoDescargaDocumentacion,
+} from "@/lib/services/documentacionLoteService";
 import { ModalExportarDetalleLote } from "@/components/tesoreria/ModalExportarDetalleLote";
 import { ModalConfigurarOrdenDePago } from "@/components/tesoreria/ModalConfigurarOrdenDePago";
 import {
@@ -60,6 +65,9 @@ import {
   UploadCloud,
   Paperclip,
   ExternalLink,
+  FolderArchive,
+  FileDown,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -91,6 +99,8 @@ export function ModalDetalleLoteGDE({
   const [deletingComprobanteId, setDeletingComprobanteId] = useState<string | null>(null);
   const [isUploadingRetenciones, setIsUploadingRetenciones] = useState(false);
   const [deletingRetencionId, setDeletingRetencionId] = useState<string | null>(null);
+  const [isDownloadingDocs, setIsDownloadingDocs] = useState<"pdf" | "zip" | null>(null);
+  const [progresoDocs, setProgresoDocs] = useState<ProgresoDescargaDocumentacion | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -106,6 +116,50 @@ export function ModalDetalleLoteGDE({
     variant: "destructive",
     onConfirm: () => {},
   });
+
+  const handleDescargarDocsPDF = async () => {
+    if (prestacionesDelLote.length === 0) {
+      toast.warning("No hay prestaciones en el lote para descargar documentación");
+      return;
+    }
+    setIsDownloadingDocs("pdf");
+    try {
+      await descargarDocumentacionRespaldatoriaLotePDF(
+        lote,
+        prestacionesDelLote,
+        (progreso) => setProgresoDocs(progreso)
+      );
+      toast.success("Documentación respaldatoria consolidada en PDF descargada con éxito.");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Error al compilar la documentación respaldatoria");
+    } finally {
+      setIsDownloadingDocs(null);
+      setProgresoDocs(null);
+    }
+  };
+
+  const handleDescargarDocsZIP = async () => {
+    if (prestacionesDelLote.length === 0) {
+      toast.warning("No hay prestaciones en el lote para descargar documentación");
+      return;
+    }
+    setIsDownloadingDocs("zip");
+    try {
+      await descargarDocumentacionRespaldatoriaLoteZIP(
+        lote,
+        prestacionesDelLote,
+        (progreso) => setProgresoDocs(progreso)
+      );
+      toast.success("Paquete ZIP de documentación respaldatoria descargado con éxito.");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Error al generar paquete ZIP");
+    } finally {
+      setIsDownloadingDocs(null);
+      setProgresoDocs(null);
+    }
+  };
 
   if (!lote) return null;
 
@@ -578,9 +632,44 @@ export function ModalDetalleLoteGDE({
                 variant="outline"
                 onClick={handleAbrirPlanillaResumenGDE}
                 className="text-xs flex items-center gap-1.5"
+                title="Abrir e imprimir la planilla oficial del Anexo I para el cuerpo principal del expediente"
               >
                 <FileSpreadsheet className="h-3.5 w-3.5" />
-                Ver Planilla Resumen GDE (Anexo I)
+                Planilla Resumen (Anexo I)
+              </Button>
+
+              {/* Botón Principal: PDF Consolidado de Documentación Respaldatoria para Archivos de Trabajo */}
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleDescargarDocsPDF}
+                disabled={Boolean(isDownloadingDocs)}
+                className="text-xs flex items-center gap-1.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold shadow-xs"
+                title="Genera un único archivo PDF con todas las Fichas Asistenciales, Facturas ARCA y Conductas Fiscales DGR en el orden exacto de la nómina (ideal para la sección Archivos de Trabajo de GDE)"
+              >
+                {isDownloadingDocs === "pdf" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Layers className="h-3.5 w-3.5" />
+                )}
+                Documentación Respaldatoria (PDF Unificado GDE)
+              </Button>
+
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleDescargarDocsZIP}
+                disabled={Boolean(isDownloadingDocs)}
+                className="text-xs flex items-center gap-1.5 text-slate-700 dark:text-slate-300"
+                title="Descargar paquete ZIP con todos los archivos organizados por carpeta de profesional"
+              >
+                {isDownloadingDocs === "zip" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <FolderArchive className="h-3.5 w-3.5" />
+                )}
+                Descargar ZIP
               </Button>
 
               <Button
@@ -589,6 +678,7 @@ export function ModalDetalleLoteGDE({
                 variant="outline"
                 onClick={handleExportarBSE}
                 className="text-xs flex items-center gap-1.5"
+                title="Exportar matriz de liquidación y retenciones en formato Excel/CSV"
               >
                 <Download className="h-3.5 w-3.5" />
                 Exportar Detalle
@@ -608,6 +698,22 @@ export function ModalDetalleLoteGDE({
               </Button>
             )}
           </div>
+
+          {/* Banner de Progreso de Compilación de Documentación */}
+          {progresoDocs && (
+            <div className="p-3 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center gap-3 text-xs text-blue-900 dark:text-blue-200 animate-in fade-in duration-150">
+              <Loader2 className="h-4 w-4 animate-spin text-blue-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between font-semibold">
+                  <span className="truncate">Compilando documentación: {progresoDocs.prestadorNombre}</span>
+                  <span className="font-mono text-[11px] ml-2 shrink-0">{progresoDocs.currentItem} de {progresoDocs.totalItems}</span>
+                </div>
+                <p className="text-[11px] text-blue-700 dark:text-blue-300 truncate mt-0.5">
+                  {progresoDocs.paso}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Tabla de Prestaciones del Lote con Selección y Pagos Individuales */}
           <div className="space-y-2">

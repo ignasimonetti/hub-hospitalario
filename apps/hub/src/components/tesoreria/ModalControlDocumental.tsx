@@ -141,6 +141,88 @@ export function ModalControlDocumental({
     }
     return Number(prestacion.invoice_amount) || 0;
   }, [digitalForm, configPrestadores, prestacion]);
+  // Evaluación de Vigencia de Conducta Fiscal
+  const evaluacionConductaFiscal = useMemo(() => {
+    if (!prestacion) {
+      return {
+        estado: "sin_fecha" as const,
+        mensaje: "Sin fecha",
+        colorBadge: "bg-slate-100 text-slate-700 border-slate-300",
+        esInvalida: false,
+      };
+    }
+
+    const fechaVtoConducta = prestacion.conducta_fiscal_due_date;
+    const fechaPresentacion = prestacion.submitted_at || prestacion.created;
+    const fechaFactura = prestacion.invoice_date;
+
+    const formatD = (dateStr?: string) => {
+      if (!dateStr) return "-";
+      try {
+        const clean = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.split(" ")[0];
+        const parts = clean.split("-");
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        return clean;
+      } catch {
+        return dateStr;
+      }
+    };
+
+    if (!fechaVtoConducta) {
+      return {
+        estado: "sin_fecha" as const,
+        mensaje: "Sin fecha de vencimiento registrada",
+        colorBadge: "bg-slate-100 text-slate-700 border-slate-300",
+        esInvalida: false,
+      };
+    }
+
+    const vtoOnly = fechaVtoConducta.includes("T") ? fechaVtoConducta.split("T")[0] : fechaVtoConducta.split(" ")[0];
+    const presOnly = fechaPresentacion ? (fechaPresentacion.includes("T") ? fechaPresentacion.split("T")[0] : fechaPresentacion.split(" ")[0]) : "";
+    const factOnly = fechaFactura ? (fechaFactura.includes("T") ? fechaFactura.split("T")[0] : fechaFactura.split(" ")[0]) : "";
+
+    const fechaRef = presOnly || factOnly;
+
+    if (!fechaRef) {
+      return {
+        estado: "indeterminado" as const,
+        mensaje: `Vto: ${vtoOnly}`,
+        colorBadge: "bg-slate-100 text-slate-700 border-slate-300",
+        esInvalida: false,
+      };
+    }
+
+    // Estuvo vencida al momento del envío?
+    if (vtoOnly < fechaRef) {
+      return {
+        estado: "vencida_al_enviar" as const,
+        mensaje: `⚠️ Vencida al presentar (${formatD(vtoOnly)} < ${formatD(fechaRef)})`,
+        colorBadge: "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 font-bold",
+        esInvalida: true,
+      };
+    }
+
+    // Estuvo vigente al momento del envío
+    const hoyStr = new Date().toISOString().split("T")[0];
+    const estaVencidaHoy = vtoOnly < hoyStr;
+
+    if (estaVencidaHoy) {
+      return {
+        estado: "vigente_al_inicio_vencida_hoy" as const,
+        mensaje: `✓ Vigente al presentar (Vto: ${formatD(vtoOnly)})`,
+        subMensaje: `Venció con posterioridad (${formatD(vtoOnly)}) durante el trámite`,
+        colorBadge: "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 font-semibold",
+        esInvalida: false,
+      };
+    }
+
+    return {
+      estado: "vigente" as const,
+      mensaje: `✓ Vigente (Vto: ${formatD(vtoOnly)})`,
+      colorBadge: "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 font-semibold",
+      esInvalida: false,
+    };
+  }, [prestacion]);
 
   if (!prestacion) return null;
 
@@ -230,66 +312,7 @@ export function ModalControlDocumental({
     ? getPerfilFileUrl(perfil, perfil.file_conducta_fiscal)
     : "";
 
-  // Evaluación de Vigencia de Conducta Fiscal
-  const fechaVtoConducta = prestacion.conducta_fiscal_due_date;
   const fechaPresentacion = prestacion.submitted_at || prestacion.created;
-  const fechaFactura = prestacion.invoice_date;
-
-  const evaluacionConductaFiscal = useMemo(() => {
-    if (!fechaVtoConducta) {
-      return {
-        estado: "sin_fecha" as const,
-        mensaje: "Sin fecha de vencimiento registrada",
-        colorBadge: "bg-slate-100 text-slate-700 border-slate-300",
-      };
-    }
-
-    const vtoOnly = fechaVtoConducta.includes("T") ? fechaVtoConducta.split("T")[0] : fechaVtoConducta.split(" ")[0];
-    const presOnly = fechaPresentacion ? (fechaPresentacion.includes("T") ? fechaPresentacion.split("T")[0] : fechaPresentacion.split(" ")[0]) : "";
-    const factOnly = fechaFactura ? (fechaFactura.includes("T") ? fechaFactura.split("T")[0] : fechaFactura.split(" ")[0]) : "";
-
-    // Fecha de referencia: la de presentación formal si existe, sino la de factura
-    const fechaRef = presOnly || factOnly;
-
-    if (!fechaRef) {
-      return {
-        estado: "indeterminado" as const,
-        mensaje: `Vto: ${vtoOnly}`,
-        colorBadge: "bg-slate-100 text-slate-700 border-slate-300",
-      };
-    }
-
-    // Estuvo vencida al momento del envío?
-    if (vtoOnly < fechaRef) {
-      return {
-        estado: "vencida_al_enviar" as const,
-        mensaje: `⚠️ Vencida al presentar (${formatDate(vtoOnly)} < ${formatDate(fechaRef)})`,
-        colorBadge: "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 font-bold",
-        esInvalida: true,
-      };
-    }
-
-    // Estuvo vigente al momento del envío
-    const hoyStr = new Date().toISOString().split("T")[0];
-    const estaVencidaHoy = vtoOnly < hoyStr;
-
-    if (estaVencidaHoy) {
-      return {
-        estado: "vigente_al_inicio_vencida_hoy" as const,
-        mensaje: `✓ Vigente al presentar (Vto: ${formatDate(vtoOnly)})`,
-        subMensaje: `Venció con posterioridad (${formatDate(vtoOnly)}) durante el trámite`,
-        colorBadge: "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 font-semibold",
-        esInvalida: false,
-      };
-    }
-
-    return {
-      estado: "vigente" as const,
-      mensaje: `✓ Vigente (Vto: ${formatDate(vtoOnly)})`,
-      colorBadge: "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 font-semibold",
-      esInvalida: false,
-    };
-  }, [fechaVtoConducta, fechaPresentacion, fechaFactura]);
 
   const handleVerPlanillaOficial = () => {
     const html = generarPlanillaOficialHTML(prestacion, perfil);

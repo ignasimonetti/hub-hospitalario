@@ -230,6 +230,67 @@ export function ModalControlDocumental({
     ? getPerfilFileUrl(perfil, perfil.file_conducta_fiscal)
     : "";
 
+  // Evaluación de Vigencia de Conducta Fiscal
+  const fechaVtoConducta = prestacion.conducta_fiscal_due_date;
+  const fechaPresentacion = prestacion.submitted_at || prestacion.created;
+  const fechaFactura = prestacion.invoice_date;
+
+  const evaluacionConductaFiscal = useMemo(() => {
+    if (!fechaVtoConducta) {
+      return {
+        estado: "sin_fecha" as const,
+        mensaje: "Sin fecha de vencimiento registrada",
+        colorBadge: "bg-slate-100 text-slate-700 border-slate-300",
+      };
+    }
+
+    const vtoOnly = fechaVtoConducta.includes("T") ? fechaVtoConducta.split("T")[0] : fechaVtoConducta.split(" ")[0];
+    const presOnly = fechaPresentacion ? (fechaPresentacion.includes("T") ? fechaPresentacion.split("T")[0] : fechaPresentacion.split(" ")[0]) : "";
+    const factOnly = fechaFactura ? (fechaFactura.includes("T") ? fechaFactura.split("T")[0] : fechaFactura.split(" ")[0]) : "";
+
+    // Fecha de referencia: la de presentación formal si existe, sino la de factura
+    const fechaRef = presOnly || factOnly;
+
+    if (!fechaRef) {
+      return {
+        estado: "indeterminado" as const,
+        mensaje: `Vto: ${vtoOnly}`,
+        colorBadge: "bg-slate-100 text-slate-700 border-slate-300",
+      };
+    }
+
+    // Estuvo vencida al momento del envío?
+    if (vtoOnly < fechaRef) {
+      return {
+        estado: "vencida_al_enviar" as const,
+        mensaje: `⚠️ Vencida al presentar (${formatDate(vtoOnly)} < ${formatDate(fechaRef)})`,
+        colorBadge: "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 font-bold",
+        esInvalida: true,
+      };
+    }
+
+    // Estuvo vigente al momento del envío
+    const hoyStr = new Date().toISOString().split("T")[0];
+    const estaVencidaHoy = vtoOnly < hoyStr;
+
+    if (estaVencidaHoy) {
+      return {
+        estado: "vigente_al_inicio_vencida_hoy" as const,
+        mensaje: `✓ Vigente al presentar (Vto: ${formatDate(vtoOnly)})`,
+        subMensaje: `Venció con posterioridad (${formatDate(vtoOnly)}) durante el trámite`,
+        colorBadge: "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 font-semibold",
+        esInvalida: false,
+      };
+    }
+
+    return {
+      estado: "vigente" as const,
+      mensaje: `✓ Vigente (Vto: ${formatDate(vtoOnly)})`,
+      colorBadge: "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 font-semibold",
+      esInvalida: false,
+    };
+  }, [fechaVtoConducta, fechaPresentacion, fechaFactura]);
+
   const handleVerPlanillaOficial = () => {
     const html = generarPlanillaOficialHTML(prestacion, perfil);
     const win = window.open("", "_blank");
@@ -343,18 +404,30 @@ export function ModalControlDocumental({
               </div>
 
               {/* Conducta Fiscal DGR */}
-              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
+              <div className={`p-3 rounded-lg border space-y-2 text-xs ${
+                evaluacionConductaFiscal.esInvalida
+                  ? "border-rose-300 bg-rose-50/50 dark:bg-rose-950/20 dark:border-rose-800"
+                  : "border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50"
+              }`}>
+                <div className="flex items-center justify-between gap-1 flex-wrap">
                   <span className="font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1.5">
-                    <FileCheck2 className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" /> Conducta Fiscal (DGR SDE)
+                    <FileCheck2 className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" /> Conducta Fiscal (DGR)
                   </span>
-                  <Badge variant="outline" className="text-[10px]">
-                    {prestacion.conducta_fiscal_due_date ? `Vto: ${formatDate(prestacion.conducta_fiscal_due_date)}` : "Sin fecha"}
+                  <Badge variant="outline" className={`text-[10px] ${evaluacionConductaFiscal.colorBadge}`}>
+                    {evaluacionConductaFiscal.mensaje}
                   </Badge>
                 </div>
                 <div className="text-gray-500 space-y-0.5 text-[11px]">
                   <div><strong>CUIT:</strong> {perfil?.cuit || "No informado"}</div>
                   <div><strong>Condición:</strong> {perfil?.tax_condition ? CONDICIONES_FISCALES_MAP[perfil.tax_condition] : "Monotributo"}</div>
+                  <div>
+                    <strong>Presentado el:</strong> {formatDate(fechaPresentacion)}
+                    {evaluacionConductaFiscal.subMensaje && (
+                      <span className="text-[10px] text-amber-700 dark:text-amber-300 block font-medium mt-0.5">
+                        ℹ️ {evaluacionConductaFiscal.subMensaje}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {conductaFiscalUrl ? (
                   <a

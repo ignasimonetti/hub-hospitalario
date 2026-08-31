@@ -728,152 +728,102 @@ export default function TesoreriaPage() {
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
           {/* VISTA 1: ANTESALA / HUB PRINCIPAL DE SUBMÓDULOS DE TESORERÍA */}
           {vistaActiva === "galeria" ? (
-            <div className="space-y-6 max-w-6xl mx-auto">
-              {/* Banner de Bienvenida y Resumen Financiero Ejecutivo */}
-              <div className="p-6 rounded-2xl bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg border border-slate-800 relative overflow-hidden">
-                <div className="relative z-10 space-y-2 max-w-2xl">
-                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Gestión Financiera & Pagos — CISB
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
-                    Centro de Control de Tesorería
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-300">
-                    Seleccione un área operativa para gestionar la liquidación de honorarios, control documental de facturas AFIP/ARCA, conformación de expedientes GDE y análisis de métricas.
-                  </p>
-                </div>
-
-                {/* Métricas Resumen Rápidas */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 pt-5 border-t border-slate-800/80">
-                  <div>
-                    <span className="text-[11px] text-slate-400 block uppercase font-medium">Pendiente de Control</span>
-                    <span className="text-lg sm:text-xl font-extrabold text-amber-400 font-mono">
-                      {metricasSimples.pendientesControlCount}{" "}
-                      <span className="text-xs font-normal text-slate-300">
-                        ({formatMoney(metricasSimples.montoPendientesControl)})
-                      </span>
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] text-slate-400 block uppercase font-medium">Listas para Lote</span>
-                    <span className="text-lg sm:text-xl font-extrabold text-blue-400 font-mono">
-                      {metricasSimples.listasParaLoteCount}{" "}
-                      <span className="text-xs font-normal text-slate-300">
-                        ({formatMoney(metricasSimples.montoListasParaLote)})
-                      </span>
-                    </span>
-                  </div>
-
-                  <div className="col-span-2 sm:col-span-1">
-                    <span className="text-[11px] text-slate-400 block uppercase font-medium">Lotes Activos</span>
-                    <span className="text-lg sm:text-xl font-extrabold text-emerald-400 font-mono">
-                      {lotes.filter((l) => l.estado !== "pagado_bse" && !l.comprobante_pago_bse).length}{" "}
-                      <span className="text-xs font-normal text-slate-300">expedientes</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Grid de Submódulos de Tesorería */}
-              <div>
-                <h3 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">
-                  Submódulos y Áreas de Trabajo
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Tarjeta 1: Liquidación a Prestadores Asistenciales */}
-                  <Card
-                    onClick={() => setVistaActiva("operaciones")}
-                    className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
-                  >
-                    <CardContent className="p-5 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                          <Receipt className="w-6 h-6" />
-                        </div>
-                        {metricasSimples.pendientesControlCount > 0 && (
-                          <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 text-[10px]">
-                            {metricasSimples.pendientesControlCount} por auditar
-                          </Badge>
-                        )}
+            <div className="space-y-4 max-w-5xl mx-auto py-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                {/* Tarjeta 1: Liquidación a Prestadores Asistenciales */}
+                <Card
+                  onClick={() => setVistaActiva("operaciones")}
+                  className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between rounded-xl"
+                >
+                  <CardContent className="p-5 sm:p-6 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
+                        <Receipt className="w-6 h-6" />
                       </div>
-
-                      <div className="space-y-1">
-                        <h4 className="text-base font-bold text-gray-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          Pago a Prestadores Asistenciales
-                        </h4>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
-                          Control documental de facturas, cálculo de retenciones (IIBB, Ganancias, SUSS), conformación de Lotes GDE y emisión de Órdenes de Pago.
-                        </p>
-                      </div>
-
-                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-blue-600 dark:text-blue-400 font-semibold">
-                        <span>Ingresar a Bandeja Operativa</span>
-                        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Tarjeta 2: Panel de Métricas & Estadísticas Financieras */}
-                  <Card
-                    onClick={() => setVistaActiva("metricas")}
-                    className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-400 dark:hover:border-indigo-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
-                  >
-                    <CardContent className="p-5 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className="w-11 h-11 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                          <BarChart3 className="w-6 h-6" />
-                        </div>
-                        <Badge variant="outline" className="text-[10px] text-slate-500">
-                          Analítica
+                      {metricasSimples.pendientesControlCount > 0 ? (
+                        <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 text-[10px] font-semibold">
+                          {metricasSimples.pendientesControlCount} por auditar
                         </Badge>
-                      </div>
-
-                      <div className="space-y-1">
-                        <h4 className="text-base font-bold text-gray-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                          Tablero de Métricas & Gastos
-                        </h4>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
-                          Análisis presupuestario, desglose de erogaciones por servicio hospitalario, evolución mensual de liquidaciones y KPIs de retenciones.
-                        </p>
-                      </div>
-
-                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-indigo-600 dark:text-indigo-400 font-semibold">
-                        <span>Ver Reportes & Gráficos</span>
-                        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Tarjeta 3: Pago a Proveedores & Servicios Comerciales (Futura expansión) */}
-                  <Card className="border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 opacity-75 flex flex-col justify-between">
-                    <CardContent className="p-5 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
-                          <Building2 className="w-6 h-6" />
-                        </div>
-                        <Badge variant="secondary" className="text-[10px] bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                          Próximamente
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40">
+                          Al día
                         </Badge>
-                      </div>
+                      )}
+                    </div>
 
-                      <div className="space-y-1">
-                        <h4 className="text-base font-bold text-gray-700 dark:text-slate-300">
-                          Proveedores & Bienes de Consumo
-                        </h4>
-                        <p className="text-xs text-gray-400 dark:text-slate-500 leading-relaxed">
-                          Circuito de pago para órdenes de compra, droguería central, mantenimiento de aparatología e insumos médicos generales.
-                        </p>
-                      </div>
+                    <div className="space-y-1.5">
+                      <h4 className="text-base font-bold text-gray-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        Pago a Prestadores Asistenciales
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                        Control documental de facturas, cálculo de retenciones (IIBB, Ganancias, SUSS), conformación de Lotes GDE y emisión de Órdenes de Pago.
+                      </p>
+                    </div>
 
-                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-gray-400">
-                        En fase de diseño institucional
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-blue-600 dark:text-blue-400 font-semibold">
+                      <span>Ingresar a Bandeja Operativa</span>
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Tarjeta 2: Panel de Métricas & Estadísticas Financieras */}
+                <Card
+                  onClick={() => setVistaActiva("metricas")}
+                  className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-400 dark:hover:border-indigo-600 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between rounded-xl"
+                >
+                  <CardContent className="p-5 sm:p-6 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
+                        <BarChart3 className="w-6 h-6" />
                       </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                      <Badge variant="outline" className="text-[10px] text-slate-500">
+                        Analítica
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <h4 className="text-base font-bold text-gray-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        Tablero de Métricas & Gastos
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                        Análisis presupuestario, desglose de erogaciones por servicio hospitalario, evolución mensual de liquidaciones y KPIs de retenciones.
+                      </p>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-indigo-600 dark:text-indigo-400 font-semibold">
+                      <span>Ver Reportes & Gráficos</span>
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Tarjeta 3: Pago a Proveedores & Servicios Comerciales (Futura expansión) */}
+                <Card className="border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 opacity-75 flex flex-col justify-between rounded-xl">
+                  <CardContent className="p-5 sm:p-6 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
+                        <Building2 className="w-6 h-6" />
+                      </div>
+                      <Badge variant="secondary" className="text-[10px] bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        Próximamente
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <h4 className="text-base font-bold text-gray-700 dark:text-slate-300">
+                        Proveedores & Bienes de Consumo
+                      </h4>
+                      <p className="text-xs text-gray-400 dark:text-slate-500 leading-relaxed">
+                        Circuito de pago para órdenes de compra, droguería central, mantenimiento de aparatología e insumos médicos generales.
+                      </p>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-[11px] text-gray-400">
+                      En fase de diseño institucional
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           ) : vistaActiva === "metricas" ? (

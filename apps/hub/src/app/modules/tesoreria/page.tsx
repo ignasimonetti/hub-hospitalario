@@ -836,7 +836,7 @@ export default function TesoreriaPage() {
                   onClick={() => setVistaActiva("galeria")}
                   className="text-xs text-gray-600 hover:text-gray-900 gap-1.5"
                 >
-                  <ArrowLeft className="h-3.5 w-3.5" /> Volver al Hub Principal
+                  <ArrowLeft className="h-3.5 w-3.5" /> Volver al Menú de Tesorería
                 </Button>
 
                 {/* Selector de Período para Métricas */}
@@ -880,7 +880,7 @@ export default function TesoreriaPage() {
                   onClick={() => setVistaActiva("galeria")}
                   className="text-xs text-gray-600 hover:text-gray-900 gap-1.5"
                 >
-                  <ArrowLeft className="h-3.5 w-3.5" /> Volver al Hub de Tesorería
+                  <ArrowLeft className="h-3.5 w-3.5" /> Volver al Menú de Tesorería
                 </Button>
               </div>
 

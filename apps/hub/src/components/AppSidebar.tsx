@@ -90,10 +90,17 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
         (currentRole?.name?.toLowerCase() || '').includes('suministros');
     const canAccessSupply = isAdmin || isSupplyUser;
 
-    // Check if user has Tesoreria access
-    const isTesoreriaUser = (currentRole?.slug || '').includes('tesoreria') ||
-        (currentRole?.name?.toLowerCase() || '').includes('tesorer') ||
-        (currentRole?.slug || '').includes('director');
+    // Check if user has Tesoreria access (excluyendo a director_adjunto)
+    const roleSlug = currentRole?.slug || '';
+    const roleName = (currentRole?.name || '').toLowerCase();
+    const isDirectorAdjunto = roleSlug === 'director_adjunto' || roleName.includes('adjunto');
+    const isTesoreriaUser =
+        !isDirectorAdjunto && (
+            roleSlug.includes('tesoreria') ||
+            roleName.includes('tesorer') ||
+            roleSlug === 'director_coordinador' ||
+            roleSlug === 'director'
+        );
     const canAccessTesoreria = isAdmin || isTesoreriaUser;
 
     const getTenantLogoUrl = () => {

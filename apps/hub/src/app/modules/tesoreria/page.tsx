@@ -113,7 +113,6 @@ export default function TesoreriaPage() {
     hasRole("tesorer") ||
     hasRole("director") ||
     hasRole("director_coordinador") ||
-    hasRole("director_adjunto") ||
     hasRole("admin") ||
     hasRole("superadmin");
 

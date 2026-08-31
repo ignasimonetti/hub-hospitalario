@@ -17,7 +17,7 @@ const MESES = [
 export function generarPlanillaOficialHTML(
   prestacion: PrestacionPresentacion,
   perfil?: PrestadorPerfil | null,
-  hospitalName: string = "Centro Integral de Salud La Banda - Dr. Ricardo \"Pololo\" Abdala"
+  hospitalName: string = "Centro Integral de Salud Banda - Dr. Ricardo \"Pololo\" Abdala"
 ): string {
   const isGuardia = prestacion.service_type === "guardia";
   const mesNombre = MESES[prestacion.period_month - 1] || `Mes ${prestacion.period_month}`;
@@ -362,7 +362,7 @@ export function generarPlanillaOficialHTML(
           <img src="${CISB_LOGO_B64}" alt="CISB" style="max-height: 52px; width: auto; object-fit: contain;" />
         </td>
         <td class="header-center">
-          <div class="header-hospital">Centro Integral de Salud La Banda - Dr. Ricardo &quot;Pololo&quot; Abdala</div>
+          <div class="header-hospital">Centro Integral de Salud Banda - Dr. Ricardo &quot;Pololo&quot; Abdala</div>
           <div class="header-title">
             ${isGuardia ? "FORMULARIO ÚNICO DE SOLICITUD Y AUTORIZACIÓN DE GUARDIAS" : "FORMULARIO ÚNICO DE SOLICITUD Y AUTORIZACIÓN DE EXTENSIÓN HORARIA"}
           </div>

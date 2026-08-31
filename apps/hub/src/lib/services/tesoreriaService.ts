@@ -1587,7 +1587,7 @@ export function generarOrdenDePagoHTML(
   lote: LoteTesoreria,
   prestaciones: PrestacionTesoreriaItem[],
   configParam?: OrdenDePagoConfigPayload,
-  hospitalName: string = 'Centro Integral de Salud La Banda - Dr. Ricardo "Pololo" Abdala'
+  hospitalName: string = 'Centro Integral de Salud Banda - Dr. Ricardo "Pololo" Abdala'
 ): string {
   const cfg = configParam || lote.op_config || {
     numero_op: lote.numero_orden_pago || "S/N",
@@ -1750,8 +1750,8 @@ export function generarOrdenDePagoHTML(
       <div class="logo-box">
         <img src="/assets/cisb.png" alt="Logo CISB" class="logo-img" onerror="this.style.display='none'" />
         <div class="institution-text">
-          <div class="institution-name">Centro Integral de Salud La Banda</div>
-          <div class="institution-sub">Dr. Ricardo "Pololo" Abdala • Ministerio de Salud • Sgo. del Estero</div>
+          <div class="institution-name">Centro Integral de Salud Banda</div>
+          <div class="institution-sub">Dr. Ricardo "Pololo" Abdala • Ministerio de Salud • Santiago del Estero</div>
         </div>
       </div>
       <div class="header-area">
@@ -1857,7 +1857,7 @@ export function generarPlanillaResumenLoteHTML(
   tituloLote: string,
   expedienteGde: string,
   prestaciones: PrestacionTesoreriaItem[],
-  hospitalName: string = 'Centro Integral de Salud La Banda - Dr. Ricardo "Pololo" Abdala'
+  hospitalName: string = 'Centro Integral de Salud Banda - Dr. Ricardo "Pololo" Abdala'
 ): string {
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {

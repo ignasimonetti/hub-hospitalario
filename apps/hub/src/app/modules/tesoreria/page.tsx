@@ -342,8 +342,10 @@ export default function TesoreriaPage() {
     });
   }, [prestaciones, tabActiva, filtroMes, filtroAnio, filtroServicio, searchQuery]);
 
-  // Lotes filtrados
+  // Lotes filtrados con búsqueda profunda (por cabecera y por prestaciones hijas: médico, CUIT, factura, trámite)
   const lotesFiltrados = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
     return lotes.filter((l) => {
       // Filtro por estado activo vs pagado
       if (filtroEstadoLotes === "activos") {
@@ -354,19 +356,44 @@ export default function TesoreriaPage() {
 
       if (filtroMes !== "todos" && l.periodo_mes !== parseInt(filtroMes, 10)) return false;
       if (filtroAnio !== "todos" && l.periodo_anio !== parseInt(filtroAnio, 10)) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
+
+      if (q) {
+        // 1. Coincidencia en cabecera del lote
+        const matchCabecera =
           l.numero_lote.toLowerCase().includes(q) ||
           (l.numero_expediente_gde || "").toLowerCase().includes(q) ||
           (l.numero_resolucion || "").toLowerCase().includes(q) ||
           (l.numero_orden_pago || "").toLowerCase().includes(q) ||
-          l.descripcion.toLowerCase().includes(q)
-        );
+          l.descripcion.toLowerCase().includes(q);
+
+        if (matchCabecera) return true;
+
+        // 2. Búsqueda profunda en prestaciones contenidas en este lote
+        const matchPrestacionHija = prestaciones.some((p) => {
+          if (p.lote_id !== l.id) return false;
+
+          const user = p.expand?.user;
+          const nombre = `${user?.lastName || ""} ${user?.firstName || ""}`.toLowerCase();
+          const email = (user?.email || "").toLowerCase();
+          const cuit = (p.perfilPrestador?.cuit || "").toLowerCase();
+          const formNum = (p.form_number || "").toLowerCase();
+          const invoiceNum = (p.invoice_number || "").toLowerCase();
+
+          return (
+            nombre.includes(q) ||
+            email.includes(q) ||
+            cuit.includes(q) ||
+            formNum.includes(q) ||
+            invoiceNum.includes(q)
+          );
+        });
+
+        return matchPrestacionHija;
       }
+
       return true;
     });
-  }, [lotes, filtroEstadoLotes, filtroMes, filtroAnio, searchQuery]);
+  }, [lotes, prestaciones, filtroEstadoLotes, filtroMes, filtroAnio, searchQuery]);
 
   // Conteos para pestañas
   const counts = useMemo(() => {
@@ -1096,6 +1123,43 @@ export default function TesoreriaPage() {
                                     <span>{lote.comprobantes_retenciones.length} certificado(s) de retención</span>
                                   </div>
                                 )}
+
+                                {/* Indicador de Coincidencia por Búsqueda Profunda */}
+                                {searchQuery.trim() && (() => {
+                                  const q = searchQuery.trim().toLowerCase();
+                                  const matches = prestaciones.filter((p) => {
+                                    if (p.lote_id !== lote.id) return false;
+                                    const user = p.expand?.user;
+                                    const nombre = `${user?.lastName || ""} ${user?.firstName || ""}`.toLowerCase();
+                                    const email = (user?.email || "").toLowerCase();
+                                    const cuit = (p.perfilPrestador?.cuit || "").toLowerCase();
+                                    const formNum = (p.form_number || "").toLowerCase();
+                                    const invoiceNum = (p.invoice_number || "").toLowerCase();
+                                    return (
+                                      nombre.includes(q) ||
+                                      email.includes(q) ||
+                                      cuit.includes(q) ||
+                                      formNum.includes(q) ||
+                                      invoiceNum.includes(q)
+                                    );
+                                  });
+
+                                  if (matches.length === 0) return null;
+
+                                  const primerMatch = matches[0];
+                                  const user = primerMatch.expand?.user;
+                                  const nombre = user ? `${user.lastName || ""} ${user.firstName || ""}`.trim() : "Prestador";
+
+                                  return (
+                                    <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-300/80 dark:border-amber-700 text-[10px] text-amber-900 dark:text-amber-200 font-medium">
+                                      <Search className="w-3 h-3 text-amber-600 shrink-0" />
+                                      <span className="truncate">
+                                        Contiene a: <strong>{nombre}</strong> {primerMatch.invoice_number ? `(Fact. ${primerMatch.invoice_number})` : ""}
+                                        {matches.length > 1 ? ` y ${matches.length - 1} más` : ""}
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
                               </CardContent>
                             </Card>
                           );

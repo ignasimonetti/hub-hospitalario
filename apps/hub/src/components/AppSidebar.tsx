@@ -117,95 +117,94 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
 
     // Base classes
     const containerClasses = isMobile
-        ? "h-full w-full bg-gray-50 dark:bg-slate-900 flex flex-col"
-        : `fixed left-0 top-0 bottom-0 bg-gray-50 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 z-10 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`;
+        ? "h-full w-full bg-[#f6f5f4] dark:bg-[#1f1f1f] flex flex-col"
+        : `fixed left-0 top-0 bottom-0 bg-[#f6f5f4] dark:bg-[#1f1f1f] border-r border-[#e6e6e6] dark:border-[#2e2e2e] z-10 flex flex-col transition-all duration-200 ease-in-out ${sidebarCollapsed ? 'w-16' : 'w-64'}`;
 
     const showContent = isMobile || !sidebarCollapsed;
+
+    // Helper for Notion item classes
+    const getNavButtonClasses = (isActive: boolean) => `
+        w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-2.5 px-2.5'} py-1.5 text-sm font-medium rounded-md transition-colors
+        ${isActive
+            ? 'text-[#000000] dark:text-white bg-[#eae8e6] dark:bg-[#2b2b2b] font-semibold'
+            : 'text-[#615d59] dark:text-[#a39e98] hover:text-[#000000] dark:hover:text-white hover:bg-[#eae8e6]/60 dark:hover:bg-[#2a2a2a]/60'
+        }
+    `;
 
     return (
         <>
             <div className={containerClasses}>
-                {/* Integrated Header */}
-                <div className={`h-14 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between flex-shrink-0 ${isMobile ? 'pl-4 pr-12' : 'px-4'}`}>
-                    {!isMobile && (
+                {/* Header Integrado con Logo / Workspace Switcher Style con 100% de espacio */}
+                <div className={`h-14 border-b border-[#e6e6e6] dark:border-[#2e2e2e] flex items-center justify-between flex-shrink-0 ${!showContent ? 'px-2 justify-center' : 'px-3'}`}>
+                    <div className={`flex items-center min-w-0 ${!showContent ? 'justify-center w-full' : 'gap-2.5 flex-1'}`}>
                         <button
-                            onClick={toggleSidebar}
-                            className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-slate-800 rounded flex items-center justify-center"
-                            title={sidebarCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+                            type="button"
+                            onClick={!showContent ? toggleSidebar : undefined}
+                            className={`flex items-center justify-center rounded-lg transition-transform active:scale-95 ${!showContent ? 'cursor-pointer hover:ring-2 hover:ring-[#0075de]/30' : ''}`}
+                            title={!showContent ? "Expandir menú de navegación" : undefined}
                         >
-                            {sidebarCollapsed ? (
-                                <PanelLeftOpen className="h-4 w-4 text-gray-600 dark:text-slate-400" />
-                            ) : (
-                                <PanelLeftClose className="h-4 w-4 text-gray-600 dark:text-slate-400" />
-                            )}
+                            <Avatar className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-white dark:bg-[#2b2b2b] border border-[#e6e6e6] dark:border-[#383838] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                                <AvatarImage src={tenantLogoUrl} alt={currentTenant?.name} className="object-contain p-0.5" />
+                                <AvatarFallback className="bg-[#0075de] text-white text-xs font-bold rounded-lg">
+                                    {currentTenant?.name?.charAt(0).toUpperCase() || 'H'}
+                                </AvatarFallback>
+                            </Avatar>
                         </button>
-                    )}
 
-                    {/* On mobile, align items typically or hide the toggle but show other controls if needed */}
-                    {showContent && (
-                        <div className={`flex items-center gap-2 ${isMobile ? 'ml-auto' : ''}`}>
-                            <ThemeToggleButton />
-                            <NotificationBell />
-                        </div>
-                    )}
-                </div>
-
-                {/* Logo */}
-                <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-center">
-                    <div className={`flex items-center w-full ${!showContent ? 'justify-center' : 'justify-start gap-3'}`}>
-                        <Avatar className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <AvatarImage src={tenantLogoUrl} alt={currentTenant?.name} />
-                            <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white">
-                                {currentTenant?.name?.charAt(0).toUpperCase() || 'H'}
-                            </AvatarFallback>
-                        </Avatar>
                         {showContent && (
                             <div className="flex-1 min-w-0">
                                 <h1
-                                    className="text-base font-semibold text-gray-900 dark:text-slate-100"
+                                    className="text-xs font-bold text-[#000000] dark:text-white truncate tracking-[-0.01em] leading-snug"
                                     title={currentTenant?.name || 'Hub Hospitalario'}
                                 >
                                     {currentTenant?.name || 'Hub Hospitalario'}
                                 </h1>
-                                <p className="text-xs text-gray-500 dark:text-slate-400 truncate">Hub Hospitalario</p>
+                                <p className="text-[11px] text-[#615d59] dark:text-[#a39e98] truncate leading-tight">
+                                    CISB • Workspace
+                                </p>
                             </div>
                         )}
                     </div>
+
+                    {/* Botón único de colapsar en desktop */}
+                    {showContent && !isMobile && (
+                        <button
+                            onClick={toggleSidebar}
+                            className="h-7 w-7 p-0 hover:bg-[#eae8e6] dark:hover:bg-[#2b2b2b] text-[#615d59] dark:text-[#a39e98] hover:text-[#000000] dark:hover:text-white rounded-md flex items-center justify-center transition-colors shrink-0 ml-1"
+                            title="Colapsar sidebar"
+                        >
+                            <PanelLeftClose className="h-4 w-4" />
+                        </button>
+                    )}
                 </div>
 
                 {/* Navigation */}
-                <nav className={`flex-1 ${!showContent ? 'p-2' : 'p-4'} overflow-y-auto`}>
-                    <div className="space-y-2">
+                <nav className={`flex-1 ${!showContent ? 'p-1.5' : 'p-2.5'} overflow-y-auto space-y-1`}>
+                    <div className="space-y-0.5">
                         {showContent && (
-                            <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">
-                                Principal
+                            <div className="px-2.5 py-1 text-[11px] font-medium text-[#a39e98] dark:text-[#615d59] uppercase tracking-wider">
+                                Espacios
                             </div>
                         )}
 
                         {/* Dashboard Button */}
                         <button
-                            className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm font-medium ${currentPage === 'dashboard'
-                                ? 'text-gray-900 dark:text-slate-100 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700'
-                                : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
-                                } transition-colors`}
+                            className={getNavButtonClasses(currentPage === 'dashboard')}
                             title={!showContent ? 'Dashboard' : undefined}
                             onClick={() => handleNavigation('/dashboard')}
                         >
-                            <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                            <Activity className={`h-4 w-4 flex-shrink-0 ${currentPage === 'dashboard' ? 'text-[#0075de]' : 'text-[#615d59] dark:text-[#a39e98]'}`} />
                             {showContent && <span>Dashboard</span>}
                         </button>
 
                         {/* Content Management Module */}
                         {canAccessBlog && (
                             <button
-                                className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'blog'
-                                    ? 'text-gray-900 dark:text-slate-100 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700'
-                                    : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
-                                    } transition-colors`}
+                                className={getNavButtonClasses(currentPage === 'blog')}
                                 title={!showContent ? 'Blog' : undefined}
                                 onClick={() => handleNavigation('/modules/content')}
                             >
-                                <FileText className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
+                                <FileText className={`h-4 w-4 flex-shrink-0 ${currentPage === 'blog' ? 'text-[#0075de]' : 'text-[#615d59] dark:text-[#a39e98]'}`} />
                                 {showContent && <span>Blog</span>}
                             </button>
                         )}
@@ -213,14 +212,11 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
                         {/* Expedientes Module */}
                         {canAccessExpedientes && (
                             <button
-                                className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'expedientes'
-                                    ? 'text-gray-900 dark:text-slate-100 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700'
-                                    : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
-                                    } transition-colors`}
+                                className={getNavButtonClasses(currentPage === 'expedientes')}
                                 title={!showContent ? 'Expedientes' : undefined}
                                 onClick={() => handleNavigation('/modules/expedientes')}
                             >
-                                <FolderOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                <FolderOpen className={`h-4 w-4 flex-shrink-0 ${currentPage === 'expedientes' ? 'text-[#0075de]' : 'text-[#615d59] dark:text-[#a39e98]'}`} />
                                 {showContent && <span>Expedientes</span>}
                             </button>
                         )}
@@ -228,42 +224,33 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
                         {/* Supply Module */}
                         {canAccessSupply && (
                             <button
-                                className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'supply'
-                                    ? 'text-gray-900 dark:text-slate-100 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700'
-                                    : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
-                                    } transition-colors`}
+                                className={getNavButtonClasses(currentPage === 'supply')}
                                 title={!showContent ? 'Suministros' : undefined}
                                 onClick={() => handleNavigation('/modules/supply')}
                             >
-                                <Package className="h-4 w-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
+                                <Package className={`h-4 w-4 flex-shrink-0 ${currentPage === 'supply' ? 'text-[#0075de]' : 'text-[#615d59] dark:text-[#a39e98]'}`} />
                                 {showContent && <span>Suministros</span>}
                             </button>
                         )}
 
                         {/* Portal de Prestadores */}
                         <button
-                            className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'prestadores'
-                                ? 'text-gray-900 dark:text-slate-100 bg-sky-50 dark:bg-sky-900/30 rounded-lg border border-sky-200 dark:border-sky-700'
-                                : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
-                                } transition-colors`}
+                            className={getNavButtonClasses(currentPage === 'prestadores')}
                             title={!showContent ? 'Portal de Prestadores' : undefined}
                             onClick={() => handleNavigation('/modules/prestadores')}
                         >
-                            <Stethoscope className="h-4 w-4 text-sky-600 dark:text-sky-400 flex-shrink-0" />
+                            <Stethoscope className={`h-4 w-4 flex-shrink-0 ${currentPage === 'prestadores' ? 'text-[#0075de]' : 'text-[#615d59] dark:text-[#a39e98]'}`} />
                             {showContent && <span>Portal de Prestadores</span>}
                         </button>
 
                         {/* Módulo de Tesorería */}
                         {canAccessTesoreria && (
                             <button
-                                className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'tesoreria'
-                                    ? 'text-gray-900 dark:text-slate-100 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg border border-emerald-200 dark:border-emerald-700'
-                                    : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
-                                    } transition-colors`}
+                                className={getNavButtonClasses(currentPage === 'tesoreria')}
                                 title={!showContent ? 'Tesorería' : undefined}
                                 onClick={() => handleNavigation('/modules/tesoreria')}
                             >
-                                <Receipt className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                <Receipt className={`h-4 w-4 flex-shrink-0 ${currentPage === 'tesoreria' ? 'text-[#0075de]' : 'text-[#615d59] dark:text-[#a39e98]'}`} />
                                 {showContent && <span>Tesorería</span>}
                             </button>
                         )}
@@ -272,31 +259,25 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
                         {isAdmin && (
                             <>
                                 {showContent && (
-                                    <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide mt-2">
+                                    <div className="px-2.5 pt-3 pb-1 text-[11px] font-medium text-[#a39e98] dark:text-[#615d59] uppercase tracking-wider">
                                         Administración
                                     </div>
                                 )}
                                 <button
-                                    className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'admin'
-                                        ? 'text-gray-900 dark:text-slate-100 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700'
-                                        : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
-                                        } transition-colors`}
+                                    className={getNavButtonClasses(currentPage === 'admin')}
                                     title={!showContent ? 'Configuración' : undefined}
                                     onClick={() => handleNavigation('/admin')}
                                 >
-                                    <Settings className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
+                                    <Settings className={`h-4 w-4 flex-shrink-0 ${currentPage === 'admin' ? 'text-[#0075de]' : 'text-[#615d59] dark:text-[#a39e98]'}`} />
                                     {showContent && <span>Configuración</span>}
                                 </button>
 
                                 <button
-                                    className={`w-full flex items-center ${!showContent ? 'justify-center px-2' : 'gap-3 px-3'} py-2 text-sm ${currentPage === 'admin'
-                                        ? 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
-                                        : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg'
-                                        } transition-colors`}
+                                    className={getNavButtonClasses(currentPage === 'admin')}
                                     title={!showContent ? 'Soporte' : undefined}
                                     onClick={() => handleNavigation('/admin/support')}
                                 >
-                                    <LifeBuoy className="h-4 w-4 text-gray-500 dark:text-slate-400 flex-shrink-0" />
+                                    <LifeBuoy className="h-4 w-4 text-[#615d59] dark:text-[#a39e98] flex-shrink-0" />
                                     {showContent && <span>Soporte</span>}
                                 </button>
                             </>
@@ -304,13 +285,26 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
                     </div>
                 </nav>
 
+                {/* Utilidades de Barra Inferior: Tema y Notificaciones (Estilo Notion Footer) */}
+                <div className={`px-2.5 py-1.5 border-t border-[#e6e6e6] dark:border-[#2e2e2e] flex items-center ${!showContent ? 'justify-center flex-col gap-1' : 'justify-between'}`}>
+                    <div className="flex items-center gap-1">
+                        <ThemeToggleButton />
+                        <NotificationBell />
+                    </div>
+                    {showContent && (
+                        <span className="text-[10px] text-[#a39e98] font-mono tracking-tighter">
+                            v2.5 CISB
+                        </span>
+                    )}
+                </div>
+
                 {/* User Profile Dropdown - Fixed at bottom */}
-                <div className="border-t border-gray-200 dark:border-slate-700">
+                <div className="border-t border-[#e6e6e6] dark:border-[#2e2e2e]">
                     {user && <UserProfileDropdown user={user} collapsed={!showContent} />}
                 </div>
 
                 {/* Error Report Button - Fixed at bottom */}
-                <div className={`${!showContent ? 'p-2' : 'p-4'} border-t border-gray-200 dark:border-slate-700 transition-all`}>
+                <div className={`${!showContent ? 'p-1.5' : 'p-2.5'} border-t border-[#e6e6e6] dark:border-[#2e2e2e] transition-all`}>
                     <ErrorReportButton collapsed={!showContent} />
                 </div>
             </div>

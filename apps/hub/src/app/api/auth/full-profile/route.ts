@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerPocketBase } from '@/lib/pocketbase-server'; // Importar la nueva utilidad
+import { getServerPocketBase } from '@/lib/pocketbase-server';
+import { createAdminClient } from '@/lib/pocketbase-admin';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,8 +17,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get complete user profile from PocketBase
-    const userProfile = await pb.collection('auth_users').getOne(currentUser.id);
+    // Usar admin client para garantizar lectura completa de todos los campos de auth_users
+    let userProfile: any;
+    try {
+      const adminPb = await createAdminClient();
+      userProfile = await adminPb.collection('auth_users').getOne(currentUser.id);
+    } catch {
+      userProfile = await pb.collection('auth_users').getOne(currentUser.id);
+    }
 
     // Get user roles with expanded tenant and role information
     const userRoles = await pb.collection('hub_user_roles').getList(1, 100, {
@@ -60,6 +67,7 @@ export async function GET(request: NextRequest) {
         specialty: userProfile.specialty || null,
         department: userProfile.department || null,
         position: userProfile.position || null,
+        signature_data: userProfile.signature_data || null,
         verified: userProfile.verified,
         created: userProfile.created,
         updated: userProfile.updated

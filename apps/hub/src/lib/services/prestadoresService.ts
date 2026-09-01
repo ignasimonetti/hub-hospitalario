@@ -150,6 +150,7 @@ export async function getMisPrestaciones(tenantId?: string): Promise<PrestacionP
         .getFullList<PrestacionPresentacion>({
           filter,
           sort: '-created',
+          expand: 'tenant,user',
           requestKey: null, // Desactiva la autocancelación por re-render
         });
 
@@ -165,6 +166,7 @@ export async function getMisPrestaciones(tenantId?: string): Promise<PrestacionP
           .getFullList<PrestacionPresentacion>({
             filter: `user = "${user.id}"`,
             sort: '-created',
+            expand: 'tenant,user',
             requestKey: null,
           });
         return records;

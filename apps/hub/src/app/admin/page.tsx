@@ -7,7 +7,8 @@ import { RolesTab } from "@/components/admin/RolesTab";
 import { AuditTab } from "@/components/admin/AuditTab";
 import { AnnouncementsTab } from "@/components/admin/AnnouncementsTab";
 import { ParametersTab } from "@/components/admin/ParametersTab";
-import { Building2, Users, ShieldCheck, FileText, Megaphone, Sliders } from "lucide-react";
+import { PurgeTab } from "@/components/admin/PurgeTab";
+import { Building2, Users, ShieldCheck, FileText, Megaphone, Sliders, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminPage() {
@@ -24,7 +25,7 @@ export default function AdminPage() {
             </div>
 
             <Tabs defaultValue="tenants" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto p-1 dark:bg-slate-800">
+                <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 h-auto p-1 dark:bg-slate-800">
                     <TabsTrigger value="tenants" className="flex items-center gap-2 py-3">
                         <Building2 className="h-4 w-4" />
                         <span className="hidden md:inline">Hospitales</span>
@@ -55,6 +56,11 @@ export default function AdminPage() {
                         <span className="hidden md:inline">Anuncios</span>
                         <span className="md:hidden">Avisos</span>
                     </TabsTrigger>
+                    <TabsTrigger value="purge" className="flex items-center gap-2 py-3 text-rose-600 dark:text-rose-400 font-semibold">
+                        <Trash2 className="h-4 w-4" />
+                        <span className="hidden md:inline">Purgar Prueba</span>
+                        <span className="md:hidden">Purga</span>
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="tenants" className="space-y-4">
@@ -79,6 +85,10 @@ export default function AdminPage() {
 
                 <TabsContent value="announcements" className="space-y-4">
                     <AnnouncementsTab />
+                </TabsContent>
+
+                <TabsContent value="purge" className="space-y-4">
+                    <PurgeTab />
                 </TabsContent>
             </Tabs>
         </div>

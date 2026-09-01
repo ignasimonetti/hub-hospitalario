@@ -110,16 +110,16 @@ export function ModalRegistrarPago({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto p-0 border-slate-200 dark:border-slate-800">
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-5 pr-12 text-white">
+        <div className="border-b border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/80 dark:bg-[#1f1f1f]/80 p-5 pr-12">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
+            <div className="p-2 bg-white dark:bg-[#2b2b2b] rounded-lg border border-[#e6e6e6] dark:border-[#383838] text-[#615d59] dark:text-[#a39e98]">
               <Receipt className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-bold text-white tracking-tight">
+              <DialogTitle className="text-base font-semibold text-[#000000] dark:text-white tracking-tight">
                 Registrar Liquidación / Pago de Honorarios
               </DialogTitle>
-              <DialogDescription className="text-emerald-100 text-xs mt-0.5">
+              <DialogDescription className="text-[#615d59] dark:text-[#a39e98] text-xs mt-0.5">
                 Trámite Nº {prestacion.form_number || prestacion.id} • {srvLabel}
               </DialogDescription>
             </div>
@@ -128,18 +128,18 @@ export function ModalRegistrarPago({
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Ficha Resumen del Beneficiario y Factura */}
-          <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 space-y-2.5">
+          <div className="p-3.5 rounded-lg border border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/60 dark:bg-[#1f1f1f]/50 space-y-2.5">
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-xs text-gray-500 dark:text-slate-400">Beneficiario / Prestador</div>
-                <div className="text-sm font-bold text-gray-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <User className="h-3.5 w-3.5 text-emerald-600" />
+                <div className="text-xs text-[#615d59] dark:text-[#a39e98]">Beneficiario / Prestador</div>
+                <div className="text-sm font-semibold text-[#000000] dark:text-white flex items-center gap-1.5">
+                  <User className="h-3.5 w-3.5 text-[#615d59] dark:text-[#a39e98]" />
                   {nombrePrestador}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-gray-500 dark:text-slate-400">Monto Liquidable</div>
-                <div className="text-base font-extrabold text-emerald-700 dark:text-emerald-400">
+                <div className="text-xs text-[#615d59] dark:text-[#a39e98]">Monto Liquidable</div>
+                <div className="text-base font-bold text-[#1aae39] dark:text-emerald-400">
                   {formatMoney(Number(prestacion.invoice_amount) || 0)}
                 </div>
               </div>
@@ -165,74 +165,59 @@ export function ModalRegistrarPago({
                 </span>
               </div>
             </div>
-
-            {/* Datos Bancarios */}
-            <div className="p-2 rounded bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5 text-gray-600 dark:text-slate-300">
-                <CreditCard className="h-3.5 w-3.5 text-blue-600" />
-                <span className="font-medium">CBU / Alias:</span>
-              </div>
-              <span className="font-mono font-bold text-gray-900 dark:text-slate-100 select-all">
-                {perfil?.cbu_alias || "Sin CBU registrado en el perfil"}
-              </span>
-            </div>
           </div>
 
           {/* Formulario de Pago */}
-          <div className="space-y-3.5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="receiptNumber" className="text-xs font-semibold">
-                  Nº Comprobante / Orden Bancaria <span className="text-rose-500">*</span>
-                </Label>
-                <Input
-                  id="receiptNumber"
-                  placeholder="Ej: TRANSF-892472 o OP-2026-0041"
-                  value={receiptNumber}
-                  onChange={(e) => setReceiptNumber(e.target.value)}
-                  className="text-xs font-mono"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="paymentDate" className="text-xs font-semibold">
-                  Fecha de Pago / Liquidación <span className="text-rose-500">*</span>
-                </Label>
-                <Input
-                  id="paymentDate"
-                  type="date"
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
-                  className="text-xs"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="notes" className="text-xs font-semibold">
-                Observaciones / Referencia Interna de Tesorería (Opcional)
-              </Label>
-              <Textarea
-                id="notes"
-                placeholder="Detalle de acreditación, cuenta origen, retenciones aplicadas si hubiere, etc."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className="text-xs resize-none"
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+                Fecha Efectiva de Transferencia BSE <span className="text-rose-500">*</span>
+              </label>
+              <Input
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                required
+                className="text-xs h-9"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">
-                Comprobante de Transferencia / Recibo Firmado (Opcional - PDF / Imagen)
-              </Label>
-              <div className="border border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-3 text-center bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+                Nº de Transferencia / Comprobante Bancario <span className="text-rose-500">*</span>
+              </label>
+              <Input
+                placeholder="Ej: BSE-TX-99882211"
+                value={receiptNumber}
+                onChange={(e) => setReceiptNumber(e.target.value)}
+                required
+                className="text-xs h-9 font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+                Observaciones / Nota de Liquidación (Opcional)
+              </label>
+              <Textarea
+                placeholder="Detalles sobre retenciones aplicadas o número de cuenta de acreditación..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="text-xs resize-none"
+                rows={2}
+              />
+            </div>
+
+            {/* Adjuntar Comprobante */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+                Adjuntar Comprobante de Transferencia (PDF / Imagen)
+              </label>
+              <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg p-3 text-center hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
                 <input
                   type="file"
                   id="fileProofInput"
-                  accept="application/pdf,image/jpeg,image/png"
+                  accept="application/pdf,image/*"
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -252,7 +237,7 @@ export function ModalRegistrarPago({
             </div>
           </div>
 
-          <DialogFooter className="pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
+          <DialogFooter className="pt-2 border-t border-[#e6e6e6] dark:border-[#2e2e2e] gap-2">
             <Button
               type="button"
               variant="outline"
@@ -265,7 +250,7 @@ export function ModalRegistrarPago({
             <Button
               type="submit"
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+              className="bg-[#000000] hover:bg-[#2e2e2e] dark:bg-white dark:hover:bg-slate-200 dark:text-[#000000] text-white font-medium rounded-md"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

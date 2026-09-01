@@ -1449,6 +1449,14 @@ export function calcularKpisTesoreria(
   let totalConformadoMonto = 0;
   let totalConformadoCantidad = 0;
 
+  // Acumuladores de Retenciones
+  let totalRetencionesIIBB = 0;
+  let totalRetencionesGanancias = 0;
+  let totalRetencionesSUSS = 0;
+  let totalRetencionesOtras = 0;
+  let totalRetencionesMonto = 0;
+  let totalNetoEstimado = 0;
+
   const desgloseMap = new Map<
     string,
     {
@@ -1461,8 +1469,27 @@ export function calcularKpisTesoreria(
     }
   >();
 
+  const MESES_NOMBRES = [
+    "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+    "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+  ];
+
   for (const item of items) {
     const monto = Number(item.invoice_amount) || 0;
+    const rIIBB = Number(item.retencion_iibb) || 0;
+    const rGan = Number(item.retencion_ganancias) || 0;
+    const rSuss = Number(item.retencion_suss) || 0;
+    const rOtras = Number(item.retencion_otras) || 0;
+    const rTotal = Number(item.retencion_monto) || (rIIBB + rGan + rSuss + rOtras);
+    const montoNeto = Number(item.monto_neto_liquidable) || Math.max(0, monto - rTotal);
+
+    totalRetencionesIIBB += rIIBB;
+    totalRetencionesGanancias += rGan;
+    totalRetencionesSUSS += rSuss;
+    totalRetencionesOtras += rOtras;
+    totalRetencionesMonto += rTotal;
+    totalNetoEstimado += montoNeto;
+
     const srvKey = (item.hospital_service as string) || "otro";
     const srvLabel =
       SECTORES_SERVICIO_MAP[srvKey as SectorServicio] ||
@@ -1510,6 +1537,194 @@ export function calcularKpisTesoreria(
     }))
     .sort((a, b) => b.montoTotal - a.montoTotal);
 
+  const totalTramitesValidos = totalLiquidadoCantidad + totalPendienteCantidad;
+  const ticketPromedio = totalTramitesValidos > 0 ? granTotal / totalTramitesValidos : 0;
+
+  // Construir evolución mensual con base en las prestaciones del dataset
+  const anioBase = filtroAnio && filtroAnio > 0 ? filtroAnio : new Date().getFullYear();
+  const mensualMap = new Map<number, { montoLiquidado: number; montoPendiente: number; montoTotal: number; cantidad: number }>();
+  for (let m = 1; m <= 12; m++) {
+    mensualMap.set(m, { montoLiquidado: 0, montoPendiente: 0, montoTotal: 0, cantidad: 0 });
+  }
+
+  for (const item of prestaciones) {
+    if (item.period_year === anioBase) {
+      const m = item.period_month || 1;
+      if (mensualMap.has(m)) {
+        const d = mensualMap.get(m)!;
+        const monto = Number(item.invoice_amount) || 0;
+        d.montoTotal += monto;
+        d.cantidad += 1;
+        if (item.status === "pagado") {
+          d.montoLiquidado += monto;
+        } else if (item.status === "aprobado") {
+          d.montoPendiente += monto;
+        }
+      }
+    }
+  }
+
+  const evolucionMensual = Array.from(mensualMap.entries()).map(([mNum, val]) => ({
+    mesLabel: MESES_NOMBRES[mNum - 1],
+    mesNum: mNum,
+    anio: anioBase,
+    montoLiquidado: val.montoLiquidado,
+    montoPendiente: val.montoPendiente,
+    montoTotal: val.montoTotal,
+    cantidad: val.cantidad,
+  }));
+
+  // ==========================================
+  // CÓMPUTO DE TIEMPOS DE DEMORA NETOS (SLA TESORERÍA SIN SESGO)
+  // ==========================================
+  // Reglas:
+  // 1. T_inicio = Fecha de Aprobación de Dirección (director_approved_at).
+  // 2. Si Tesorería observó el trámite, el tiempo de observación NO se le imputa a Tesorería:
+  //    T_inicio se reinicia a la fecha en que el prestador subsanó y re-envió el comprobante
+  //    (último evento 'correccion_reenvio' en historial_observaciones o updated).
+  // 3. T_fin = Fecha de Pago efectivo (treasury_paid_at o paid_at o updated).
+  const diasDemoraArray: number[] = [];
+  let optimoCount = 0; // <= 15 días
+  let moderadoCount = 0; // 16 a 30 días
+  let demoradoCount = 0; // > 30 días
+
+  for (const item of items) {
+    if (item.status === "pagado") {
+      let tInicioStr = item.director_approved_at || item.submitted_at || item.created;
+      
+      // Evaluar historial de observaciones para descontar el tiempo de espera del prestador
+      if (item.historial_observaciones) {
+        try {
+          const historial: EventoObservacion[] =
+            typeof item.historial_observaciones === "string"
+              ? JSON.parse(item.historial_observaciones)
+              : item.historial_observaciones;
+
+          if (Array.isArray(historial) && historial.length > 0) {
+            // Buscar la última corrección del prestador tras observación de tesorería
+            const eventosCorreccion = historial.filter(
+              (e) => e.tipo === "correccion_reenvio" && e.rol_emisor === "prestador"
+            );
+            if (eventosCorreccion.length > 0) {
+              const ultimaCorreccion = eventosCorreccion[eventosCorreccion.length - 1];
+              if (ultimaCorreccion.created_at) {
+                tInicioStr = ultimaCorreccion.created_at;
+              }
+            }
+          }
+        } catch {
+          // Si falla parseo, fallback a director_approved_at
+        }
+      }
+
+      const tFinStr = item.treasury_paid_at || item.paid_at || item.updated;
+      if (tInicioStr && tFinStr) {
+        const dInicio = new Date(tInicioStr).getTime();
+        const dFin = new Date(tFinStr).getTime();
+        const diffMs = dFin - dInicio;
+        if (!isNaN(diffMs) && diffMs >= 0) {
+          const dias = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+          diasDemoraArray.push(dias);
+
+          if (dias <= 15) optimoCount++;
+          else if (dias <= 30) moderadoCount++;
+          else demoradoCount++;
+        }
+      }
+    }
+  }
+
+  diasDemoraArray.sort((a, b) => a - b);
+  const tramitesEvaluados = diasDemoraArray.length;
+  const sumaDias = diasDemoraArray.reduce((sum, d) => sum + d, 0);
+  const promedioDiasNetos = tramitesEvaluados > 0 ? Math.round((sumaDias / tramitesEvaluados) * 10) / 10 : 0;
+  
+  let medianaDiasNetos = 0;
+  if (tramitesEvaluados > 0) {
+    const mid = Math.floor(tramitesEvaluados / 2);
+    medianaDiasNetos =
+      tramitesEvaluados % 2 !== 0
+        ? diasDemoraArray[mid]
+        : Math.round(((diasDemoraArray[mid - 1] + diasDemoraArray[mid]) / 2) * 10) / 10;
+  }
+
+  const tiemposGestion = {
+    promedioDiasNetos,
+    medianaDiasNetos,
+    semaforo: {
+      optimo: optimoCount,
+      moderado: moderadoCount,
+      demorado: demoradoCount,
+    },
+    tramitesEvaluados,
+    tiempoMinimoDias: tramitesEvaluados > 0 ? diasDemoraArray[0] : 0,
+    tiempoMaximoDias: tramitesEvaluados > 0 ? diasDemoraArray[tramitesEvaluados - 1] : 0,
+  };
+
+  // ==========================================
+  // CÓMPUTO DE TASA DE OBSERVACIÓN FISCAL Y MOTIVOS MÁS FRECUENTES
+  // ==========================================
+  const cantidadTotalAuditados = items.length;
+  const motivosMap = new Map<string, number>();
+
+  for (const item of items) {
+    if (
+      item.status === "observado_tesoreria" ||
+      item.status === "observado" ||
+      item.treasury_check_status === "observado_fiscal"
+    ) {
+      let motivoEncontrado = false;
+      if (item.historial_observaciones) {
+        try {
+          const hist: EventoObservacion[] =
+            typeof item.historial_observaciones === "string"
+              ? JSON.parse(item.historial_observaciones)
+              : item.historial_observaciones;
+
+          if (Array.isArray(hist)) {
+            const obsTes = hist.filter((e) => e.rol_emisor === "tesoreria" && e.tipo === "observacion");
+            if (obsTes.length > 0) {
+              const ultObs = obsTes[obsTes.length - 1];
+              const mot = ultObs.motivo || "Inconsistencia Fiscal";
+              motivosMap.set(mot, (motivosMap.get(mot) || 0) + 1);
+              motivoEncontrado = true;
+            }
+          }
+        } catch {
+          // Ignorar
+        }
+      }
+
+      if (!motivoEncontrado) {
+        const mot = item.treasury_observation || "Inconsistencia Fiscal / Documental";
+        motivosMap.set(mot, (motivosMap.get(mot) || 0) + 1);
+      }
+    }
+  }
+
+  const cantidadObservados = totalObservadoCantidad;
+  const porcentajeObservacion =
+    cantidadTotalAuditados > 0
+      ? Math.round((cantidadObservados / cantidadTotalAuditados) * 1000) / 10
+      : 0;
+
+  const desglosePorMotivo = Array.from(motivosMap.entries())
+    .map(([motivoLabel, cant]) => ({
+      motivoId: motivoLabel,
+      motivoLabel: motivoLabel.length > 45 ? motivoLabel.substring(0, 45) + "..." : motivoLabel,
+      cantidad: cant,
+      porcentaje: cantidadObservados > 0 ? Math.round((cant / cantidadObservados) * 100) : 0,
+    }))
+    .sort((a, b) => b.cantidad - a.cantidad);
+
+  const tasaObservacion = {
+    porcentaje: porcentajeObservacion,
+    cantidadTotalAuditados,
+    cantidadObservados,
+    montoRetenidoPreventivo: totalObservadoMonto,
+    desglosePorMotivo,
+  };
+
   return {
     totalLiquidadoMonto,
     totalLiquidadoCantidad,
@@ -1519,7 +1734,17 @@ export function calcularKpisTesoreria(
     totalObservadoCantidad,
     totalConformadoMonto,
     totalConformadoCantidad,
+    totalRetencionesIIBB,
+    totalRetencionesGanancias,
+    totalRetencionesSUSS,
+    totalRetencionesOtras,
+    totalRetencionesMonto,
+    totalNetoEstimado,
+    ticketPromedio,
+    tasaObservacion,
+    tiemposGestion,
     desglosePorServicio,
+    evolucionMensual,
   };
 }
 

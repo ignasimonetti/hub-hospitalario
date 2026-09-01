@@ -68,6 +68,7 @@ import {
   X,
   History,
   FileEdit,
+  Stethoscope,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { motion, AnimatePresence } from "framer-motion";
@@ -95,6 +96,10 @@ export default function PrestadoresPage() {
 
   // Tabs del listado del prestador: activos (cards) vs historial (tabla)
   const [tabListado, setTabListado] = useState<"activos" | "historial">("activos");
+
+  // Helper para evitar narrowing de TypeScript en JSX
+  const isTabActivos = tabListado === "activos";
+  const isTabHistorial = tabListado === "historial";
   const [misActivos, setMisActivos] = useState<PrestacionPresentacion[]>([]);
   const [historialData, setHistorialData] = useState<PrestacionPageResult>({
     items: [],
@@ -107,6 +112,24 @@ export default function PrestadoresPage() {
   const [histAnio, setHistAnio] = useState<string>("todos");
   const [histEstado, setHistEstado] = useState<"todos" | "aprobado" | "pagado">("todos");
   const [kpisLivianos, setKpisLivianos] = useState<ProyeccionKpisPrestaciones | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const savedState = localStorage.getItem("sidebar-collapsed");
+    if (savedState !== null) {
+      setSidebarCollapsed(JSON.parse(savedState));
+    }
+
+    const handleSidebarToggle = () => {
+      const state = localStorage.getItem("sidebar-collapsed");
+      if (state !== null) {
+        setSidebarCollapsed(JSON.parse(state));
+      }
+    };
+
+    window.addEventListener("sidebarToggle", handleSidebarToggle);
+    return () => window.removeEventListener("sidebarToggle", handleSidebarToggle);
+  }, []);
 
   // Bandeja de Dirección (server-driven)
   const [dirData, setDirData] = useState<PrestacionPageResult>({
@@ -149,7 +172,6 @@ export default function PrestadoresPage() {
   const [prestacionParaAuditar, setPrestacionParaAuditar] = useState<PrestacionPresentacion | null>(null);
 
   // Sidebar / Navegación
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -350,11 +372,11 @@ export default function PrestadoresPage() {
   const kpis = useMemo(() => {
     const suma = kpisLivianos?.sumaPorEstado || {};
     const conteo = kpisLivianos?.conteoPorEstado || {};
+    // Trámites en curso: todos los estados activos sin aprobar/pagar
     const enTramiteEstados = [
       "pendiente",
       "en_revision",
       "visado_adjunto",
-      "aprobado",
       "observado",
       "observado_tesoreria",
     ];
@@ -385,7 +407,7 @@ export default function PrestadoresPage() {
       return misActivos.filter((p) => p.status === "borrador");
     if (filtroEstado === "pendientes")
       return misActivos.filter((p) =>
-        ["pendiente", "en_revision", "visado_adjunto"].includes(p.status)
+        ["pendiente", "en_revision", "visado_adjunto", "observado", "observado_tesoreria"].includes(p.status)
       );
     if (filtroEstado === "observadas")
       return misActivos.filter((p) =>
@@ -552,8 +574,52 @@ export default function PrestadoresPage() {
     }
   };
 
+  // Validación previa de Conducta Fiscal antes de iniciar carga
+  const handleIniciarNuevaPresentacion = () => {
+    if (!perfil) {
+      setModalPerfilOpen(true);
+      return;
+    }
+
+    if (!perfil.file_conducta_fiscal || !perfil.conducta_fiscal_due_date) {
+      toast.error("Falta tu Constancia de Conducta Fiscal", {
+        description: "Debes adjuntar la constancia DGR vigente en tu perfil para iniciar liquidaciones.",
+        action: {
+          label: "Actualizar en Mis Datos",
+          onClick: () => setModalPerfilOpen(true),
+        },
+        duration: 8000,
+      });
+      return;
+    }
+
+    const dateOnly = perfil.conducta_fiscal_due_date.split(" ")[0].split("T")[0];
+    const parts = dateOnly.split("-");
+    if (parts.length === 3) {
+      const dueDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (!isNaN(dueDate.getTime()) && dueDate.getTime() < today.getTime()) {
+        const formattedDue = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        toast.error(`Conducta Fiscal Vencida (${formattedDue})`, {
+          description: "Tu constancia DGR ha caducado. Actualízala en tu perfil para poder liquidar.",
+          action: {
+            label: "Actualizar en Mis Datos",
+            onClick: () => setModalPerfilOpen(true),
+          },
+          duration: 8000,
+        });
+        return;
+      }
+    }
+
+    setObservadaParaEditar(null);
+    setModalSelectorOpen(true);
+  };
+
   return (
-    <div className="flex min-h-screen bg-slate-50/50 dark:bg-slate-950">
+    <div className="flex min-h-screen bg-[#f6f5f4] dark:bg-[#191919]">
       {/* Sidebar Desktop */}
       <div className="hidden md:block shrink-0">
         <AppSidebar
@@ -561,62 +627,76 @@ export default function PrestadoresPage() {
         />
       </div>
 
-      {/* Main Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header */}
-        <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
+      {/* Main Area con offset responsive para no encimarse con el Sidebar */}
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ease-in-out ${sidebarCollapsed ? "md:pl-16" : "md:pl-64"}`}>
+        {/* Header Superior Consistente */}
+        <header className="h-14 border-b border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/90 dark:bg-[#191919]/90 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-72">
-                <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
-                <AppSidebar
-                  currentPage="prestadores"
-                  isMobile={true}
-                  onMobileClose={() => setIsMobileMenuOpen(false)}
-                />
-              </SheetContent>
-            </Sheet>
+            <div className="md:hidden">
+              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md">
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-0 w-72">
+                  <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
+                  <AppSidebar
+                    currentPage="prestadores"
+                    isMobile={true}
+                    onMobileClose={() => setIsMobileMenuOpen(false)}
+                  />
+                </SheetContent>
+              </Sheet>
+            </div>
 
-            <div>
-              <h1 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                Portal de Prestadores
-              </h1>
-              <p className="text-[11px] text-slate-400">
-                {currentTenant?.name || "Hub Hospitalario"}
-              </p>
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 bg-[#0075de]/15 dark:bg-[#0075de]/20 rounded-md text-[#0075de]">
+                <Stethoscope className="h-4 w-4" />
+              </div>
+              <div>
+                <h1 className="text-sm font-semibold text-[#000000] dark:text-white tracking-[-0.02em]">
+                  Portal de Prestadores
+                </h1>
+                <p className="text-[11px] text-[#615d59] dark:text-[#a39e98] hidden sm:block">
+                  {vistaActiva === "auditoria_direccion"
+                    ? "Bandeja de Auditorías & Autorizaciones"
+                    : "Mis Honorarios y Asistencias"}
+                </p>
+              </div>
             </div>
           </div>
 
-          <Button
-            size="sm"
-            onClick={() => setModalSelectorOpen(true)}
-            className="h-8 px-3 bg-[#08487A] hover:bg-[#053D6C] text-white font-medium text-xs rounded-xl shadow-sm transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5 mr-1" /> Nueva Presentación
-          </Button>
-        </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleRefresh()}
+              disabled={refreshing}
+              className="h-8 text-xs flex items-center gap-1.5"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">Actualizar</span>
+            </Button>
+          </div>
+        </header>
 
         {/* Content Container */}
         <main className="flex-1 p-4 md:p-8 max-w-5xl w-full mx-auto space-y-6">
           {/* Header Saludo y Selector de Modo (Prestador vs Director) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl md:text-2xl font-bold text-[#000000] dark:text-white tracking-[-0.03em]">
                   {firstName ? `¡Hola, ${firstName}!` : "Portal de Prestadores"}
                 </h2>
                 {isDirector && (
-                  <Badge variant="outline" className="bg-sky-50 dark:bg-sky-950 text-[#08487A] dark:text-sky-300 border-sky-300 font-semibold text-[11px]">
+                  <Badge variant="outline" className="bg-[#62aef0]/15 dark:bg-[#62aef0]/20 text-[#0075de] dark:text-sky-300 border-[#62aef0]/40 font-medium text-[11px] rounded-md px-2 py-0.5">
                     <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Dirección Asistencial
                   </Badge>
                 )}
               </div>
-              <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs md:text-sm text-[#615d59] dark:text-[#a39e98] mt-0.5">
                 {perfil
                   ? `${PROFESIONES_MAP[perfil.profession]} • MP ${perfil.license_number} • CUIT ${perfil.cuit}`
                   : "Gestiona la liquidación y cobro de tus honorarios profesionales."}
@@ -628,19 +708,16 @@ export default function PrestadoresPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setModalPerfilOpen(true)}
-                className="h-9 text-xs rounded-xl border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="h-9 text-xs"
               >
-                <Settings className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                <Settings className="w-3.5 h-3.5 mr-1.5 text-[#615d59]" />
                 Mis Datos
               </Button>
 
               <Button
                 size="sm"
-                onClick={() => {
-                  setObservadaParaEditar(null);
-                  setModalSelectorOpen(true);
-                }}
-                className="h-9 px-4 bg-[#08487A] hover:bg-[#06375d] text-white font-medium text-xs rounded-xl shadow-sm transition-all hover:shadow"
+                onClick={handleIniciarNuevaPresentacion}
+                className="h-9 px-4 text-xs font-semibold"
               >
                 <Plus className="w-4 h-4 mr-1.5" /> Nueva Presentación
               </Button>
@@ -649,20 +726,20 @@ export default function PrestadoresPage() {
 
           {/* Switch de Vistas para Directores que también son Prestadores */}
           {isDirector && (
-            <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+            <div className="flex items-center gap-1.5 p-1 bg-[#eae8e6] dark:bg-[#262626] rounded-lg border border-[#e6e6e6] dark:border-[#383838]">
               <button
                 type="button"
                 onClick={() => setVistaActiva("auditoria_direccion")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-md text-xs font-semibold transition-all ${
                   vistaActiva === "auditoria_direccion"
-                    ? "bg-white dark:bg-slate-800 text-[#08487A] dark:text-sky-400 shadow-sm border border-slate-200/60 dark:border-slate-700"
-                    : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    ? "bg-white dark:bg-[#333333] text-[#000000] dark:text-white shadow-xs border border-[#e6e6e6] dark:border-transparent"
+                    : "text-[#615d59] hover:text-[#000000] dark:text-[#a39e98] dark:hover:text-white"
                 }`}
               >
-                <ShieldCheck className="w-4 h-4 text-sky-600" />
+                <ShieldCheck className="w-4 h-4 text-[#0075de]" />
                 <span>Bandeja de Autorizaciones de Dirección</span>
                 {kpisDireccion.pendientesCount > 0 && (
-                  <span className="px-2 py-0.2 text-[10px] font-bold rounded-full bg-amber-500 text-white animate-pulse">
+                  <span className="px-2 py-0.2 text-[10px] font-bold rounded-full bg-[#dd5b00] text-white">
                     {kpisDireccion.pendientesCount}
                   </span>
                 )}
@@ -671,13 +748,13 @@ export default function PrestadoresPage() {
               <button
                 type="button"
                 onClick={() => setVistaActiva("mis_prestaciones")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-md text-xs font-semibold transition-all ${
                   vistaActiva === "mis_prestaciones"
-                    ? "bg-white dark:bg-slate-800 text-[#08487A] dark:text-sky-400 shadow-sm border border-slate-200/60 dark:border-slate-700"
-                    : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    ? "bg-white dark:bg-[#333333] text-[#000000] dark:text-white shadow-xs border border-[#e6e6e6] dark:border-transparent"
+                    : "text-[#615d59] hover:text-[#000000] dark:text-[#a39e98] dark:hover:text-white"
                 }`}
               >
-                <UserCheck className="w-4 h-4 text-emerald-600" />
+                <UserCheck className="w-4 h-4 text-[#1aae39]" />
                 <span>Mis Presentaciones Personales ({totalActivos})</span>
               </button>
             </div>
@@ -688,9 +765,16 @@ export default function PrestadoresPage() {
           {/* ========================================================================= */}
           {vistaActiva === "auditoria_direccion" && isDirector && (
             <div className="space-y-5 animate-in fade-in-50 duration-300">
-              {/* KPIs de Dirección */}
+              {/* KPIs de Dirección - clickeables para consistencia con Mis Presentaciones */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-2xl">
+                <Card
+                  onClick={() => { setFiltroDireccionEstado("pendientes"); setSelectedIds(new Set()); }}
+                  className={`border transition-all rounded-2xl cursor-pointer hover:shadow-md ${
+                    filtroDireccionEstado === "pendientes"
+                      ? "ring-2 ring-amber-500 border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-slate-900"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs"
+                  }`}
+                >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-slate-500">Pendientes de Visado</p>
@@ -705,7 +789,14 @@ export default function PrestadoresPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-2xl">
+                <Card
+                  onClick={() => { setFiltroDireccionEstado("pendientes"); setSelectedIds(new Set()); }}
+                  className={`border transition-all rounded-2xl cursor-pointer hover:shadow-md ${
+                    filtroDireccionEstado === "pendientes"
+                      ? "ring-2 ring-[#08487A] border-[#08487A]/40 dark:border-[#08487A]/60 bg-[#08487A]/5 dark:bg-slate-900"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs"
+                  }`}
+                >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-slate-500">Monto a Autorizar</p>
@@ -720,7 +811,14 @@ export default function PrestadoresPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-2xl">
+                <Card
+                  onClick={() => { setFiltroDireccionEstado("aprobadas"); setSelectedIds(new Set()); }}
+                  className={`border transition-all rounded-2xl cursor-pointer hover:shadow-md ${
+                    filtroDireccionEstado === "aprobadas"
+                      ? "ring-2 ring-emerald-500 border-emerald-300 dark:border-emerald-700 bg-emerald-50/40 dark:bg-slate-900"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs"
+                  }`}
+                >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-slate-500">Aprobadas para Pago</p>
@@ -1203,19 +1301,19 @@ export default function PrestadoresPage() {
                 </Card>
               </div>
 
-              {/* Tabs de nivel superior: Mis Trámites | Historial */}
+              {/* Tabs principales simplificados: En Curso | Historial */}
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
                   <button
                     type="button"
-                    onClick={() => setTabListado("activos")}
+                    onClick={() => { setTabListado("activos"); setFiltroEstado("todos"); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
                       tabListado === "activos"
                         ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-2xs"
                         : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
                     }`}
                   >
-                    Mis Trámites ({totalActivos})
+                    En Curso ({totalActivos})
                   </button>
 
                   <button
@@ -1229,67 +1327,6 @@ export default function PrestadoresPage() {
                   >
                     Historial ({historialData.totalItems})
                   </button>
-
-                  {tabListado === "activos" && (
-                    <>
-                      <span className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1 shrink-0" />
-
-                      <button
-                        type="button"
-                        onClick={() => setFiltroEstado("todos")}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                          filtroEstado === "todos"
-                            ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-2xs"
-                            : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-                        }`}
-                      >
-                        Todas ({misActivos.length})
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setFiltroEstado("borradores")}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                          filtroEstado === "borradores"
-                            ? "bg-slate-600 text-white shadow-2xs"
-                            : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-                        }`}
-                      >
-                        Borradores ({borradoresCount})
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setFiltroEstado("pendientes")}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                          filtroEstado === "pendientes"
-                            ? "bg-amber-500 text-white shadow-2xs"
-                            : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-                        }`}
-                      >
-                        En Trámite
-                      </button>
-
-                      {kpis.observadasCount > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setFiltroEstado("observadas")}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 ${
-                            filtroEstado === "observadas"
-                              ? "bg-rose-600 text-white shadow-2xs"
-                              : "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                          }`}
-                        >
-                          <span>Observadas</span>
-                          <span className={`px-1.5 py-0.2 text-[10px] font-bold rounded-full ${
-                            filtroEstado === "observadas" ? "bg-white text-rose-600" : "bg-rose-100 text-rose-700"
-                          }`}>
-                            {kpis.observadasCount}
-                          </span>
-                        </button>
-                      )}
-                    </>
-                  )}
 
                   {tabListado === "historial" && (
                     <>
@@ -1335,17 +1372,58 @@ export default function PrestadoresPage() {
                     </>
                   )}
                 </div>
+              </div>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="h-8 w-8 text-slate-400 hover:text-slate-600 shrink-0"
-                  title="Actualizar datos"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
-                </Button>
+{/* Breadcrumb / Estado actual - orientación visual */}
+              <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1">
+                  <span className="font-medium text-slate-700 dark:text-slate-200">
+                    {isTabActivos ? "En Curso" : "Historial"}
+                  </span>
+                  {isTabActivos && filtroEstado !== "todos" && (
+                    <>
+                      <span>/</span>
+                      <span className="font-medium capitalize text-slate-600 dark:text-slate-300">
+                        {filtroEstado === "borradores" && "Borradores"}
+                        {filtroEstado === "pendientes" && "En Trámite"}
+                        {filtroEstado === "observadas" && "Observadas"}
+                      </span>
+                    </>
+                  )}
+                  {isTabHistorial && (
+                    <>
+                      {histAnio !== "todos" && (
+                        <>
+                          <span>/</span>
+                          <span className="font-medium capitalize text-slate-600 dark:text-slate-300">
+                            {histAnio}
+                          </span>
+                        </>
+                      )}
+                      {histEstado !== "todos" && (
+                        <>
+                          <span>/</span>
+                          <span className="font-medium capitalize text-slate-600 dark:text-slate-300">
+                            {histEstado === "aprobado" ? "Aprobadas" : "Pagadas"}
+                          </span>
+                        </>
+                      )}
+                    </>
+                  )}
+                </span>
+                {(isTabActivos && filtroEstado !== "todos") || (isTabHistorial && (histAnio !== "todos" || histEstado !== "todos")) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isTabActivos) setFiltroEstado("todos");
+                      else { setHistAnio("todos"); setHistEstado("todos"); setHistPage(1); getMisPrestacionesPaginadas({ tenantId: currentTenant?.id, grupo: "historial", page: 1 }).then(setHistorialData); }
+                    }}
+                    className="px-2 py-0.5 rounded-lg text-[10px] font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    title="Limpiar filtros"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
               </div>
 
               {/* Contenido según tab */}
@@ -1367,7 +1445,7 @@ export default function PrestadoresPage() {
                     </p>
                     <Button
                       size="sm"
-                      onClick={() => setModalSelectorOpen(true)}
+                      onClick={handleIniciarNuevaPresentacion}
                       className="h-8 px-3 bg-[#08487A] hover:bg-[#06375d] text-white text-xs rounded-xl"
                     >
                       <Plus className="w-3.5 h-3.5 mr-1" /> Crear Solicitud
@@ -1418,12 +1496,17 @@ export default function PrestadoresPage() {
                             const rawFecha = p.paid_at || p.treasury_paid_at;
                             let fechaPagoDisplay = "—";
                             if (rawFecha) {
-                              const datePart = rawFecha.includes("T") ? rawFecha.split("T")[0] : rawFecha.split(" ")[0];
-                              const parts = datePart.split("-");
-                              if (parts.length === 3) {
-                                fechaPagoDisplay = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                              } else {
-                                fechaPagoDisplay = datePart;
+                              try {
+                                const d = new Date(rawFecha);
+                                if (!isNaN(d.getTime())) {
+                                  fechaPagoDisplay = d.toLocaleDateString("es-AR", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  });
+                                }
+                              } catch {
+                                fechaPagoDisplay = String(rawFecha).split(" ")[0];
                               }
                             }
 
@@ -1579,6 +1662,7 @@ export default function PrestadoresPage() {
           tenantId={currentTenant?.id || ""}
           tenantCode={currentTenant?.code || "CISB"}
           observadaParaReenviar={observadaParaEditar}
+          onOpenPerfil={() => setModalPerfilOpen(true)}
           onCreated={() => {
             setModalNuevaOpen(false);
             setObservadaParaEditar(null);

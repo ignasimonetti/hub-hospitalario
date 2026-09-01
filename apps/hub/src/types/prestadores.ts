@@ -268,6 +268,8 @@ export interface PrestacionPresentacion {
       email: string;
       firstName?: string;
       lastName?: string;
+      professional_id?: string;
+      signature_data?: string;
     };
     tenant?: {
       id: string;

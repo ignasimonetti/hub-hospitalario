@@ -84,9 +84,11 @@ export function generarPlanillaOficialHTML(
   }
 
   const profesionLabel = perfil?.profession ? PROFESIONES_MAP[perfil.profession] : "Médico";
-  const matricula = perfil?.license_number ? `M.P. ${perfil.license_number}` : "";
+  const matriculaNum = perfil?.license_number || prestacion.expand?.user?.professional_id || (authUser as any)?.professional_id || "";
+  const matricula = matriculaNum ? `M.P. ${matriculaNum}` : "";
   const cuit = perfil?.cuit ? `CUIT: ${perfil.cuit}` : "";
-  const especialidad = perfil?.specialty || profesionLabel;
+  const especialidad = perfil?.specialty || (authUser as any)?.specialty || profesionLabel;
+  const signatureData = prestacion.expand?.user?.signature_data || (authUser as any)?.signature_data || null;
   const sectorTexto = prestacion.hospital_service
     ? (SECTORES_SERVICIO_MAP[prestacion.hospital_service as SectorServicio] || prestacion.hospital_service)
     : "Guardia Central / Servicio Asistencial";
@@ -306,6 +308,33 @@ export function generarPlanillaOficialHTML(
       padding: 0.5px 3px;
       border-radius: 2px;
     }
+    .signature-img {
+      max-height: 38px;
+      max-width: 130px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto 2px auto;
+    }
+    .signature-cell-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      padding: 1px 0;
+    }
+    .signature-cell-img {
+      max-height: 24px;
+      max-width: 90px;
+      object-fit: contain;
+      display: block;
+    }
+    .signature-cell-meta {
+      font-size: 7px;
+      color: #334155;
+      line-height: 1.1;
+      font-weight: normal;
+    }
     .obs-box {
       border: 1px solid #cbd5e1;
       padding: 4px 6px;
@@ -443,16 +472,23 @@ export function generarPlanillaOficialHTML(
     <!-- Firmas Superiores de Autorización Previa -->
     <div class="signatures-top-grid">
       <div class="sign-box">
+        ${signatureData ? `
+          <div style="min-height: 38px; display: flex; align-items: center; justify-content: center; margin-bottom: 2px;">
+            <img src="${signatureData}" alt="Firma Prestador" class="signature-img" />
+          </div>
+        ` : `
+          <div style="height: 16px;"></div>
+        `}
         <div class="sign-name">${nombreCompleto}</div>
         <div class="sign-meta">${profesionLabel} ${matricula ? "• " + matricula : ""} ${cuit ? "• " + cuit : ""}</div>
         <div style="font-weight: bold; margin-top: 1px;">Firma y Aclaración del Prestador</div>
-        <div><span class="sign-badge">✓ Firmado electrónicamente</span></div>
+        <div><span class="sign-badge">✓ Firmado Digitalmente</span></div>
       </div>
       <div class="sign-box">
-        <div style="height: 12px;"></div>
+        <div style="height: 20px;"></div>
         <div style="font-weight: bold;">Firma y Aclaración del Coordinador / Director Adjunto</div>
         <div class="sign-meta">Autorización Previa de Cobertura</div>
-        <div><span class="sign-badge">✓ Firmado electrónicamente</span></div>
+        <div><span class="sign-badge">✓ Autorizado en Plataforma</span></div>
       </div>
     </div>
 
@@ -483,9 +519,33 @@ export function generarPlanillaOficialHTML(
               <td><strong>${idx + 1}</strong></td>
               <td>${formatDate(r.fecha)}</td>
               <td>${r.hora_entrada} hs</td>
-              <td><span class="badge-digital">Validado Digital</span></td>
+              <td style="padding: 1px 3px;">
+                <div class="signature-cell-container">
+                  ${signatureData ? `
+                    <img src="${signatureData}" alt="Firma" class="signature-cell-img" />
+                  ` : `
+                    <span class="badge-digital">Validado Digital</span>
+                  `}
+                  <div class="signature-cell-meta">
+                    <strong>${nombreCompleto}</strong>
+                    ${matricula ? `<span> • ${matricula}</span>` : ""}
+                  </div>
+                </div>
+              </td>
               <td>${r.hora_salida} hs (${dur}hs)</td>
-              <td><span class="badge-digital">Validado Digital</span></td>
+              <td style="padding: 1px 3px;">
+                <div class="signature-cell-container">
+                  ${signatureData ? `
+                    <img src="${signatureData}" alt="Firma" class="signature-cell-img" />
+                  ` : `
+                    <span class="badge-digital">Validado Digital</span>
+                  `}
+                  <div class="signature-cell-meta">
+                    <strong>${nombreCompleto}</strong>
+                    ${matricula ? `<span> • ${matricula}</span>` : ""}
+                  </div>
+                </div>
+              </td>
               <td><strong>${tipoStr}</strong></td>
             </tr>`;
           } else {
@@ -511,7 +571,7 @@ export function generarPlanillaOficialHTML(
           <th style="width: 85px;">Fecha</th>
           <th>Horario Programado</th>
           <th style="width: 85px;">Hs. Cumplidas</th>
-          <th style="width: 130px;">Certificación Prestador</th>
+          <th style="width: 150px;">Certificación Prestador</th>
         </tr>
       </thead>
       <tbody>
@@ -524,7 +584,19 @@ export function generarPlanillaOficialHTML(
               <td>${formatDate(r.fecha)}</td>
               <td>${r.horario_programado || "Según cronograma"}</td>
               <td><strong>${r.horas_cumplidas} hs</strong></td>
-              <td><span class="badge-digital">Validado Digital</span></td>
+              <td style="padding: 2px 4px;">
+                <div class="signature-cell-container">
+                  ${signatureData ? `
+                    <img src="${signatureData}" alt="Firma" class="signature-cell-img" />
+                  ` : `
+                    <span class="badge-digital">Validado Digital</span>
+                  `}
+                  <div class="signature-cell-meta">
+                    <strong>${nombreCompleto}</strong>
+                    ${matricula ? `<span> • ${matricula}</span>` : ""}
+                  </div>
+                </div>
+              </td>
             </tr>`;
           } else {
             return `

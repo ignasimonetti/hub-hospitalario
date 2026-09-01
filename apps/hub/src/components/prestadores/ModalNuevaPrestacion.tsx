@@ -750,7 +750,17 @@ export function ModalNuevaPrestacion({
 
     // 0. Validar Conducta Fiscal
     if (!estadoConducta.valida) {
-      toast.error(estadoConducta.mensaje);
+      toast.error(estadoConducta.mensaje, {
+        description: estadoConducta.detalle,
+        action: onOpenPerfil ? {
+          label: "Ir a Mis Datos",
+          onClick: () => {
+            onOpenChange(false);
+            onOpenPerfil();
+          },
+        } : undefined,
+        duration: 8000,
+      });
       return;
     }
 

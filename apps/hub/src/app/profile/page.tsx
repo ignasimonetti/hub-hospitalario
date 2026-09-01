@@ -32,13 +32,15 @@ import {
   Save,
   X,
   AlertCircle,
-  Loader2
+  Loader2,
+  PenTool
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, pocketbase } from "@/lib/auth";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardPreferences } from "@/components/profile/DashboardPreferences";
+import { SignaturePad } from "@/components/profile/SignaturePad";
 
 interface UserHospital {
   id: string;
@@ -75,6 +77,7 @@ interface UserProfile {
   specialty?: string;
   department?: string;
   position?: string;
+  signature_data?: string | null;
   verified: boolean;
   created: string;
   updated: string;
@@ -98,6 +101,7 @@ export default function ProfilePage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [isSavingSignature, setIsSavingSignature] = useState(false);
 
 
   const [formData, setFormData] = useState({
@@ -125,11 +129,16 @@ export default function ProfilePage() {
         }
 
         // Obtener perfil completo desde la API (incluyendo hospitales y roles)
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (pocketbase.authStore.token) {
+          headers['Authorization'] = `Bearer ${pocketbase.authStore.token}`;
+        }
+
         const response = await fetch('/api/auth/full-profile', {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
         });
 
         if (!response.ok) {
@@ -146,6 +155,7 @@ export default function ProfilePage() {
                 lastName: fallbackUser.lastName || '',
                 dni: '',
                 phone: '',
+                signature_data: (fallbackUser as any).signature_data || null,
                 verified: fallbackUser.verified || false,
                 created: fallbackUser.created,
                 updated: fallbackUser.updated
@@ -381,6 +391,78 @@ export default function ProfilePage() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveSignature = async (signatureBase64: string) => {
+    setIsSavingSignature(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (pocketbase.authStore.token) {
+        headers["Authorization"] = `Bearer ${pocketbase.authStore.token}`;
+      }
+      const response = await fetch("/api/auth/update-profile", {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ signature_data: signatureBase64 }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Error al guardar la firma");
+      }
+      if (data.user) {
+        setUser(data.user);
+      }
+      toast({
+        title: "Firma actualizada",
+        description: "Su firma holográfica digital ha sido guardada correctamente",
+        variant: "default",
+      });
+    } catch (error: any) {
+      console.error("Error saving signature:", error);
+      toast({
+        title: "Error al guardar firma",
+        description: error.message || "No se pudo guardar la firma",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingSignature(false);
+    }
+  };
+
+  const handleDeleteSignature = async () => {
+    setIsSavingSignature(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (pocketbase.authStore.token) {
+        headers["Authorization"] = `Bearer ${pocketbase.authStore.token}`;
+      }
+      const response = await fetch("/api/auth/update-profile", {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ signature_data: null }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Error al eliminar la firma");
+      }
+      if (data.user) {
+        setUser(data.user);
+      }
+      toast({
+        title: "Firma eliminada",
+        description: "La firma digital ha sido removida del perfil",
+        variant: "default",
+      });
+    } catch (error: any) {
+      console.error("Error deleting signature:", error);
+      toast({
+        title: "Error al eliminar firma",
+        description: error.message || "No se pudo eliminar la firma",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingSignature(false);
     }
   };
 
@@ -717,6 +799,50 @@ export default function ProfilePage() {
                       </div>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            {/* Firma Holográfica Digital */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.82 }}
+              className="lg:col-span-2"
+            >
+              <Card className="border border-gray-200 dark:border-gray-700 shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                      <PenTool className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Firma Holográfica Digital
+                      </CardTitle>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Su firma será utilizada en documentos oficiales generados por la plataforma
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {isSavingSignature && (
+                    <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Guardando firma...
+                    </div>
+                  )}
+                  <SignaturePad
+                    initialSignature={user?.signature_data}
+                    onSave={handleSaveSignature}
+                    onClear={() => {
+                      // Limpiar la firma del estado local
+                    }}
+                    onDeleteSignature={handleDeleteSignature}
+                    disabled={isSavingSignature}
+                    height={200}
+                    showSaveButton={true}
+                  />
                 </CardContent>
               </Card>
             </motion.div>

@@ -94,16 +94,16 @@ export function ModalObservarFiscal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg p-0 border-slate-200 dark:border-slate-800 overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-600 to-rose-600 p-5 pr-12 text-white">
+        <div className="border-b border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/80 dark:bg-[#1f1f1f]/80 p-5 pr-12">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
+            <div className="p-2 bg-white dark:bg-[#2b2b2b] rounded-lg border border-[#e6e6e6] dark:border-[#383838] text-[#615d59] dark:text-[#a39e98]">
               <FileWarning className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-bold text-white tracking-tight">
+              <DialogTitle className="text-base font-semibold text-[#000000] dark:text-white tracking-tight">
                 Observar Trámite
               </DialogTitle>
-              <DialogDescription className="text-amber-100 text-xs mt-0.5">
+              <DialogDescription className="text-[#615d59] dark:text-[#a39e98] text-xs mt-0.5">
                 Trámite Nº {prestacion.form_number || prestacion.id} • {nombrePrestador}
               </DialogDescription>
             </div>
@@ -112,11 +112,11 @@ export function ModalObservarFiscal({
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Banner Explicativo de Conservación de Firmas Asistenciales */}
-          <div className="p-3 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-950/20 text-xs text-amber-900 dark:text-amber-200 flex gap-2.5 items-start">
-            <ShieldCheck className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="p-3 rounded-lg border border-[#dd5b00]/30 dark:border-[#dd5b00]/40 bg-[#dd5b00]/10 dark:bg-[#dd5b00]/15 text-xs text-[#523410] dark:text-[#f6c99c] flex gap-2.5 items-start">
+            <ShieldCheck className="h-4 w-4 text-[#dd5b00] flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
               <span className="font-bold">Preservación de Visados Médicos:</span>
-              <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+              <p className="text-[11px] leading-relaxed">
                 Esta observación <strong>no anulará las firmas de Dirección</strong>. Cuando el prestador reemplace el comprobante ARCA y reenvíe, volverá directamente a Tesorería en estado <em>Aprobado</em> sin requerir nuevo visado asistencial.
               </p>
             </div>
@@ -160,7 +160,7 @@ export function ModalObservarFiscal({
             </div>
           </div>
 
-          <DialogFooter className="pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
+          <DialogFooter className="pt-2 border-t border-[#e6e6e6] dark:border-[#2e2e2e] gap-2">
             <Button
               type="button"
               variant="outline"
@@ -173,7 +173,7 @@ export function ModalObservarFiscal({
             <Button
               type="submit"
               size="sm"
-              className="bg-amber-600 hover:bg-amber-700 text-white font-medium"
+              className="bg-[#000000] hover:bg-[#2e2e2e] dark:bg-white dark:hover:bg-slate-200 dark:text-[#000000] text-white font-medium rounded-md"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

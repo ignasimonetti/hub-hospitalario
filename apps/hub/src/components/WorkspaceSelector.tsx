@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { MapPin, Phone, ArrowRight, Building2 } from "lucide-react";
+import { ArrowRight, Building2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -171,23 +171,6 @@ export function WorkspaceSelector({ userRoles, onWorkspaceSelect }: WorkspaceSel
                         </div>
                       </div>
 
-                      {/* Address / Details */}
-                      {(tenant.address || tenant.phone) && (
-                        <div className="space-y-1 text-xs text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800/80">
-                          {tenant.address && (
-                            <div className="flex items-center gap-1.5 justify-center truncate">
-                              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span className="truncate">{tenant.address}</span>
-                            </div>
-                          )}
-                          {tenant.phone && (
-                            <div className="flex items-center gap-1.5 justify-center">
-                              <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span>{tenant.phone}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
 
                       {/* Action Button con azul institucional */}
                       <Button

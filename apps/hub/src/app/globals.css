@@ -19,65 +19,56 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --background: 30 11% 96%; /* #f6f5f4 Notion Canvas Soft */
+    --foreground: 0 0% 0%; /* #000000 Notion Ink */
+    --card: 0 0% 100%; /* #ffffff Notion Surface */
+    --card-foreground: 36 3% 19%; /* #31302e Notion Ink Secondary */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 208 100% 43.5%; /* #0075de Notion Primary Blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 11% 96%; /* #f6f5f4 */
+    --secondary-foreground: 36 3% 19%;
+    --muted: 30 11% 94%;
+    --muted-foreground: 36 4% 37%; /* #615d59 Notion Ink Muted */
+    --accent: 30 11% 96%;
+    --accent-foreground: 0 0% 0%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%; /* #e6e6e6 Notion Hairline */
+    --input: 0 0% 90%; /* #e6e6e6 Notion Hairline */
+    --ring: 208 100% 43.5%; /* #0075de Notion Primary */
+    --chart-1: 208 100% 43.5%;
+    --chart-2: 133 74% 39%;
+    --chart-3: 268 76% 84%;
+    --chart-4: 25 100% 43%;
+    --chart-5: 178 58% 39%;
   }
 
   .dark {
-    --background: 222.2 47% 2%;
-    /* slate-950 */
-    --foreground: 210 40% 98%;
-    --card: 217.2 32.6% 10%;
-    /* slate-900 */
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 47% 2%;
-    /* slate-950 */
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 210 40% 98%;
-    /* slate-50 para mejor contraste */
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    /* slate-800 */
-    --muted-foreground: 215 20.2% 65%;
-    /* slate-400 */
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    /* slate-800 */
-    --input: 222.2 47% 2%;
-    /* slate-950 */
-    --ring: 217.2 91.2% 59.8%;
-    /* blue-400 */
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 340 75% 55%;
+    --background: 0 0% 12%; /* Notion Dark Canvas */
+    --foreground: 0 0% 100%;
+    --card: 0 0% 15%; /* Notion Dark Surface */
+    --card-foreground: 0 0% 92%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 208 100% 55%; /* #2b8ee8 Notion Blue Dark */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 92%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 0% 18%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 22%; /* #383838 Dark Hairline */
+    --input: 0 0% 22%;
+    --ring: 208 100% 55%;
+    --chart-1: 208 100% 55%;
+    --chart-2: 133 74% 45%;
+    --chart-3: 268 76% 75%;
+    --chart-4: 25 100% 50%;
+    --chart-5: 178 58% 45%;
   }
 }

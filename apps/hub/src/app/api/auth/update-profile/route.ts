@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerPocketBase } from '@/lib/pocketbase-server'; // Importar la nueva utilidad
+import { getServerPocketBase } from '@/lib/pocketbase-server';
+import { createAdminClient } from '@/lib/pocketbase-admin';
 
 export async function PUT(request: Request) {
   const pb = await getServerPocketBase();
@@ -66,63 +67,80 @@ export async function PUT(request: Request) {
       }
     }
 
-    // Validar campos de perfil personal
-    if (!firstName || !lastName || !email) {
-      return NextResponse.json(
-        { error: 'Nombre, apellido y email son requeridos' },
-        { status: 400 }
-      );
-    }
+    // Determinar si es una actualización parcial (solo firma) o completa
+    const isProfileField = (v: any) => v !== undefined && v !== null && String(v).trim() !== '';
+    const isSignatureOnly = body.signature_data !== undefined
+      && !isProfileField(firstName)
+      && !isProfileField(lastName)
+      && !isProfileField(email)
+      && !isProfileField(dni);
 
-    // Validar DNI (obligatorio)
-    if (!dni) {
-      return NextResponse.json(
-        { error: 'El DNI es requerido' },
-        { status: 400 }
-      );
-    }
+    // Construir objeto de actualización
+    const updateData: any = {};
 
-    // Validar formato de DNI (7-8 dígitos numéricos)
-    const dniRegex = /^[0-9]{7,8}$/;
-    if (!dniRegex.test(dni.replace(/\./g, ''))) {
-      return NextResponse.json(
-        { error: 'El DNI debe contener entre 7 y 8 dígitos numéricos' },
-        { status: 400 }
-      );
-    }
-
-    // Validar email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Formato de email inválido' },
-        { status: 400 }
-      );
-    }
-
-    // Validar teléfono si se proporciona
-    if (phone) {
-      const phoneRegex = /^[+]?[0-9\s\-\(\)]{10,}$/;
-      if (!phoneRegex.test(phone.trim())) {
+    if (isSignatureOnly) {
+      // Actualización parcial: solo firma digital
+      updateData.signature_data = body.signature_data;
+    } else {
+      // Actualización completa: validar campos de perfil personal
+      if (!firstName || !lastName || !email) {
         return NextResponse.json(
-          { error: 'Formato de teléfono inválido' },
+          { error: 'Nombre, apellido y email son requeridos' },
           { status: 400 }
         );
       }
-    }
 
-    // Construir objeto de actualización
-    const updateData: any = {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.trim().toLowerCase(),
-      dni: dni.replace(/\./g, '').trim(), // Almacenar sin puntos
-      emailVisibility: true // Make email visible for profile purposes
-    };
+      // Validar DNI (obligatorio)
+      if (!dni) {
+        return NextResponse.json(
+          { error: 'El DNI es requerido' },
+          { status: 400 }
+        );
+      }
 
-    // Agregar teléfono si se proporciona
-    if (phone && phone.trim()) {
-      updateData.phone = phone.trim();
+      // Validar formato de DNI (7-8 dígitos numéricos)
+      const dniRegex = /^[0-9]{7,8}$/;
+      if (!dniRegex.test(dni.replace(/\./g, ''))) {
+        return NextResponse.json(
+          { error: 'El DNI debe contener entre 7 y 8 dígitos numéricos' },
+          { status: 400 }
+        );
+      }
+
+      // Validar email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json(
+          { error: 'Formato de email inválido' },
+          { status: 400 }
+        );
+      }
+
+      // Validar teléfono si se proporciona
+      if (phone) {
+        const phoneRegex = /^[+]?[0-9\s\-\(\)]{10,}$/;
+        if (!phoneRegex.test(phone.trim())) {
+          return NextResponse.json(
+            { error: 'Formato de teléfono inválido' },
+            { status: 400 }
+          );
+        }
+      }
+
+      updateData.firstName = firstName.trim();
+      updateData.lastName = lastName.trim();
+      updateData.email = email.trim().toLowerCase();
+      updateData.dni = dni.replace(/\./g, '').trim();
+      updateData.emailVisibility = true;
+
+      if (phone && phone.trim()) {
+        updateData.phone = phone.trim();
+      }
+
+      // Incluir firma si también se envió junto con el perfil
+      if (body.signature_data !== undefined) {
+        updateData.signature_data = body.signature_data;
+      }
     }
 
     // Cambiar contraseña si se proporciona
@@ -130,11 +148,21 @@ export async function PUT(request: Request) {
       updateData.password = newPassword;
     }
 
-    // Update user profile in PocketBase
-    const updatedUser = await pb.collection('auth_users').update(
-      currentUser.id,
-      updateData
-    );
+    // Update user profile in PocketBase siempre con admin client para garantizar escritura
+    let updatedUser: any;
+    try {
+      const adminPb = await createAdminClient();
+      updatedUser = await adminPb.collection('auth_users').update(
+        currentUser.id,
+        updateData
+      );
+    } catch (adminErr: any) {
+      console.warn("Fallo admin update, intentando con user pb:", adminErr);
+      updatedUser = await pb.collection('auth_users').update(
+        currentUser.id,
+        updateData
+      );
+    }
 
     // Si se cambió la contraseña, cerrar sesión y reautenticar
     if (newPassword) {
@@ -150,8 +178,14 @@ export async function PUT(request: Request) {
       }
     }
 
-    // Obtener información completa del usuario actualizado
-    const userProfile = await pb.collection('auth_users').getOne(currentUser.id);
+    // Obtener información completa del usuario actualizado usando admin client
+    let userProfile: any;
+    try {
+      const adminPb = await createAdminClient();
+      userProfile = await adminPb.collection('auth_users').getOne(currentUser.id);
+    } catch {
+      userProfile = await pb.collection('auth_users').getOne(currentUser.id);
+    }
 
     return NextResponse.json({
       success: true,
@@ -165,6 +199,7 @@ export async function PUT(request: Request) {
         lastName: userProfile.lastName,
         dni: userProfile.dni,
         phone: userProfile.phone || null,
+        signature_data: userProfile.signature_data || null,
         updated: userProfile.updated
       }
     });
@@ -172,12 +207,18 @@ export async function PUT(request: Request) {
   } catch (error: any) {
     console.error('Error updating profile:', error);
 
-    // Handle specific PocketBase errors
-    if (error.response?.data?.message) {
-      return NextResponse.json(
-        { error: error.response.data.message },
-        { status: error.response.status || 400 }
-      );
+    let errorMessage = error?.message || 'Error al actualizar el perfil';
+
+    // Extraer detalle de validaciones de campos de PocketBase (ej. error.response.data.data = { signature_data: { message: "..." } })
+    if (error?.response?.data?.data && typeof error.response.data.data === 'object') {
+      const fieldErrors = Object.entries(error.response.data.data)
+        .map(([field, errObj]: [string, any]) => `${field}: ${errObj?.message || JSON.stringify(errObj)}`)
+        .join(', ');
+      if (fieldErrors) {
+        errorMessage = `Error de validación (${fieldErrors})`;
+      }
+    } else if (error?.response?.data?.message) {
+      errorMessage = error.response.data.message;
     }
 
     // Handle duplicate key errors (email, DNI)
@@ -190,8 +231,8 @@ export async function PUT(request: Request) {
     }
 
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: error?.status || error?.response?.status || 400 }
     );
   }
 }

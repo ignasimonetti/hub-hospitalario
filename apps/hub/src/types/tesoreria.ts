@@ -83,6 +83,41 @@ export interface KpisTesoreriaData {
   totalObservadoCantidad: number;
   totalConformadoMonto: number;
   totalConformadoCantidad: number;
+  // Retenciones y Neto
+  totalRetencionesIIBB: number;
+  totalRetencionesGanancias: number;
+  totalRetencionesSUSS: number;
+  totalRetencionesOtras: number;
+  totalRetencionesMonto: number;
+  totalNetoEstimado: number;
+  ticketPromedio: number;
+  // Métrica de Calidad de Facturación / Observaciones Fiscales
+  tasaObservacion: {
+    porcentaje: number; // % sobre el total de trámites gestionados
+    cantidadTotalAuditados: number;
+    cantidadObservados: number;
+    montoRetenidoPreventivo: number;
+    desglosePorMotivo: {
+      motivoId: string;
+      motivoLabel: string;
+      cantidad: number;
+      porcentaje: number;
+    }[];
+  };
+  // Métricas de Tiempo de Gestión Neta de Tesorería (SLA sin sesgo)
+  tiemposGestion: {
+    promedioDiasNetos: number;
+    medianaDiasNetos: number;
+    semaforo: {
+      optimo: number; // <= 15 días (verde)
+      moderado: number; // 16 - 30 días (amarillo)
+      demorado: number; // > 30 días (rojo)
+    };
+    tramitesEvaluados: number;
+    tiempoMinimoDias: number;
+    tiempoMaximoDias: number;
+  };
+  // Desglose por servicio
   desglosePorServicio: {
     servicioKey: string;
     servicioLabel: string;
@@ -91,6 +126,16 @@ export interface KpisTesoreriaData {
     montoTotal: number;
     cantidadPrestaciones: number;
     porcentajeDelTotal: number;
+  }[];
+  // Desglose mensual para gráficos cronológicos
+  evolucionMensual?: {
+    mesLabel: string;
+    mesNum: number;
+    anio: number;
+    montoLiquidado: number;
+    montoPendiente: number;
+    montoTotal: number;
+    cantidad: number;
   }[];
 }
 

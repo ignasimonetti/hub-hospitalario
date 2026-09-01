@@ -101,21 +101,21 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
+    <div className="min-h-screen bg-[#f6f5f4] dark:bg-[#191919]">
       {/* Mobile Header & Sidebar */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-20">
+      <div className="md:hidden flex items-center justify-between p-3.5 border-b border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/90 dark:bg-[#191919]/90 backdrop-blur-md sticky top-0 z-20">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-slate-900 dark:text-white">
+          <span className="font-semibold text-sm text-[#000000] dark:text-white tracking-[-0.02em]">
             {currentTenant?.name || 'Hub Hospitalario'}
           </span>
         </div>
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
           <SheetTrigger asChild>
-            <button className="p-2 -mr-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
-              <Menu className="h-6 w-6" />
+            <button className="p-2 -mr-2 text-[#615d59] dark:text-[#a39e98] hover:bg-[#eae8e6] dark:hover:bg-[#2e2e2e] rounded-md">
+              <Menu className="h-5 w-5" />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-80 border-r-slate-200 dark:border-slate-800">
+          <SheetContent side="left" className="p-0 w-80 border-r-[#e6e6e6] dark:border-[#2e2e2e]">
             <SheetTitle className="sr-only">Menú de Navegación</SheetTitle>
             <AppSidebar
               currentPage="dashboard"
@@ -132,16 +132,16 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div className={`pt-4 md:pt-14 transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'} ml-0`}>
+      <div className={`transition-all duration-200 ease-in-out ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'} ml-0`}>
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-          className="max-w-6xl mx-auto px-4 md:px-8 py-4 md:py-12"
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          className="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-10"
         >
           {/* Welcome Banner */}
-          <div className="rounded-2xl bg-slate-50/90 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 p-6 md:p-8 mb-8 shadow-xs">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
+          <div className="rounded-xl bg-white dark:bg-[#242424] border border-[#e6e6e6] dark:border-[#383838] p-6 md:p-8 mb-8 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            <h1 className="text-2xl md:text-3xl font-bold text-[#000000] dark:text-white tracking-[-0.03em]">
               {firstName ? `¡Hola, ${firstName}!` : "¡Bienvenido!"}
             </h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">

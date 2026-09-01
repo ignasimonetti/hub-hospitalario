@@ -306,9 +306,10 @@ export function ModalPerfilPrestador({
               <Input
                 id="conducta_date"
                 type="date"
+                placeholder="DD/MM/AAAA"
                 value={conductaDueDate}
                 onChange={(e) => setConductaDueDate(e.target.value)}
-                className="h-9 text-xs bg-white dark:bg-slate-900 dark:text-white"
+                className="h-10 text-sm bg-slate-50 dark:bg-slate-950 dark:text-white"
               />
             </div>
 

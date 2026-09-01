@@ -43,6 +43,7 @@ import { ModalRegistrarPago } from "@/components/tesoreria/ModalRegistrarPago";
 import { ModalLiquidarLote } from "@/components/tesoreria/ModalLiquidarLote";
 import { ModalObservarFiscal } from "@/components/tesoreria/ModalObservarFiscal";
 import { ModalDetalleLiquidacion } from "@/components/tesoreria/ModalDetalleLiquidacion";
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -84,6 +85,7 @@ import {
   ArrowLeft,
   FileText,
   Building2,
+  Trash2,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 
@@ -108,6 +110,7 @@ export default function TesoreriaPage() {
 
   // Permisos y Guardia de Acceso
   const { hasRole, loading: loadingRoles } = useRoles(currentTenant?.id);
+  const isSuperAdmin = Boolean(user?.is_super_admin || hasRole("superadmin"));
   const canAccessTesoreria =
     hasRole("tesoreria") ||
     hasRole("tesorer") ||
@@ -147,6 +150,23 @@ export default function TesoreriaPage() {
   const [isCrearLoteModalOpen, setIsCrearLoteModalOpen] = useState(false);
   const [isLoteModalOpen, setIsLoteModalOpen] = useState(false);
   const [showAgregarALoteDropdown, setShowAgregarALoteDropdown] = useState(false);
+
+  // Modal de Borrado Individual (Superadmin)
+  const [deleteModalConfig, setDeleteModalConfig] = useState<{
+    isOpen: boolean;
+    collection: string;
+    recordId: string;
+    title: string;
+    description: string;
+    recordLabel: string;
+  }>({
+    isOpen: false,
+    collection: "",
+    recordId: "",
+    title: "",
+    description: "",
+    recordLabel: "",
+  });
 
   useEffect(() => {
     setUser(getCurrentUser());
@@ -511,6 +531,38 @@ export default function TesoreriaPage() {
     await cargarDatos();
   };
 
+  const handleDeleteRecord = async () => {
+    const { collection, recordId } = deleteModalConfig;
+    if (!collection || !recordId) return;
+
+    try {
+      const token = (await import("@/lib/auth")).pocketbase.authStore.token;
+      const res = await fetch("/api/admin/purge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: "delete_record",
+          collection,
+          recordId,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Error al eliminar el registro.");
+      }
+
+      toast.success(data.message || "Registro eliminado exitosamente.");
+      await cargarDatos();
+    } catch (err: any) {
+      toast.error(err?.message || "Error al eliminar el registro.");
+      throw err;
+    }
+  };
+
   const handleExportarLoteBancario = () => {
     const aExportar =
       selectedItemsList.length > 0
@@ -605,7 +657,7 @@ export default function TesoreriaPage() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-screen bg-[#f6f5f4] dark:bg-[#191919]">
       {/* Sidebar Desktop */}
       <div className="hidden lg:block">
         <AppSidebar currentPage="tesoreria" />
@@ -614,13 +666,13 @@ export default function TesoreriaPage() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden lg:pl-64">
         {/* Header Superior */}
-        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-10 flex-shrink-0">
+        <header className="h-14 border-b border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/90 dark:bg-[#191919]/90 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-10 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="lg:hidden">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
-                    <Menu className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md">
+                    <Menu className="h-4 w-4" />
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="p-0 w-64">
@@ -631,14 +683,14 @@ export default function TesoreriaPage() {
             </div>
 
             <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-emerald-100 dark:bg-emerald-950/60 rounded-lg text-emerald-700 dark:text-emerald-400">
-                <Receipt className="h-5 w-5" />
+              <div className="p-1.5 bg-[#1aae39]/15 dark:bg-[#1aae39]/20 rounded-md text-[#1aae39]">
+                <Receipt className="h-4 w-4" />
               </div>
               <div>
-                <h1 className="text-base font-bold text-gray-900 dark:text-slate-100 tracking-tight">
+                <h1 className="text-sm font-semibold text-[#000000] dark:text-white tracking-[-0.02em]">
                   Tesorería
                 </h1>
-                <p className="text-xs text-gray-500 dark:text-slate-400 hidden sm:block">
+                <p className="text-[11px] text-[#615d59] dark:text-[#a39e98] hidden sm:block">
                   {vistaActiva === "operaciones"
                     ? "Bandeja de Control Documental & Lotes GDE"
                     : vistaActiva === "metricas"
@@ -651,13 +703,13 @@ export default function TesoreriaPage() {
 
           <div className="flex items-center gap-2">
             {/* Navegación rápida entre Hub, Bandeja y Métricas */}
-            <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+            <div className="hidden sm:flex items-center bg-[#eae8e6] dark:bg-[#262626] p-0.5 rounded-lg border border-[#e6e6e6] dark:border-[#383838] text-xs">
               <button
                 onClick={() => setVistaActiva("galeria")}
-                className={`px-3 py-1 rounded-md font-semibold transition-colors flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 rounded-md font-semibold transition-colors flex items-center gap-1.5 ${
                   vistaActiva === "galeria"
-                    ? "bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm"
-                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400"
+                    ? "bg-white dark:bg-[#333333] text-[#000000] dark:text-white shadow-xs"
+                    : "text-[#615d59] hover:text-[#000000] dark:text-[#a39e98] dark:hover:text-white"
                 }`}
               >
                 <Layers className="h-3.5 w-3.5" />
@@ -665,10 +717,10 @@ export default function TesoreriaPage() {
               </button>
               <button
                 onClick={() => setVistaActiva("operaciones")}
-                className={`px-3 py-1 rounded-md font-semibold transition-colors flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 rounded-md font-semibold transition-colors flex items-center gap-1.5 ${
                   vistaActiva === "operaciones"
-                    ? "bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm"
-                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400"
+                    ? "bg-white dark:bg-[#333333] text-[#000000] dark:text-white shadow-xs"
+                    : "text-[#615d59] hover:text-[#000000] dark:text-[#a39e98] dark:hover:text-white"
                 }`}
               >
                 <Receipt className="h-3.5 w-3.5" />
@@ -676,10 +728,10 @@ export default function TesoreriaPage() {
               </button>
               <button
                 onClick={() => setVistaActiva("metricas")}
-                className={`px-3 py-1 rounded-md font-semibold transition-colors flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 rounded-md font-semibold transition-colors flex items-center gap-1.5 ${
                   vistaActiva === "metricas"
-                    ? "bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm"
-                    : "text-gray-500 hover:text-gray-900 dark:text-slate-400"
+                    ? "bg-white dark:bg-[#333333] text-[#000000] dark:text-white shadow-xs"
+                    : "text-[#615d59] hover:text-[#000000] dark:text-[#a39e98] dark:hover:text-white"
                 }`}
               >
                 <BarChart3 className="h-3.5 w-3.5" />
@@ -1335,6 +1387,31 @@ export default function TesoreriaPage() {
                                     </div>
                                   );
                                 })()}
+
+                                {/* Superadmin: Botón de Borrado Individual de Lote */}
+                                {isSuperAdmin && (
+                                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex justify-end">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteModalConfig({
+                                          isOpen: true,
+                                          collection: "tesoreria_lotes",
+                                          recordId: lote.id,
+                                          title: "Eliminar Lote de Tesorería",
+                                          description: "Esta acción eliminará el lote seleccionado y desvinculará todas sus prestaciones asociadas para que vuelvan a estar disponibles.",
+                                          recordLabel: `Lote: ${lote.numero_lote} (${lote.cantidad_prestaciones} profesionales, ${formatMoney(lote.monto_neto_total)})`,
+                                        });
+                                      }}
+                                      className="h-6 px-2 text-[10px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 gap-1 font-semibold"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                      Eliminar Lote
+                                    </Button>
+                                  </div>
+                                )}
                               </CardContent>
                             </Card>
                           );
@@ -1594,6 +1671,28 @@ export default function TesoreriaPage() {
                                           </Button>
                                         </>
                                       )}
+                                      {/* Superadmin: Borrado individual de prestación/comprobante */}
+                                      {isSuperAdmin && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                                          title="Eliminar registro (Superadmin)"
+                                          onClick={() =>
+                                            setDeleteModalConfig({
+                                              isOpen: true,
+                                              collection: "prestaciones_presentaciones",
+                                              recordId: item.id,
+                                              title: "Eliminar Trámite / Factura",
+                                              description:
+                                                "Esta acción eliminará permanentemente la presentación de la prestación asistencial y su comprobante asociado.",
+                                              recordLabel: `Trámite: ${item.form_number || item.id} - ${nombrePrestador} (${formatMoney(montoBruto)})`,
+                                            })
+                                          }
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
                                     </div>
                                   </td>
                                 </tr>
@@ -1664,6 +1763,19 @@ export default function TesoreriaPage() {
         isOpen={!!itemDetalle}
         onClose={() => setItemDetalle(null)}
         prestacion={itemDetalle}
+      />
+
+      {/* Modal de Confirmación de Borrado (Superadmin) */}
+      <ConfirmDeleteModal
+        isOpen={deleteModalConfig.isOpen}
+        onClose={() =>
+          setDeleteModalConfig((prev) => ({ ...prev, isOpen: false }))
+        }
+        onConfirm={handleDeleteRecord}
+        title={deleteModalConfig.title}
+        description={deleteModalConfig.description}
+        confirmWord="ELIMINAR"
+        recordLabel={deleteModalConfig.recordLabel}
       />
     </div>
   );

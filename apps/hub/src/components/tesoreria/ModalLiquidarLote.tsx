@@ -94,16 +94,16 @@ export function ModalLiquidarLote({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md p-0 border-slate-200 dark:border-slate-800 overflow-hidden">
-        <div className="bg-gradient-to-r from-emerald-700 to-teal-800 p-5 text-white">
+        <div className="border-b border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/80 dark:bg-[#1f1f1f]/80 p-5 pr-12">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
+            <div className="p-2 bg-white dark:bg-[#2b2b2b] rounded-lg border border-[#e6e6e6] dark:border-[#383838] text-[#615d59] dark:text-[#a39e98]">
               <Layers className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-bold text-white tracking-tight">
+              <DialogTitle className="text-base font-semibold text-[#000000] dark:text-white tracking-tight">
                 Liquidar Lote Masivo de Honorarios
               </DialogTitle>
-              <DialogDescription className="text-emerald-100 text-xs mt-0.5">
+              <DialogDescription className="text-[#615d59] dark:text-[#a39e98] text-xs mt-0.5">
                 Procesamiento simultáneo de transferencias
               </DialogDescription>
             </div>
@@ -112,18 +112,18 @@ export function ModalLiquidarLote({
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Resumen del Lote */}
-          <div className="p-3.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2">
+          <div className="p-3.5 rounded-lg border border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/60 dark:bg-[#1f1f1f]/50 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-emerald-900 dark:text-emerald-300">
+              <span className="text-xs font-medium text-[#31302e] dark:text-slate-300">
                 Trámites a Liquidar:
               </span>
-              <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 font-bold">
+              <Badge variant="outline" className="bg-white dark:bg-[#2b2b2b] text-[#000000] dark:text-white font-semibold border-[#e6e6e6] dark:border-[#383838]">
                 {selectedItems.length} órdenes seleccionadas
               </Badge>
             </div>
-            <div className="flex items-center justify-between pt-1 border-t border-emerald-200/60 dark:border-emerald-900/40">
-              <span className="text-xs text-gray-600 dark:text-slate-400">Total a Acreditar:</span>
-              <span className="text-base font-extrabold text-emerald-800 dark:text-emerald-300 font-mono">
+            <div className="flex items-center justify-between pt-1 border-t border-[#e6e6e6] dark:border-[#2e2e2e]">
+              <span className="text-xs text-[#615d59] dark:text-[#a39e98]">Total a Acreditar:</span>
+              <span className="text-base font-extrabold text-[#1aae39] dark:text-emerald-400 font-mono">
                 {formatMoney(totalMonto)}
               </span>
             </div>
@@ -142,14 +142,11 @@ export function ModalLiquidarLote({
                 className="text-xs font-mono"
                 required
               />
-              <p className="text-[11px] text-gray-500">
-                Este número identificador quedará registrado en las {selectedItems.length} órdenes.
-              </p>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="paymentDate" className="text-xs font-semibold">
-                Fecha de Acreditación / Transferencia <span className="text-rose-500">*</span>
+                Fecha de Pago Efectiva <span className="text-rose-500">*</span>
               </Label>
               <Input
                 id="paymentDate"
@@ -163,7 +160,7 @@ export function ModalLiquidarLote({
 
             <div className="space-y-1.5">
               <Label htmlFor="notes" className="text-xs font-semibold">
-                Notas del Lote (Opcional)
+                Observaciones Generales de la Liquidación (Opcional)
               </Label>
               <Textarea
                 id="notes"
@@ -176,7 +173,7 @@ export function ModalLiquidarLote({
             </div>
           </div>
 
-          <DialogFooter className="pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
+          <DialogFooter className="pt-2 border-t border-[#e6e6e6] dark:border-[#2e2e2e] gap-2">
             <Button
               type="button"
               variant="outline"
@@ -189,7 +186,7 @@ export function ModalLiquidarLote({
             <Button
               type="submit"
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+              className="bg-[#000000] hover:bg-[#2e2e2e] dark:bg-white dark:hover:bg-slate-200 dark:text-[#000000] text-white font-medium rounded-md"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

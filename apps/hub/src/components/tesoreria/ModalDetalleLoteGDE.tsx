@@ -644,7 +644,7 @@ export function ModalDetalleLoteGDE({
                 size="sm"
                 onClick={handleDescargarDocsPDF}
                 disabled={Boolean(isDownloadingDocs)}
-                className="text-xs flex items-center gap-1.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold shadow-xs"
+                className="text-xs flex items-center gap-1.5 bg-[#000000] hover:bg-[#2e2e2e] dark:bg-white dark:hover:bg-slate-200 dark:text-[#000000] text-white font-semibold shadow-xs rounded-md"
                 title="Genera un único archivo PDF con todas las Fichas Asistenciales, Facturas ARCA y Conductas Fiscales DGR en el orden exacto de la nómina (ideal para la sección Archivos de Trabajo de GDE)"
               >
                 {isDownloadingDocs === "pdf" ? (
@@ -940,7 +940,7 @@ export function ModalDetalleLoteGDE({
                       type="button"
                       size="sm"
                       onClick={handleAbrirOrdenDePagoPDF}
-                      className="h-8 text-xs font-bold flex items-center gap-1.5 bg-blue-700 hover:bg-blue-800 text-white shadow-xs"
+                      className="h-8 text-xs font-semibold flex items-center gap-1.5 bg-[#000000] hover:bg-[#2e2e2e] dark:bg-white dark:hover:bg-slate-200 dark:text-[#000000] text-white shadow-xs rounded-md"
                       title="Abrir el documento oficial en una nueva pestaña para imprimir o descargar en PDF"
                     >
                       <FileText className="h-3.5 w-3.5" />
@@ -964,7 +964,7 @@ export function ModalDetalleLoteGDE({
                     type="button"
                     size="sm"
                     onClick={() => setIsConfigOPOpen(true)}
-                    className="h-8 text-xs font-semibold flex items-center gap-1.5 bg-blue-700 hover:bg-blue-800 text-white"
+                    className="h-8 text-xs font-semibold flex items-center gap-1.5 bg-[#000000] hover:bg-[#2e2e2e] dark:bg-white dark:hover:bg-slate-200 dark:text-[#000000] text-white rounded-md"
                   >
                     <ClipboardList className="h-3.5 w-3.5" />
                     Generar Orden de Pago
@@ -975,14 +975,14 @@ export function ModalDetalleLoteGDE({
           )}
 
           {/* Sección de Comprobantes Bancarios de Acreditación / Transferencia */}
-          <div className="p-4 rounded-xl border border-blue-200/80 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-950/20 space-y-3">
+          <div className="p-4 rounded-xl border border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/60 dark:bg-[#1f1f1f]/50 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="space-y-0.5">
-                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <Paperclip className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <div className="text-xs font-semibold text-[#000000] dark:text-white flex items-center gap-1.5">
+                  <Paperclip className="h-4 w-4 text-[#615d59] dark:text-[#a39e98]" />
                   Comprobantes Bancarios de Acreditación / Transferencia (Home Banking PDF)
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                <p className="text-[11px] text-[#615d59] dark:text-[#a39e98]">
                   Adjunte los comprobantes oficiales descargados del banco (individuales o unificados en PDF) como respaldo documental del lote.
                 </p>
               </div>

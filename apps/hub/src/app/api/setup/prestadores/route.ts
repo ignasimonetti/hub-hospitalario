@@ -6,6 +6,34 @@ export async function GET() {
     const pb = await createAdminClient();
     const results: any = {};
 
+    // 0. Asegurar que 'auth_users' tenga el campo 'signature_data'
+    try {
+      const authUsersCol = await pb.collections.getOne('auth_users');
+      const isV23 = Array.isArray((authUsersCol as any).fields);
+      const currentFields = (authUsersCol as any).fields || (authUsersCol as any).schema || [];
+      const hasSignature = currentFields.some((f: any) => f.name === 'signature_data');
+
+      if (!hasSignature) {
+        const updatedFields = [...currentFields, {
+          name: 'signature_data',
+          type: 'editor',
+          required: false,
+        }];
+        const updatePayload: any = {};
+        if (isV23) {
+          updatePayload.fields = updatedFields;
+        } else {
+          updatePayload.schema = updatedFields;
+        }
+        await pb.collections.update(authUsersCol.id, updatePayload);
+        results.auth_users = 'Campo signature_data agregado a auth_users';
+      } else {
+        results.auth_users = 'auth_users ya tiene el campo signature_data';
+      }
+    } catch (e: any) {
+      results.auth_users_error = e.message;
+    }
+
     // 1. Actualizar o crear colección 'prestadores_perfiles'
     try {
       const existing = await pb.collections.getOne('prestadores_perfiles');

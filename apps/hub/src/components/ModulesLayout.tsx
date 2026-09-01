@@ -45,14 +45,14 @@ export function ModulesLayout({ children, currentPage = 'blog' }: ModulesLayoutP
     }, []);
 
     return (
-        <div className="min-h-screen bg-white dark:bg-slate-950">
+        <div className="min-h-screen bg-[#f6f5f4] dark:bg-[#191919]">
             {/* Sidebar - Hidden on mobile, shown on desktop */}
             <div className="hidden md:block">
                 <AppSidebar currentPage={currentPage} />
             </div>
 
             {/* Main Content */}
-            <div className={`pt-14 transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'} ml-0`}>
+            <div className={`transition-all duration-200 ease-in-out ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'} ml-0`}>
                 <div className="min-h-screen">
                     {children}
                 </div>

@@ -6,6 +6,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useSession } from "@/components/SessionProvider";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { PendingUserDialog } from "@/components/PendingUserDialog";
+import { ModalFirmaObligatoria } from "@/components/profile/ModalFirmaObligatoria";
 import { getCurrentUserRoles } from "@/lib/auth";
 
 // Using any for PocketBase records to avoid type conflicts
@@ -20,6 +21,7 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
   
   const [uiState, setUiState] = useState<"loading" | "selecting" | "pending" | "ready">("loading");
   const [userRoles, setUserRoles] = useState<any[]>([]);
+  const [needsSignature, setNeedsSignature] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -46,12 +48,25 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
     }
 
     // 4. A partir de aquí, sabemos que sessionStatus es "authenticated" y workspaceStatus es "ready"
-    // Si ya hay un workspace seleccionado, podemos continuar
+    // Si ya hay un workspace seleccionado, verificar firma solo si aún no está validada
     if (isWorkspaceSelected) {
-      setUiState("ready");
+      const checkSignature = async () => {
+        try {
+          const res = await fetch("/api/auth/full-profile");
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+              setNeedsSignature(!data.user?.signature_data);
+            }
+          }
+        } catch (err) {
+          console.error("Error verificando firma:", err);
+        }
+        setUiState("ready");
+      };
+
+      checkSignature();
       return;
-      // Nota: En producción, si solo hay un hospital, se auto-seleccionaría aquí.
-      // Para desarrollo, forzamos la selección manual.
     }
 
     // 5. El usuario está autenticado, el workspace está listo, pero no hay un workspace seleccionado en el contexto.
@@ -103,8 +118,20 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
     return (
       <WorkspaceSelector
         userRoles={userRoles}
-        onWorkspaceSelect={(tenant, role) => {
+        onWorkspaceSelect={async (tenant, role) => {
           setWorkspace(tenant, role);
+          // Verificar firma inmediatamente después de seleccionar el espacio de trabajo
+          try {
+            const res = await fetch("/api/auth/full-profile");
+            if (res.ok) {
+              const data = await res.json();
+              if (data.success) {
+                setNeedsSignature(!data.user?.signature_data);
+              }
+            }
+          } catch (e) {
+            console.error("Error verificando firma al seleccionar workspace:", e);
+          }
           setUiState("ready");
         }}
       />
@@ -121,5 +148,15 @@ export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
   }
 
   // uiState es "ready" y no es una página pública
-  return <>{children}</>;
+  return (
+    <>
+      {needsSignature && (
+        <ModalFirmaObligatoria
+          open={needsSignature}
+          onSignatureSaved={() => setNeedsSignature(false)}
+        />
+      )}
+      {children}
+    </>
+  );
 }

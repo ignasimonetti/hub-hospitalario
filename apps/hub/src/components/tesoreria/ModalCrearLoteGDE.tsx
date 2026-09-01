@@ -23,7 +23,6 @@ import {
   Calculator,
   Loader2,
   CheckCircle2,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -106,16 +105,16 @@ export function ModalCrearLoteGDE({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg p-0 border-slate-200 dark:border-slate-800 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-700 to-indigo-800 p-5 text-white">
+        <div className="border-b border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/80 dark:bg-[#1f1f1f]/80 p-5 pr-12">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/15 rounded-lg backdrop-blur-sm">
+            <div className="p-2 bg-white dark:bg-[#2b2b2b] rounded-lg border border-[#e6e6e6] dark:border-[#383838] text-[#615d59] dark:text-[#a39e98]">
               <FolderOpen className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-bold text-white tracking-tight">
-                Crear Lote
+              <DialogTitle className="text-base font-semibold text-[#000000] dark:text-white tracking-tight">
+                Crear Lote GDE
               </DialogTitle>
-              <DialogDescription className="text-blue-100 text-xs mt-0.5">
+              <DialogDescription className="text-[#615d59] dark:text-[#a39e98] text-xs mt-0.5">
                 Propagación masiva de carátula a {selectedItems.length} prestaciones conformadas
               </DialogDescription>
             </div>
@@ -124,34 +123,34 @@ export function ModalCrearLoteGDE({
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Resumen Financiero del Lote */}
-          <div className="p-3.5 rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-2">
+          <div className="p-3.5 rounded-lg border border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/60 dark:bg-[#1f1f1f]/50 space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-blue-900 dark:text-blue-300">
+              <span className="font-medium text-[#31302e] dark:text-slate-300">
                 Total de Prestaciones en el Lote:
               </span>
-              <Badge className="bg-blue-600 text-white font-bold">
+              <Badge variant="outline" className="bg-white dark:bg-[#2b2b2b] text-[#000000] dark:text-white font-semibold border-[#e6e6e6] dark:border-[#383838]">
                 {selectedItems.length} trámites
               </Badge>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-blue-200/60 dark:border-blue-900/40 text-xs">
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#e6e6e6] dark:border-[#2e2e2e] text-xs">
               <div>
-                <span className="text-[10px] text-gray-500 block">Total Bruto Facturado</span>
-                <span className="font-bold font-mono text-gray-900 dark:text-slate-100">
+                <span className="text-[10px] text-[#615d59] dark:text-[#a39e98] block">Total Bruto Facturado</span>
+                <span className="font-bold font-mono text-[#000000] dark:text-white">
                   {formatMoney(montoBruto)}
                 </span>
               </div>
               <div>
-                <span className="text-[10px] text-gray-500 block">Total Retenciones</span>
-                <span className="font-bold font-mono text-rose-600">
+                <span className="text-[10px] text-[#615d59] dark:text-[#a39e98] block">Total Retenciones</span>
+                <span className="font-bold font-mono text-rose-600 dark:text-rose-400">
                   - {formatMoney(montoRetenciones)}
                 </span>
               </div>
               <div>
-                <span className="text-[10px] text-emerald-800 dark:text-emerald-400 block font-semibold">
+                <span className="text-[10px] text-[#1aae39] dark:text-emerald-400 block font-semibold">
                   Neto a Liquidar
                 </span>
-                <span className="font-extrabold font-mono text-emerald-700 dark:text-emerald-400">
+                <span className="font-extrabold font-mono text-[#1aae39] dark:text-emerald-400">
                   {formatMoney(montoNeto)}
                 </span>
               </div>
@@ -185,8 +184,8 @@ export function ModalCrearLoteGDE({
                 className="text-xs font-mono"
                 required
               />
-              <p className="text-[11px] text-gray-500">
-                ✨ <strong>Propagación Masiva:</strong> Este número de expediente se guardará automáticamente en las {selectedItems.length} prestaciones vinculadas.
+              <p className="text-[11px] text-[#615d59] dark:text-[#a39e98]">
+                <strong>Propagación Masiva:</strong> Este número de expediente se guardará automáticamente en las {selectedItems.length} prestaciones vinculadas.
               </p>
             </div>
 
@@ -205,7 +204,7 @@ export function ModalCrearLoteGDE({
             </div>
           </div>
 
-          <DialogFooter className="pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
+          <DialogFooter className="pt-2 border-t border-[#e6e6e6] dark:border-[#2e2e2e] gap-2">
             <Button
               type="button"
               variant="outline"
@@ -218,7 +217,7 @@ export function ModalCrearLoteGDE({
             <Button
               type="submit"
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+              className="bg-[#000000] hover:bg-[#2e2e2e] dark:bg-white dark:hover:bg-slate-200 dark:text-[#000000] text-white font-medium rounded-md"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

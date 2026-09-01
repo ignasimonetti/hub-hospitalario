@@ -22,6 +22,7 @@ async function generarPDFPlanillaAsistencial(
   const nombrePrestador = user
     ? `${user.lastName || ""} ${user.firstName || ""}`.trim().toUpperCase() || user.email.toUpperCase()
     : "PROFESIONAL PRESTADOR";
+  const matricula = p.perfilPrestador?.license_number || user?.professional_id || "";
   const cuit = p.perfilPrestador?.cuit || "Sin CUIT";
   const tipoServicio = p.service_type === "guardia" ? "PLANILLA DE GUARDIAS MÉDICAS (FORM G)" : "PLANILLA DE EXTENSIÓN HORARIA (FORM EH)";
   const srvNombre = (p.hospital_service as string) || "Servicio Asistencial Hospitalario";
@@ -74,10 +75,35 @@ async function generarPDFPlanillaAsistencial(
     borderWidth: 1,
   });
 
-  page.drawText(`PROFESIONAL: ${nombrePrestador}`, { x: 40, y: y - 10, size: 10, font: fontBold });
+  page.drawText(`PROFESIONAL: ${nombrePrestador}${matricula ? `  |  M.P.: ${matricula}` : ""}`, { x: 40, y: y - 10, size: 10, font: fontBold });
   page.drawText(`CUIT: ${cuit}    |    CONDICIÓN: ${p.perfilPrestador?.tax_condition || "Monotributo"}`, { x: 40, y: y - 24, size: 9, font: fontRegular });
   page.drawText(`SERVICIO: ${srvNombre}    |    PERÍODO: ${mesNombre}`, { x: 40, y: y - 38, size: 9, font: fontRegular });
   page.drawText(`TIPO DE CONTRATACIÓN: ${tipoServicio}`, { x: 40, y: y - 52, size: 9, font: fontRegular });
+
+  // Embeber firma del prestador si existe
+  if (user?.signature_data && user.signature_data.startsWith("data:image/png;base64,")) {
+    try {
+      const base64Data = user.signature_data.replace("data:image/png;base64,", "");
+      const imageBytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+      const embeddedImg = await pdfDoc.embedPng(imageBytes);
+      // Dibujar miniatura de firma en la esquina derecha de la tarjeta de datos
+      page.drawImage(embeddedImg, {
+        x: width - 150,
+        y: y - 55,
+        width: 100,
+        height: 35,
+      });
+      page.drawText("Firma Digital Registrada", {
+        x: width - 150,
+        y: y - 62,
+        size: 6.5,
+        font: fontRegular,
+        color: rgb(0.3, 0.5, 0.7),
+      });
+    } catch (e) {
+      console.warn("No se pudo embeber firma PNG en PDF-Lib:", e);
+    }
+  }
 
   // Desglose de Guardias / Extensión
   y -= 85;

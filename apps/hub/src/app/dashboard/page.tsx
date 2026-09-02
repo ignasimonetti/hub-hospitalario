@@ -8,9 +8,7 @@ import { PendingUserDialog } from "@/components/PendingUserDialog";
 import { SessionWarningDialog } from "@/components/SessionWarningDialog";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { AppSidebar } from "@/components/AppSidebar";
-
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { MobileSidebarHeader } from "@/components/MobileSidebarHeader";
 import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
 
 export default function DashboardPage() {
@@ -19,7 +17,6 @@ export default function DashboardPage() {
   const [userRoles, setUserRoles] = useState<any[]>([]);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
 
   // Session timeout management
@@ -103,28 +100,10 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#f6f5f4] dark:bg-[#191919]">
       {/* Mobile Header & Sidebar */}
-      <div className="md:hidden flex items-center justify-between p-3.5 border-b border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/90 dark:bg-[#191919]/90 backdrop-blur-md sticky top-0 z-20">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm text-[#000000] dark:text-white tracking-[-0.02em]">
-            {currentTenant?.name || 'Hub Hospitalario'}
-          </span>
-        </div>
-        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetTrigger asChild>
-            <button className="p-2 -mr-2 text-[#615d59] dark:text-[#a39e98] hover:bg-[#eae8e6] dark:hover:bg-[#2e2e2e] rounded-md">
-              <Menu className="h-5 w-5" />
-            </button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-80 border-r-[#e6e6e6] dark:border-[#2e2e2e]">
-            <SheetTitle className="sr-only">Menú de Navegación</SheetTitle>
-            <AppSidebar
-              currentPage="dashboard"
-              isMobile={true}
-              onMobileClose={() => setIsMobileMenuOpen(false)}
-            />
-          </SheetContent>
-        </Sheet>
-      </div>
+      <MobileSidebarHeader
+        currentPage="dashboard"
+        title={currentTenant?.name || "Hub Hospitalario"}
+      />
 
       {/* Desktop Sidebar */}
       <div className="hidden md:block">

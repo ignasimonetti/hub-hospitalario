@@ -615,10 +615,10 @@ export default function TesoreriaPage() {
   if (!loadingRoles && !canAccessTesoreria) {
     return (
       <div className="flex h-screen bg-slate-50 dark:bg-slate-950">
-        <div className="hidden lg:block">
+        <div className="hidden md:block">
           <AppSidebar currentPage="tesoreria" />
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center lg:pl-64">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center md:pl-64">
           <div className="max-w-md p-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg space-y-4">
             <div className="w-14 h-14 bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 rounded-2xl flex items-center justify-center mx-auto">
               <ShieldCheck className="w-7 h-7" />
@@ -659,23 +659,23 @@ export default function TesoreriaPage() {
   return (
     <div className="flex h-screen bg-[#f6f5f4] dark:bg-[#191919]">
       {/* Sidebar Desktop */}
-      <div className="hidden lg:block">
+      <div className="hidden md:block">
         <AppSidebar currentPage="tesoreria" />
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden lg:pl-64">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden md:pl-64">
         {/* Header Superior */}
         <header className="h-14 border-b border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/90 dark:bg-[#191919]/90 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-10 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="lg:hidden">
+            <div className="md:hidden">
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md">
                     <Menu className="h-4 w-4" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="p-0 w-64">
+                <SheetContent side="left" className="p-0 w-72">
                   <SheetTitle className="sr-only">Navegación</SheetTitle>
                   <AppSidebar currentPage="tesoreria" isMobile />
                 </SheetContent>
@@ -1462,9 +1462,9 @@ export default function TesoreriaPage() {
                               )}
                               <th className="py-3 px-3">Trámite & Período</th>
                               <th className="py-3 px-3">Beneficiario & CUIT</th>
-                              <th className="py-3 px-3">Factura</th>
-                              <th className="py-3 px-3">Lote Asignado</th>
-                              <th className="py-3 px-3 text-right">Importe Bruto</th>
+                              <th className="py-3 px-3 hidden sm:table-cell">Factura</th>
+                              <th className="py-3 px-3 hidden lg:table-cell">Lote Asignado</th>
+                              <th className="py-3 px-3 text-right hidden sm:table-cell">Importe Bruto</th>
                               <th className="py-3 px-3 text-right">Importe Neto</th>
                               <th className="py-3 px-3 text-center">Estado</th>
                               <th className="py-3 px-3 text-right">Acciones</th>
@@ -1543,7 +1543,7 @@ export default function TesoreriaPage() {
                                   </td>
 
                                   {/* Factura ARCA */}
-                                  <td className="py-3 px-3">
+                                  <td className="py-3 px-3 hidden sm:table-cell">
                                     <div className="font-mono font-semibold text-gray-900 dark:text-slate-100">
                                       {item.invoice_number || "S/N"}
                                     </div>
@@ -1553,7 +1553,7 @@ export default function TesoreriaPage() {
                                   </td>
 
                                   {/* Lote Asignado */}
-                                  <td className="py-3 px-3">
+                                  <td className="py-3 px-3 hidden lg:table-cell">
                                     {numeroLoteDisplay ? (
                                       <div>
                                         <Badge
@@ -1574,7 +1574,7 @@ export default function TesoreriaPage() {
                                   </td>
 
                                   {/* Bruto Facturado */}
-                                  <td className="py-3 px-3 text-right">
+                                  <td className="py-3 px-3 text-right hidden sm:table-cell">
                                     <span className="font-mono font-medium text-gray-900 dark:text-slate-100 text-xs">
                                       {formatMoney(montoBruto)}
                                     </span>

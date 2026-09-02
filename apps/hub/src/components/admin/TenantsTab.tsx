@@ -169,88 +169,93 @@ export function TenantsTab() {
                         Lista de Hospitales
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="dark:text-slate-400">Hospital</TableHead>
-                                <TableHead className="dark:text-slate-400">Slug</TableHead>
-                                <TableHead className="dark:text-slate-400">Estado</TableHead>
-                                <TableHead className="dark:text-slate-400">Fecha de Creación</TableHead>
-                                <TableHead className="dark:text-slate-400">Acciones</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredTenants.length === 0 ? (
+                <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={5} className="py-2">
-                                        <EmptyState
-                                            icon={Building2}
-                                            title={tenants.length === 0 ? "No hay hospitales registrados" : "Sin resultados para la búsqueda"}
-                                            description={tenants.length === 0 ? "Comenzá creando el primer hospital para habilitar el espacio de trabajo." : "Probá ajustando el término de búsqueda."}
-                                            action={tenants.length === 0 ? {
-                                                label: "Nuevo Hospital",
-                                                onClick: handleNewTenant,
-                                                icon: Plus
-                                            } : undefined}
-                                            compact
-                                        />
-                                    </TableCell>
+                                    <TableHead className="dark:text-slate-400">Hospital</TableHead>
+                                    <TableHead className="dark:text-slate-400 hidden sm:table-cell">Slug</TableHead>
+                                    <TableHead className="dark:text-slate-400">Estado</TableHead>
+                                    <TableHead className="dark:text-slate-400 hidden md:table-cell">Fecha de Creación</TableHead>
+                                    <TableHead className="dark:text-slate-400 text-right">Acciones</TableHead>
                                 </TableRow>
-                            ) : (
-                                filteredTenants.map((tenant) => (
-                                    <TableRow key={tenant.id}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="w-10 h-10">
-                                                    <AvatarImage src={getTenantLogoUrl(tenant)} alt={tenant.name} />
-                                                    <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white">
-                                                        {tenant.name?.charAt(0).toUpperCase() || 'H'}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <span className="font-medium dark:text-slate-200">{tenant.name}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <code className="text-sm bg-gray-100 dark:bg-slate-800 dark:text-slate-200 px-2 py-1 rounded">
-                                                {tenant.slug}
-                                            </code>
-                                        </TableCell>
-                                        <TableCell>
-                                            {tenant.is_active ? (
-                                                <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">Activo</Badge>
-                                            ) : (
-                                                <Badge variant="outline" className="bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">Inactivo</Badge>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-sm text-muted-foreground dark:text-slate-400">
-                                            {new Date(tenant.created).toLocaleDateString()}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => handleEditTenant(tenant)}
-                                                    className="hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => handleDeleteClick(tenant)}
-                                                    className="text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-900/30"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredTenants.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="py-2">
+                                            <EmptyState
+                                                icon={Building2}
+                                                title={tenants.length === 0 ? "No hay hospitales registrados" : "Sin resultados para la búsqueda"}
+                                                description={tenants.length === 0 ? "Comenzá creando el primer hospital para habilitar el espacio de trabajo." : "Probá ajustando el término de búsqueda."}
+                                                action={tenants.length === 0 ? {
+                                                    label: "Nuevo Hospital",
+                                                    onClick: handleNewTenant,
+                                                    icon: Plus
+                                                } : undefined}
+                                                compact
+                                            />
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                ) : (
+                                    filteredTenants.map((tenant) => (
+                                        <TableRow key={tenant.id}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="w-10 h-10">
+                                                        <AvatarImage src={getTenantLogoUrl(tenant)} alt={tenant.name} />
+                                                        <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white">
+                                                            {tenant.name?.charAt(0).toUpperCase() || 'H'}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <span className="font-medium dark:text-slate-200 block">{tenant.name}</span>
+                                                        <span className="sm:hidden text-xs text-muted-foreground font-mono">{tenant.slug}</span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="hidden sm:table-cell">
+                                                <code className="text-sm bg-gray-100 dark:bg-slate-800 dark:text-slate-200 px-2 py-1 rounded">
+                                                    {tenant.slug}
+                                                </code>
+                                            </TableCell>
+                                            <TableCell>
+                                                {tenant.is_active ? (
+                                                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">Activo</Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">Inactivo</Badge>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-sm text-muted-foreground dark:text-slate-400 hidden md:table-cell">
+                                                {new Date(tenant.created).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => handleEditTenant(tenant)}
+                                                        className="hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => handleDeleteClick(tenant)}
+                                                        className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-900/30"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 

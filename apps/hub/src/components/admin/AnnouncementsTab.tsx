@@ -172,69 +172,71 @@ export function AnnouncementsTab() {
                 </Button>
             </div>
 
-            <div className="rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="dark:text-slate-400">Título</TableHead>
-                            <TableHead className="dark:text-slate-400">Estado</TableHead>
-                            <TableHead className="dark:text-slate-400">Última Act.</TableHead>
-                            <TableHead className="text-right dark:text-slate-400">Acciones</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {loading ? (
+            <div className="rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center">
-                                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" />
-                                </TableCell>
+                                <TableHead className="dark:text-slate-400">Título</TableHead>
+                                <TableHead className="dark:text-slate-400">Estado</TableHead>
+                                <TableHead className="dark:text-slate-400 hidden sm:table-cell">Última Act.</TableHead>
+                                <TableHead className="text-right dark:text-slate-400">Acciones</TableHead>
                             </TableRow>
-                        ) : announcements.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground dark:text-slate-400">
-                                    No hay anuncios creados.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            announcements.map((item) => (
-                                <TableRow key={item.id}>
-                                    <TableCell className="font-medium dark:text-slate-200">{item.title}</TableCell>
-                                    <TableCell>
-                                        <Badge 
-                                            variant={item.active ? 'default' : 'secondary'} 
-                                            className={item.active ? 'bg-green-600 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : 'dark:bg-slate-800 dark:text-slate-200'}
-                                        >
-                                            {item.active ? 'Activo' : 'Inactivo'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground dark:text-slate-400">
-                                        {formatDistanceToNow(new Date(item.updated), { addSuffix: true, locale: es })}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                onClick={() => { setCurrentAnnouncement(item); setIsDialogOpen(true); }}
-                                                className="hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-900/30" 
-                                                onClick={() => setDeleteId(item.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
+                        </TableHeader>
+                        <TableBody>
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-24 text-center">
+                                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" />
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
+                            ) : announcements.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground dark:text-slate-400">
+                                        No hay anuncios creados.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                announcements.map((item) => (
+                                    <TableRow key={item.id}>
+                                        <TableCell className="font-medium dark:text-slate-200">{item.title}</TableCell>
+                                        <TableCell>
+                                            <Badge 
+                                                variant={item.active ? 'default' : 'secondary'} 
+                                                className={item.active ? 'bg-green-600 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : 'dark:bg-slate-800 dark:text-slate-200'}
+                                            >
+                                                {item.active ? 'Activo' : 'Inactivo'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-sm text-muted-foreground dark:text-slate-400 hidden sm:table-cell">
+                                            {formatDistanceToNow(new Date(item.updated), { addSuffix: true, locale: es })}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    onClick={() => { setCurrentAnnouncement(item); setIsDialogOpen(true); }}
+                                                    className="hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-900/30" 
+                                                    onClick={() => setDeleteId(item.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
 
             {/* Create/Edit Modal */}

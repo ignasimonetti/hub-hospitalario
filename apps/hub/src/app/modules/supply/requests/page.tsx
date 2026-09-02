@@ -55,56 +55,56 @@ export default async function SupplyRequestsPage() {
                         <table className="w-full text-left text-sm border-collapse">
                             <thead className="bg-gray-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-[0.2em] border-b border-gray-200 dark:border-slate-800">
                                 <tr>
-                                    <th className="px-8 py-5">Número / Fecha</th>
-                                    <th className="px-8 py-5">Sector</th>
-                                    <th className="px-8 py-5">Motivo</th>
-                                    <th className="px-8 py-5">Prioridad</th>
-                                    <th className="px-8 py-5">Estado</th>
-                                    <th className="px-8 py-5 text-right">Acciones</th>
+                                    <th className="px-4 sm:px-6 py-4">Número / Fecha</th>
+                                    <th className="px-4 sm:px-6 py-4">Sector</th>
+                                    <th className="px-4 sm:px-6 py-4 hidden md:table-cell">Motivo</th>
+                                    <th className="px-4 sm:px-6 py-4 hidden sm:table-cell">Prioridad</th>
+                                    <th className="px-4 sm:px-6 py-4">Estado</th>
+                                    <th className="px-4 sm:px-6 py-4 text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-slate-800/50 text-slate-700 dark:text-slate-200">
                                 {requests.map((req: any) => (
                                     <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-all cursor-pointer group">
-                                        <td className="px-8 py-6">
+                                        <td className="px-4 sm:px-6 py-4">
                                             <div className="flex flex-col">
-                                                <span className="font-bold text-slate-900 dark:text-slate-100 text-base">{req.request_number}</span>
-                                                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center mt-1.5 uppercase tracking-tighter">
-                                                    <Calendar className="w-3 h-3 mr-1.5 opacity-50" />
+                                                <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">{req.request_number}</span>
+                                                <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 flex items-center mt-1 uppercase tracking-tight">
+                                                    <Calendar className="w-3 h-3 mr-1 opacity-50" />
                                                     {new Date(req.created).toLocaleDateString()}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6">
+                                        <td className="px-4 sm:px-6 py-4">
                                             <span className="font-bold text-slate-700 dark:text-slate-300">{req.requesting_sector}</span>
                                         </td>
-                                        <td className="px-8 py-6">
+                                        <td className="px-4 sm:px-6 py-4 hidden md:table-cell">
                                             <span className="text-slate-500 dark:text-slate-400 font-medium max-w-[200px] truncate block italic">
                                                 "{req.motive || 'Sin motivo especificado'}"
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border
+                                        <td className="px-4 sm:px-6 py-4 hidden sm:table-cell">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border
                                                 ${req.priority === 'urgente' ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' :
                                                     req.priority === 'baja' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' :
                                                         'bg-gray-500/10 text-slate-600 dark:text-slate-400 border-gray-500/20'}`}>
                                                 {req.priority}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6">
+                                        <td className="px-4 sm:px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 <div className={`h-1.5 w-1.5 rounded-full animate-pulse
                                                     ${req.status === 'autorizado' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
                                                         req.status === 'pendiente_autorizacion' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' :
                                                             req.status === 'rechazado' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
                                                                 'bg-slate-400'}`}></div>
-                                                <span className="text-[10px] font-extrabold uppercase tracking-widest opacity-80">
+                                                <span className="text-[10px] font-extrabold uppercase tracking-wider opacity-80">
                                                     {req.status.replace('_', ' ')}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <button className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold text-[10px] uppercase tracking-widest border border-gray-200 dark:border-slate-800 rounded-lg px-4 py-2 bg-white dark:bg-slate-950 transition-all hover:border-blue-500/30 hover:shadow-lg active:scale-95">
+                                        <td className="px-4 sm:px-6 py-4 text-right">
+                                            <button className="text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 font-bold text-[10px] uppercase tracking-wider border border-gray-200 dark:border-slate-800 rounded-lg px-3 py-1.5 bg-white dark:bg-slate-950 transition-all hover:border-blue-500/30 hover:shadow-sm active:scale-95">
                                                 Ver Detalle
                                             </button>
                                         </td>

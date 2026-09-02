@@ -260,73 +260,77 @@ export function UsersTab() {
                         Lista de Usuarios
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="dark:text-slate-400">Usuario</TableHead>
-                                <TableHead className="dark:text-slate-400">Email</TableHead>
-                                <TableHead className="dark:text-slate-400">Roles</TableHead>
-                                <TableHead className="dark:text-slate-400">Estado</TableHead>
-                                <TableHead className="dark:text-slate-400">Acciones</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredUsers.length === 0 ? (
+                <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={6} className="py-2">
-                                        <EmptyState
-                                            icon={Users}
-                                            title={users.length === 0 ? "No hay usuarios registrados" : "Sin resultados para la búsqueda"}
-                                            description={users.length === 0 ? "Comenzá invitando o creando usuarios en el sistema." : "Probá buscando por otro nombre o correo electrónico."}
-                                            action={users.length === 0 ? {
-                                                label: "Nuevo Usuario",
-                                                onClick: handleNewUser,
-                                                icon: Plus
-                                            } : undefined}
-                                            compact
-                                        />
-                                    </TableCell>
+                                    <TableHead className="dark:text-slate-400">Usuario</TableHead>
+                                    <TableHead className="dark:text-slate-400 hidden sm:table-cell">Email</TableHead>
+                                    <TableHead className="dark:text-slate-400 hidden md:table-cell">Roles</TableHead>
+                                    <TableHead className="dark:text-slate-400">Estado</TableHead>
+                                    <TableHead className="dark:text-slate-400 text-right">Acciones</TableHead>
                                 </TableRow>
-                            ) : (
-                                filteredUsers.map((user) => (
-                                    <TableRow key={user.id}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="w-10 h-10">
-                                                    <AvatarImage src={getUserAvatarUrl(user)} alt={getFullName(user)} />
-                                                    <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white">
-                                                        {getInitials(user)}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <span className="font-medium dark:text-slate-200">{getFullName(user)}</span>
-                                            </div>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredUsers.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="py-2">
+                                            <EmptyState
+                                                icon={Users}
+                                                title={users.length === 0 ? "No hay usuarios registrados" : "Sin resultados para la búsqueda"}
+                                                description={users.length === 0 ? "Comenzá invitando o creando usuarios en el sistema." : "Probá buscando por otro nombre o correo electrónico."}
+                                                action={users.length === 0 ? {
+                                                    label: "Nuevo Usuario",
+                                                    onClick: handleNewUser,
+                                                    icon: Plus
+                                                } : undefined}
+                                                compact
+                                            />
                                         </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <span className="dark:text-slate-300">{user.email}</span>
-                                                {user.verified && (
-                                                    <Badge variant="outline" className="text-green-600 border-green-600 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 text-xs">
-                                                        ✓
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex gap-1 flex-wrap">
-                                                {user.expand?.hub_user_roles_via_user && user.expand.hub_user_roles_via_user.length > 0 ? (
-                                                    user.expand.hub_user_roles_via_user.map((userRole: any, index: number) => (
-                                                        <Badge key={index} variant="outline" className="text-xs dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
-                                                            {userRole.expand?.role?.name || "Sin nombre"}
+                                    </TableRow>
+                                ) : (
+                                    filteredUsers.map((user) => (
+                                        <TableRow key={user.id}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="w-10 h-10">
+                                                        <AvatarImage src={getUserAvatarUrl(user)} alt={getFullName(user)} />
+                                                        <AvatarFallback className="bg-blue-600 dark:bg-blue-500 text-white">
+                                                            {getInitials(user)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <span className="font-medium dark:text-slate-200 block">{getFullName(user)}</span>
+                                                        <span className="sm:hidden text-xs text-muted-foreground">{user.email}</span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="hidden sm:table-cell">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="dark:text-slate-300">{user.email}</span>
+                                                    {user.verified && (
+                                                        <Badge variant="outline" className="text-green-600 border-green-600 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 text-xs">
+                                                            ✓
                                                         </Badge>
-                                                    ))
-                                                ) : (
-                                                    <Badge variant="outline" className="bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 text-xs text-nowrap">
-                                                        Sin rol
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        </TableCell>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="hidden md:table-cell">
+                                                <div className="flex gap-1 flex-wrap">
+                                                    {user.expand?.hub_user_roles_via_user && user.expand.hub_user_roles_via_user.length > 0 ? (
+                                                        user.expand.hub_user_roles_via_user.map((userRole: any, index: number) => (
+                                                            <Badge key={index} variant="outline" className="text-xs dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                                                                {userRole.expand?.role?.name || "Sin nombre"}
+                                                            </Badge>
+                                                        ))
+                                                    ) : (
+                                                        <Badge variant="outline" className="bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 text-xs text-nowrap">
+                                                            Sin rol
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </TableCell>
                                         <TableCell>
                                             <div className="flex flex-wrap gap-1 min-w-[120px]">
                                                 {user.active === false ? (
@@ -404,6 +408,7 @@ export function UsersTab() {
                             )}
                         </TableBody>
                     </Table>
+                    </div>
                 </CardContent>
             </Card>
 

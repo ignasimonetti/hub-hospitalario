@@ -2,6 +2,7 @@
 
 import { ReactNode, useState, useEffect } from 'react';
 import { AppSidebar } from './AppSidebar';
+import { MobileSidebarHeader } from './MobileSidebarHeader';
 
 interface ModulesLayoutProps {
     children: ReactNode;
@@ -46,6 +47,9 @@ export function ModulesLayout({ children, currentPage = 'blog' }: ModulesLayoutP
 
     return (
         <div className="min-h-screen bg-[#f6f5f4] dark:bg-[#191919]">
+            {/* Mobile Header with Hamburger */}
+            <MobileSidebarHeader currentPage={currentPage} />
+
             {/* Sidebar - Hidden on mobile, shown on desktop */}
             <div className="hidden md:block">
                 <AppSidebar currentPage={currentPage} />

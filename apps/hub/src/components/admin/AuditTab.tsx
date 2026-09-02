@@ -132,63 +132,65 @@ export function AuditTab() {
 
             <Card className="bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
                 <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[180px] dark:text-slate-400">Fecha</TableHead>
-                                <TableHead className="dark:text-slate-400">Actor</TableHead>
-                                <TableHead className="dark:text-slate-400">Acción</TableHead>
-                                <TableHead className="dark:text-slate-400">Recurso</TableHead>
-                                <TableHead className="dark:text-slate-400">Descripción</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {logs.length === 0 && !isLoading ? (
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={5} className="py-2">
-                                        <EmptyState
-                                            icon={Activity}
-                                            title="No hay registros de auditoría"
-                                            description="Las acciones de los usuarios y cambios en el sistema se registrarán aquí automáticamente."
-                                            compact
-                                        />
-                                    </TableCell>
+                                    <TableHead className="w-[180px] dark:text-slate-400 hidden sm:table-cell">Fecha</TableHead>
+                                    <TableHead className="dark:text-slate-400">Actor</TableHead>
+                                    <TableHead className="dark:text-slate-400">Acción</TableHead>
+                                    <TableHead className="dark:text-slate-400 hidden md:table-cell">Recurso</TableHead>
+                                    <TableHead className="dark:text-slate-400">Descripción</TableHead>
                                 </TableRow>
-                            ) : (
-                                logs.map((log) => (
-                                    <TableRow
-                                        key={log.id}
-                                        className="cursor-pointer hover:bg-muted/50"
-                                        onClick={() => setSelectedLog(log)}
-                                    >
-                                        <TableCell className="font-mono text-xs text-muted-foreground dark:text-slate-400">
-                                            {format(new Date(log.created), 'dd/MM/yyyy HH:mm:ss')}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                                                    <User className="h-3 w-3 text-slate-500 dark:text-slate-400" />
-                                                </div>
-                                                <span className="text-sm font-medium dark:text-slate-200">
-                                                    {log.expand?.actor?.name || log.expand?.actor?.email || 'Sistema'}
-                                                </span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>{getActionBadge(log.action)}</TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2 text-sm dark:text-slate-300">
-                                                {getResourceIcon(log.resource)}
-                                                <span className="capitalize">{log.resource}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-sm text-muted-foreground dark:text-slate-400">
-                                            {getReadableDescription(log)}
+                            </TableHeader>
+                            <TableBody>
+                                {logs.length === 0 && !isLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="py-2">
+                                            <EmptyState
+                                                icon={Activity}
+                                                title="No hay registros de auditoría"
+                                                description="Las acciones de los usuarios y cambios en el sistema se registrarán aquí automáticamente."
+                                                compact
+                                            />
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                ) : (
+                                    logs.map((log) => (
+                                        <TableRow
+                                            key={log.id}
+                                            className="cursor-pointer hover:bg-muted/50"
+                                            onClick={() => setSelectedLog(log)}
+                                        >
+                                            <TableCell className="font-mono text-xs text-muted-foreground dark:text-slate-400 hidden sm:table-cell">
+                                                {format(new Date(log.created), 'dd/MM/yyyy HH:mm:ss')}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                                        <User className="h-3 w-3 text-slate-500 dark:text-slate-400" />
+                                                    </div>
+                                                    <span className="text-sm font-medium dark:text-slate-200">
+                                                        {log.expand?.actor?.name || log.expand?.actor?.email || 'Sistema'}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{getActionBadge(log.action)}</TableCell>
+                                            <TableCell className="hidden md:table-cell">
+                                                <div className="flex items-center gap-2 text-sm dark:text-slate-300">
+                                                    {getResourceIcon(log.resource)}
+                                                    <span className="capitalize">{log.resource}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-sm text-muted-foreground dark:text-slate-400">
+                                                {getReadableDescription(log)}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 

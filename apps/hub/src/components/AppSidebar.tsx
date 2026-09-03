@@ -101,6 +101,10 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
             roleSlug === 'director_coordinador' ||
             roleSlug === 'director'
         );
+    // Check if user has access to Portal de Prestadores
+    // Requires having any assigned role or being admin (users without role cannot interact)
+    const canAccessPrestadores = isAdmin || !!currentRole;
+
     const canAccessTesoreria = isAdmin || isTesoreriaUser;
 
     const getTenantLogoUrl = () => {
@@ -234,14 +238,16 @@ export function AppSidebar({ currentPage = 'dashboard', isMobile = false, onMobi
                         )}
 
                         {/* Portal de Prestadores */}
-                        <button
-                            className={getNavButtonClasses(currentPage === 'prestadores')}
-                            title={!showContent ? 'Portal de Prestadores' : undefined}
-                            onClick={() => handleNavigation('/modules/prestadores')}
-                        >
-                            <Stethoscope className={`h-4 w-4 flex-shrink-0 ${currentPage === 'prestadores' ? 'text-[#0075de]' : 'text-[#615d59] dark:text-[#a39e98]'}`} />
-                            {showContent && <span>Portal de Prestadores</span>}
-                        </button>
+                        {canAccessPrestadores && (
+                            <button
+                                className={getNavButtonClasses(currentPage === 'prestadores')}
+                                title={!showContent ? 'Portal de Prestadores' : undefined}
+                                onClick={() => handleNavigation('/modules/prestadores')}
+                            >
+                                <Stethoscope className={`h-4 w-4 flex-shrink-0 ${currentPage === 'prestadores' ? 'text-[#0075de]' : 'text-[#615d59] dark:text-[#a39e98]'}`} />
+                                {showContent && <span>Portal de Prestadores</span>}
+                            </button>
+                        )}
 
                         {/* Módulo de Tesorería */}
                         {canAccessTesoreria && (

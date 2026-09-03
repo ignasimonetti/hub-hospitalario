@@ -79,8 +79,10 @@ export default function PrestadoresPage() {
   const [firstName, setFirstName] = useState<string>("");
 
   // Permisos y Roles
-  const { hasRole } = useRoles(currentTenant?.id);
+  const { roles: userRoles, loading: loadingRoles, hasRole } = useRoles(currentTenant?.id);
   const isDirector = hasRole("director_coordinador") || hasRole("director_adjunto") || hasRole("director") || hasRole("superadmin");
+  const isSuperAdmin = user?.is_super_admin || hasRole("superadmin");
+  const hasAnyAssignedRole = isSuperAdmin || userRoles.length > 0;
 
   // Modo de Vista: "mis_prestaciones" (médico) o "auditoria_direccion" (bandeja de directores)
   const [vistaActiva, setVistaActiva] = useState<"mis_prestaciones" | "auditoria_direccion">("mis_prestaciones");
@@ -617,6 +619,43 @@ export default function PrestadoresPage() {
     setObservadaParaEditar(null);
     setModalSelectorOpen(true);
   };
+
+  // Guardia de Acceso: Bloquear a usuarios sin ningún rol asignado en el sistema
+  if (!loadingRoles && !hasAnyAssignedRole) {
+    return (
+      <div className="flex h-screen bg-[#f6f5f4] dark:bg-[#191919]">
+        <div className="hidden md:block">
+          <AppSidebar currentPage="prestadores" />
+        </div>
+        <div className={`flex-1 flex flex-col items-center justify-center p-6 text-center transition-all duration-200 ease-in-out ${sidebarCollapsed ? "md:pl-16" : "md:pl-64"}`}>
+          <div className="max-w-md p-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg space-y-4">
+            <div className="w-14 h-14 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center mx-auto">
+              <ShieldCheck className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">
+                Cuenta Pendiente de Asignación de Rol
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                Su usuario ha sido registrado en el sistema pero aún no posee ningún rol asignado para operar en los módulos asistenciales. Comuníquese con la administración del hospital para que habiliten sus permisos.
+              </p>
+            </div>
+            <div className="pt-2 flex justify-center">
+              <Button
+                asChild
+                variant="outline"
+                className="text-xs"
+              >
+                <a href="/dashboard">
+                  Volver al Dashboard
+                </a>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-[#f6f5f4] dark:bg-[#191919]">

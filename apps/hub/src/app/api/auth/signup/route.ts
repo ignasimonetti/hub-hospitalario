@@ -33,6 +33,49 @@ export async function POST(request: NextRequest) {
         lastName: lastName
       });
 
+      // Auto-asignación de rol "prestador" por defecto para nuevos auto-registros
+      try {
+        // 1. Obtener el rol "prestador"
+        let prestadorRole = null;
+        try {
+          prestadorRole = await pbAdmin.collection('hub_roles').getFirstListItem('slug = "prestador" || name ~ "Prestador"', {
+            requestKey: null,
+          });
+        } catch {
+          // Si no existe, crearlo
+          prestadorRole = await pbAdmin.collection('hub_roles').create({
+            name: 'Prestador Asistencial',
+            slug: 'prestador',
+            description: 'Acceso al Portal de Prestadores para carga y seguimiento de guardias y extensiones horarias',
+            type: 'system',
+          }, { requestKey: null });
+        }
+
+        // 2. Obtener el tenant por defecto (ej. CISB o el primer tenant activo)
+        let defaultTenant = null;
+        try {
+          defaultTenant = await pbAdmin.collection('hub_tenants').getFirstListItem('is_active = true', {
+            sort: 'created',
+            requestKey: null,
+          });
+        } catch {
+          defaultTenant = null;
+        }
+
+        // 3. Vincular usuario con rol prestador en hub_user_roles
+        if (prestadorRole) {
+          await pbAdmin.collection('hub_user_roles').create({
+            user: userData.id,
+            role: prestadorRole.id,
+            tenant: defaultTenant ? defaultTenant.id : null,
+            assigned_at: new Date().toISOString(),
+          }, { requestKey: null });
+          console.log('[SignUp] Auto-assigned role "prestador" to user:', userData.id);
+        }
+      } catch (roleAssignError) {
+        console.warn('[SignUp] Could not auto-assign prestador role:', roleAssignError);
+      }
+
       data = { user: userData };
     } catch (pbError: any) {
       console.error('PocketBase signup error:', pbError);

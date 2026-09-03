@@ -10,8 +10,10 @@ import {
   ConfiguracionModuloPrestadores,
   DEFAULT_CONFIGURACION_PRESTADORES,
   DEFAULT_SECTORES_HABILITADOS,
+  DEFAULT_PROFESIONES_HABILITADAS,
   DEFAULT_FERIADOS_ARGENTINA_SDE,
   FeriadoConfig,
+  ProfesionHabilitada,
 } from "@/types/prestadores";
 import {
   getPrestadoresConfig,
@@ -43,6 +45,7 @@ import {
   Building2,
   Calendar,
   Receipt,
+  UserCheck,
 } from "lucide-react";
 import { TesoreriaParametersTab } from "./TesoreriaParametersTab";
 
@@ -64,12 +67,12 @@ const PLUGINS: PluginDefinition[] = [
     id: "prestadores",
     name: "Portal de Prestadores",
     category: "Recursos Humanos y Asistencia",
-    description: "Tarifas de guardias ordinarias y críticas, horas de extensión asistencial, catálogo de servicios/sectores y tope normativo de facturación.",
+    description: "Tarifas de guardias ordinarias y críticas, horas de extensión asistencial, catálogo de servicios/sectores, catálogo de profesiones y tope normativo de facturación.",
     icon: Stethoscope,
     color: "text-sky-600 dark:text-sky-400",
     bgColor: "bg-sky-50 dark:bg-sky-950/50 border-sky-200 dark:border-sky-800/60",
     status: "configurable",
-    parametersCount: 6,
+    parametersCount: 7,
   },
   {
     id: "tesoreria",
@@ -189,6 +192,67 @@ export function ParametersTab() {
     setEditingSectorIdx(null);
     setEditingSectorText("");
     toast.success("Servicio actualizado");
+  };
+
+  // Estados para Gestor de Profesiones Habilitadas
+  const [nuevaProfesion, setNuevaProfesion] = useState<string>("");
+  const [editingProfesionIdx, setEditingProfesionIdx] = useState<number | null>(null);
+  const [editingProfesionText, setEditingProfesionText] = useState<string>("");
+
+  const handleAddProfesion = () => {
+    const clean = nuevaProfesion.trim();
+    if (!clean) return;
+    const current = config.profesiones_habilitadas || DEFAULT_PROFESIONES_HABILITADAS;
+    if (current.some(p => p.label.toLowerCase() === clean.toLowerCase())) {
+      toast.error("Esta profesión ya está en la lista");
+      return;
+    }
+    const newId = clean.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    setConfig(prev => ({
+      ...prev,
+      profesiones_habilitadas: [
+        ...(prev.profesiones_habilitadas || DEFAULT_PROFESIONES_HABILITADAS),
+        { id: newId, label: clean }
+      ]
+    }));
+    setNuevaProfesion("");
+    toast.success(`Profesión "${clean}" agregada`);
+  };
+
+  const handleRemoveProfesion = (profIdToRemove: string) => {
+    const current = config.profesiones_habilitadas || DEFAULT_PROFESIONES_HABILITADAS;
+    if (current.length <= 1) {
+      toast.error("Debe existir al menos una profesión habilitada");
+      return;
+    }
+    setConfig(prev => ({
+      ...prev,
+      profesiones_habilitadas: (prev.profesiones_habilitadas || DEFAULT_PROFESIONES_HABILITADAS).filter(p => p.id !== profIdToRemove)
+    }));
+    toast.success("Profesión eliminada");
+  };
+
+  const handleStartEditProfesion = (idx: number, name: string) => {
+    setEditingProfesionIdx(idx);
+    setEditingProfesionText(name);
+  };
+
+  const handleSaveEditProfesion = (idx: number) => {
+    const clean = editingProfesionText.trim();
+    if (!clean) return;
+    setConfig(prev => {
+      const list = [...(prev.profesiones_habilitadas || DEFAULT_PROFESIONES_HABILITADAS)];
+      list[idx] = { ...list[idx], label: clean };
+      return { ...prev, profesiones_habilitadas: list };
+    });
+    setEditingProfesionIdx(null);
+    setEditingProfesionText("");
+    toast.success("Profesión actualizada");
+  };
+
+  const handleRestoreDefaultProfesiones = () => {
+    setConfig(prev => ({ ...prev, profesiones_habilitadas: DEFAULT_PROFESIONES_HABILITADAS }));
+    toast.success("Catálogo de profesiones por defecto restablecido");
   };
 
   // Manejo de Feriados e Inhábiles
@@ -815,7 +879,127 @@ export function ParametersTab() {
               </CardContent>
             </Card>
 
-            {/* BLOQUE 5: CALENDARIO DE DÍAS INHÁBILES Y FERIADOS */}
+            {/* BLOQUE 5: GESTOR DE PROFESIONES ASISTENCIALES */}
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl">
+              <CardHeader className="pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
+                      <UserCheck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                        Catálogo de Profesiones y Roles Asistenciales
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        Configurá las profesiones que los prestadores podrán seleccionar en su perfil y que se imprimirán en las certificaciones oficiales.
+                      </CardDescription>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRestoreDefaultProfesiones}
+                    className="h-7 text-[11px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50"
+                  >
+                    <RotateCcw className="w-3 h-3 mr-1" />
+                    Restablecer Profesiones ({DEFAULT_PROFESIONES_HABILITADAS.length})
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Input para agregar nueva profesión */}
+                <div className="flex gap-2 max-w-md">
+                  <Input
+                    placeholder="Nombre de la nueva profesión (ej: Fonoaudiólogo)"
+                    value={nuevaProfesion}
+                    onChange={(e) => setNuevaProfesion(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddProfesion();
+                      }
+                    }}
+                    className="h-9 text-xs bg-white dark:bg-slate-900"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleAddProfesion}
+                    className="h-9 px-3 text-xs bg-[#08487A] hover:bg-[#06375d] text-white shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    Agregar
+                  </Button>
+                </div>
+
+                {/* Lista de pastillas/chips */}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {(config.profesiones_habilitadas || DEFAULT_PROFESIONES_HABILITADAS).map((prof, idx) => (
+                    <div
+                      key={prof.id || idx}
+                      className="group flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 shadow-2xs transition-all hover:border-slate-300 dark:hover:border-slate-700"
+                    >
+                      {editingProfesionIdx === idx ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={editingProfesionText}
+                            onChange={(e) => setEditingProfesionText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleSaveEditProfesion(idx);
+                              }
+                              if (e.key === "Escape") setEditingProfesionIdx(null);
+                            }}
+                            className="h-6 w-44 text-xs px-1.5 py-0 bg-white dark:bg-slate-950"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveEditProfesion(idx)}
+                            className="p-1 text-emerald-600 hover:text-emerald-700"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingProfesionIdx(null)}
+                            className="p-1 text-slate-400 hover:text-slate-600"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="truncate max-w-[200px]">{prof.label}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditProfesion(idx, prof.label)}
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded transition-opacity"
+                            title="Editar nombre"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveProfesion(prof.id)}
+                            className="text-slate-400 hover:text-rose-600 p-0.5 rounded transition-colors"
+                            title="Eliminar profesión"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* BLOQUE 6: CALENDARIO DE DÍAS INHÁBILES Y FERIADOS */}
             <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl">
               <CardHeader className="pb-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">

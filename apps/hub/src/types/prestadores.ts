@@ -96,6 +96,11 @@ export interface FeriadoConfig {
   tipo?: 'nacional' | 'provincial' | 'asueto';
 }
 
+export interface ProfesionHabilitada {
+  id: string;
+  label: string;
+}
+
 export interface ConfiguracionModuloPrestadores {
   valor_guardia_ordinaria_habil: number;
   valor_guardia_ordinaria_inhabil: number;
@@ -105,6 +110,7 @@ export interface ConfiguracionModuloPrestadores {
   valor_hora_extension: number;
   tope_maximo_factura: number;
   sectores_habilitados?: string[];
+  profesiones_habilitadas?: ProfesionHabilitada[];
   feriados_config?: FeriadoConfig[];
   updated_at?: string;
   updated_by?: string;
@@ -126,6 +132,21 @@ export const DEFAULT_SECTORES_HABILITADOS: string[] = [
   'Kinesiología y Rehabilitación',
   'Consultorios Externos',
   'Otro Sector / Servicio',
+];
+
+export const DEFAULT_PROFESIONES_HABILITADAS: ProfesionHabilitada[] = [
+  { id: 'medico', label: 'Médico / Especialista' },
+  { id: 'psicologo', label: 'Psicólogo / Lic. en Psicología' },
+  { id: 'kinesiologo', label: 'Kinesiólogo / Fisioterapeuta' },
+  { id: 'obstetra', label: 'Obstetra / Lic. en Obstetricia' },
+  { id: 'enfermero', label: 'Enfermero / Instrumentador' },
+  { id: 'bioquimico', label: 'Bioquímico' },
+  { id: 'tecnico', label: 'Técnico de Salud / Imágenes' },
+  { id: 'odontologo', label: 'Odontólogo' },
+  { id: 'nutricionista', label: 'Lic. en Nutrición' },
+  { id: 'farmaceutico', label: 'Farmacéutico' },
+  { id: 'asistente_social', label: 'Trabajador / Asistente Social' },
+  { id: 'otro', label: 'Otro Profesional Asistencial' },
 ];
 
 export const DEFAULT_FERIADOS_ARGENTINA_SDE: FeriadoConfig[] = [
@@ -158,6 +179,7 @@ export const DEFAULT_CONFIGURACION_PRESTADORES: ConfiguracionModuloPrestadores =
   valor_hora_extension: 18500,
   tope_maximo_factura: 800000,
   sectores_habilitados: DEFAULT_SECTORES_HABILITADOS,
+  profesiones_habilitadas: DEFAULT_PROFESIONES_HABILITADAS,
   feriados_config: DEFAULT_FERIADOS_ARGENTINA_SDE,
 };
 

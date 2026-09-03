@@ -83,7 +83,10 @@ export function generarPlanillaOficialHTML(
     nombreCompleto = perfil?.cuit ? `Prestador CUIT ${perfil.cuit}` : "Prestador Asistencial";
   }
 
-  const profesionLabel = perfil?.profession ? PROFESIONES_MAP[perfil.profession] : "Médico";
+  // Resolver la profesión y especialidad con precisión sin forzar 'Médico'
+  const profesionLabel = perfil?.profession
+    ? (PROFESIONES_MAP[perfil.profession] || perfil.profession)
+    : "Profesional Asistencial";
   const matriculaNum = perfil?.license_number || prestacion.expand?.user?.professional_id || (authUser as any)?.professional_id || "";
   const matricula = matriculaNum ? `M.P. ${matriculaNum}` : "";
   const cuit = perfil?.cuit ? `CUIT: ${perfil.cuit}` : "";
@@ -465,7 +468,7 @@ export function generarPlanillaOficialHTML(
 
     <div class="legal-text">
       ${isGuardia
-        ? "Teniendo en cuenta que la presente solicitud es a fin de cubrir o reforzar los días y horarios en que no se cuenta con personal médico de guardia en el servicio asistencial, solicito al Sr. Director la autorización previa para realizar guardia/s según detalle ut supra.-"
+        ? "Teniendo en cuenta que la presente solicitud es a fin de cubrir o reforzar los días y horarios en que no se cuenta con personal asistencial de guardia en el servicio, solicito al Sr. Director la autorización previa para realizar guardia/s según detalle ut supra.-"
         : "Teniendo en cuenta la necesidad de cubrir demandas asistenciales programadas que exceden la carga horaria regular del servicio, solicito al Sr. Director la autorización previa para realizar la extensión horaria detallada infra.-"}
     </div>
 

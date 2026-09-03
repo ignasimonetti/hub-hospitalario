@@ -25,8 +25,11 @@ import {
   CondicionFiscal,
   PROFESIONES_MAP,
   CONDICIONES_FISCALES_MAP,
+  DEFAULT_PROFESIONES_HABILITADAS,
+  ProfesionHabilitada,
 } from "@/types/prestadores";
 import { savePrestadorPerfil, getPerfilFileUrl } from "@/lib/services/prestadoresService";
+import { getPrestadoresConfig } from "@/lib/services/parametersService";
 import { toast } from "sonner";
 import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 import { UserCheck, ShieldCheck, Loader2, Sparkles, Eye, Trash2, FileText } from "lucide-react";
@@ -68,7 +71,19 @@ export function ModalPerfilPrestador({
   const [fileConducta, setFileConducta] = useState<File | null>(null);
   const [removeExistingConducta, setRemoveExistingConducta] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [profesionesList, setProfesionesList] = useState<ProfesionHabilitada[]>(DEFAULT_PROFESIONES_HABILITADAS);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cargar profesiones dinámicas configuradas en el sistema
+  useEffect(() => {
+    getPrestadoresConfig()
+      .then((cfg) => {
+        if (cfg.profesiones_habilitadas && cfg.profesiones_habilitadas.length > 0) {
+          setProfesionesList(cfg.profesiones_habilitadas);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Sincronizar estado local cuando perfilActual cambia o se abre el modal
   useEffect(() => {
@@ -216,9 +231,9 @@ export function ModalPerfilPrestador({
                   <SelectValue placeholder="Selecciona profesión" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-slate-900">
-                  {Object.entries(PROFESIONES_MAP).map(([key, label]) => (
-                    <SelectItem key={key} value={key} className="text-xs">
-                      {label}
+                  {profesionesList.map((item) => (
+                    <SelectItem key={item.id} value={item.id} className="text-xs">
+                      {item.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

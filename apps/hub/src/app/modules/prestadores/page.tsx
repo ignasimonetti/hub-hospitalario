@@ -698,7 +698,7 @@ export default function PrestadoresPage() {
               </div>
               <p className="text-xs md:text-sm text-[#615d59] dark:text-[#a39e98] mt-0.5">
                 {perfil
-                  ? `${PROFESIONES_MAP[perfil.profession]} • MP ${perfil.license_number} • CUIT ${perfil.cuit}`
+                  ? `${PROFESIONES_MAP[perfil.profession] || perfil.profession} • MP ${perfil.license_number} • CUIT ${perfil.cuit}`
                   : "Gestiona la liquidación y cobro de tus honorarios profesionales."}
               </p>
             </div>

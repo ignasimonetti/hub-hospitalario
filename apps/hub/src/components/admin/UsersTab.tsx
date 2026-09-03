@@ -24,7 +24,14 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Plus, Edit, Trash2, Search, Loader2, UserCheck, UserX, UserCog } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Users, Plus, Edit, Trash2, Search, Loader2, UserCheck, UserX, UserCog, Filter, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { getUsers, deleteUser, toggleUserStatus, updateUser } from "@/app/actions/users";
 import { UserSheet } from "./UserSheet";
 import { pocketbase } from "@/lib/auth";
@@ -42,9 +49,23 @@ export function UsersTab() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isToggling, setIsToggling] = useState<string | null>(null);
 
+    // Filtros avanzados
+    const [roleFilter, setRoleFilter] = useState<string>("all");
+    const [statusFilter, setStatusFilter] = useState<string>("all");
+    const [verificationFilter, setVerificationFilter] = useState<string>("all");
+
+    // Paginación
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [pageSize, setPageSize] = useState<number>(15);
+
     useEffect(() => {
         loadUsers();
     }, []);
+
+    // Resetear a página 1 al cambiar cualquier filtro
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, roleFilter, statusFilter, verificationFilter, pageSize]);
 
     const loadUsers = async () => {
         setLoading(true);
@@ -134,11 +155,64 @@ export function UsersTab() {
         }
     };
 
-    const filteredUsers = users.filter(user =>
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Extraer lista única de roles disponibles en los usuarios
+    const availableRoles = Array.from(
+        new Set(
+            users.flatMap(u =>
+                u.expand?.hub_user_roles_via_user?.map((ur: any) => ur.expand?.role?.name).filter(Boolean) || []
+            )
+        )
+    ).sort();
+
+    const filteredUsers = users.filter(user => {
+        // 1. Filtro por término de búsqueda (nombre, apellido, email)
+        const matchesSearch = !searchTerm || (
+            user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        // 2. Filtro por Rol
+        let matchesRole = true;
+        const userRoles: string[] = user.expand?.hub_user_roles_via_user?.map((ur: any) => ur.expand?.role?.name).filter(Boolean) || [];
+        if (roleFilter === "sin_rol") {
+            matchesRole = userRoles.length === 0;
+        } else if (roleFilter !== "all") {
+            matchesRole = userRoles.includes(roleFilter);
+        }
+
+        // 3. Filtro por Estado (Activo / Inactivo)
+        let matchesStatus = true;
+        if (statusFilter === "active") {
+            matchesStatus = user.active !== false;
+        } else if (statusFilter === "inactive") {
+            matchesStatus = user.active === false;
+        }
+
+        // 4. Filtro por Verificación de Correo
+        let matchesVerification = true;
+        if (verificationFilter === "verified") {
+            matchesVerification = !!user.verified;
+        } else if (verificationFilter === "unverified") {
+            matchesVerification = !user.verified;
+        }
+
+        return matchesSearch && matchesRole && matchesStatus && matchesVerification;
+    });
+
+    // Paginación calculada sobre los resultados filtrados
+    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+    const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+    const hasActiveFilters = searchTerm !== "" || roleFilter !== "all" || statusFilter !== "all" || verificationFilter !== "all";
+
+    const resetFilters = () => {
+        setSearchTerm("");
+        setRoleFilter("all");
+        setStatusFilter("all");
+        setVerificationFilter("all");
+        setCurrentPage(1);
+    };
 
     const getUserAvatarUrl = (user: any) => {
         if (!user || !user.avatar) return undefined;
@@ -239,17 +313,80 @@ export function UsersTab() {
                 </Card>
             </div>
 
-            {/* Search */}
-            <div className="flex items-center space-x-4">
-                <div className="relative flex-1 max-w-md">
+            {/* Filter Toolbar */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-gray-200 dark:border-slate-800 shadow-2xs">
+                {/* Search */}
+                <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-500 h-4 w-4" />
                     <Input
-                        placeholder="Buscar usuarios..."
+                        placeholder="Buscar por nombre o correo..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400"
+                        className="pl-9 h-9 text-xs bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400"
                     />
                 </div>
+
+                {/* Filtro por Rol */}
+                <div className="w-full md:w-52">
+                    <Select value={roleFilter} onValueChange={setRoleFilter}>
+                        <SelectTrigger className="h-9 text-xs bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800">
+                            <SelectValue placeholder="Filtrar por Rol" />
+                        </SelectTrigger>
+                        <SelectContent className="dark:bg-slate-900">
+                            <SelectItem value="all" className="text-xs">Todos los roles</SelectItem>
+                            <SelectItem value="sin_rol" className="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                                ⚠️ Sin rol asignado ({usersWithoutRoles.length})
+                            </SelectItem>
+                            {availableRoles.map(roleName => (
+                                <SelectItem key={roleName} value={roleName} className="text-xs">
+                                    {roleName}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Filtro por Estado Operativo */}
+                <div className="w-full md:w-40">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="h-9 text-xs bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800">
+                            <SelectValue placeholder="Estado" />
+                        </SelectTrigger>
+                        <SelectContent className="dark:bg-slate-900">
+                            <SelectItem value="all" className="text-xs">Todos los estados</SelectItem>
+                            <SelectItem value="active" className="text-xs">🟢 Solo Activos</SelectItem>
+                            <SelectItem value="inactive" className="text-xs">🔒 Inactivos ({inactiveUsers.length})</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Filtro por Verificación Email */}
+                <div className="w-full md:w-44">
+                    <Select value={verificationFilter} onValueChange={setVerificationFilter}>
+                        <SelectTrigger className="h-9 text-xs bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800">
+                            <SelectValue placeholder="Verificación" />
+                        </SelectTrigger>
+                        <SelectContent className="dark:bg-slate-900">
+                            <SelectItem value="all" className="text-xs">Todas las cuentas</SelectItem>
+                            <SelectItem value="verified" className="text-xs">✓ Email Verificado</SelectItem>
+                            <SelectItem value="unverified" className="text-xs">⏳ Email Pendiente</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Botón Resetear si hay filtros activos */}
+                {hasActiveFilters && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={resetFilters}
+                        className="h-9 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 shrink-0"
+                    >
+                        <X className="w-3.5 h-3.5 mr-1" />
+                        Limpiar ({filteredUsers.length} encontrados)
+                    </Button>
+                )}
             </div>
 
             {/* Users Table */}
@@ -278,19 +415,23 @@ export function UsersTab() {
                                         <TableCell colSpan={6} className="py-2">
                                             <EmptyState
                                                 icon={Users}
-                                                title={users.length === 0 ? "No hay usuarios registrados" : "Sin resultados para la búsqueda"}
-                                                description={users.length === 0 ? "Comenzá invitando o creando usuarios en el sistema." : "Probá buscando por otro nombre o correo electrónico."}
+                                                title={users.length === 0 ? "No hay usuarios registrados" : "Sin resultados para los filtros seleccionados"}
+                                                description={users.length === 0 ? "Comenzá invitando o creando usuarios en el sistema." : "Probá ajustando el rol, estado o término de búsqueda."}
                                                 action={users.length === 0 ? {
                                                     label: "Nuevo Usuario",
                                                     onClick: handleNewUser,
                                                     icon: Plus
+                                                } : hasActiveFilters ? {
+                                                    label: "Limpiar Filtros",
+                                                    onClick: resetFilters,
+                                                    icon: X
                                                 } : undefined}
                                                 compact
                                             />
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    filteredUsers.map((user) => (
+                                    paginatedUsers.map((user) => (
                                         <TableRow key={user.id}>
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
@@ -409,6 +550,63 @@ export function UsersTab() {
                         </TableBody>
                     </Table>
                     </div>
+
+                    {/* Pagination Controls */}
+                    {filteredUsers.length > 0 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground dark:text-slate-400">
+                                <span>
+                                    Mostrando <strong>{((currentPage - 1) * pageSize) + 1}</strong> a <strong>{Math.min(currentPage * pageSize, filteredUsers.length)}</strong> de <strong>{filteredUsers.length}</strong> usuarios
+                                    {hasActiveFilters && ` (filtrados de ${users.length} totales)`}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground dark:text-slate-400">
+                                    <span>Filas:</span>
+                                    <Select value={String(pageSize)} onValueChange={(val) => setPageSize(Number(val))}>
+                                        <SelectTrigger className="h-7 w-16 text-xs bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="dark:bg-slate-900">
+                                            <SelectItem value="10" className="text-xs">10</SelectItem>
+                                            <SelectItem value="15" className="text-xs">15</SelectItem>
+                                            <SelectItem value="25" className="text-xs">25</SelectItem>
+                                            <SelectItem value="50" className="text-xs">50</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage <= 1}
+                                        className="h-7 px-2 text-xs bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800"
+                                    >
+                                        <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                                        Anterior
+                                    </Button>
+                                    <span className="text-xs font-semibold px-2 text-slate-700 dark:text-slate-300">
+                                        {currentPage} / {totalPages}
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage >= totalPages}
+                                        className="h-7 px-2 text-xs bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800"
+                                    >
+                                        Siguiente
+                                        <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

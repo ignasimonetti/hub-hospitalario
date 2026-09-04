@@ -505,19 +505,19 @@ export function ModalAuditoriaDirector({
           {modoAccion === "aprobar" && (
             <div className={`p-3.5 border rounded-xl space-y-2.5 animate-in fade-in-50 ${
               accionEsSoloVisa
-                ? "bg-violet-50/90 dark:bg-violet-950/40 border-violet-300 dark:border-violet-800"
+                ? "bg-sky-50/90 dark:bg-sky-950/40 border-sky-300 dark:border-sky-800"
                 : "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800"
             }`}>
               <div className={`flex items-center gap-2 font-bold text-xs ${
-                accionEsSoloVisa ? "text-violet-900 dark:text-violet-100" : "text-emerald-900 dark:text-emerald-100"
+                accionEsSoloVisa ? "text-sky-900 dark:text-sky-100" : "text-emerald-900 dark:text-emerald-100"
               }`}>
-                <CheckCircle2 className={`w-4 h-4 ${accionEsSoloVisa ? "text-violet-600" : "text-emerald-600"}`} />
+                <CheckCircle2 className={`w-4 h-4 ${accionEsSoloVisa ? "text-sky-600" : "text-emerald-600"}`} />
                 {accionEsSoloVisa
                   ? "¿Confirmar Visado y Firma de Dirección Adjunta?"
                   : "¿Confirmar Aprobación Final y Firma de Dirección Coordinadora?"}
               </div>
               <p className={`text-[11px] leading-relaxed ${
-                accionEsSoloVisa ? "text-violet-800/80 dark:text-violet-200/80" : "text-emerald-800/80 dark:text-emerald-200/80"
+                accionEsSoloVisa ? "text-sky-800/80 dark:text-sky-200/80" : "text-emerald-800/80 dark:text-emerald-200/80"
               }`}>
                 {accionEsSoloVisa
                   ? "Al confirmar el visado, se estampará tu firma electrónica de Director Adjunto y la presentación pasará automáticamente a la Dirección Coordinadora para su aprobación final."
@@ -525,7 +525,7 @@ export function ModalAuditoriaDirector({
               </p>
               <div className="space-y-1">
                 <Label className={`text-[10px] ${
-                  accionEsSoloVisa ? "text-violet-900 dark:text-violet-200" : "text-emerald-900 dark:text-emerald-200"
+                  accionEsSoloVisa ? "text-sky-900 dark:text-sky-200" : "text-emerald-900 dark:text-emerald-200"
                 }`}>
                   Observación de visado / control (opcional):
                 </Label>
@@ -662,7 +662,7 @@ export function ModalAuditoriaDirector({
                       size="sm"
                       onClick={() => setModoAccion("aprobar")}
                       className={`text-xs text-white font-medium flex items-center gap-1.5 shadow-sm ${
-                        accionEsSoloVisa ? "bg-violet-600 hover:bg-violet-700" : "bg-emerald-600 hover:bg-emerald-700"
+                        accionEsSoloVisa ? "bg-[#08487A] hover:bg-[#06375c]" : "bg-emerald-600 hover:bg-emerald-700"
                       }`}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
@@ -699,7 +699,7 @@ export function ModalAuditoriaDirector({
                   onClick={handleAprobarOVisar}
                   disabled={isProcessing}
                   className={`text-xs text-white font-medium shadow-sm flex items-center gap-1.5 ${
-                    accionEsSoloVisa ? "bg-violet-600 hover:bg-violet-700" : "bg-emerald-600 hover:bg-emerald-700"
+                    accionEsSoloVisa ? "bg-[#08487A] hover:bg-[#06375c]" : "bg-emerald-600 hover:bg-emerald-700"
                   }`}
                 >
                   {isProcessing ? (

@@ -1253,7 +1253,7 @@ export default function PrestadoresPage() {
                         onClick={handleBulkAction}
                         className={`text-xs font-semibold text-white shadow-sm flex items-center gap-1.5 ${
                           accionEsSoloVisa
-                            ? "bg-violet-600 hover:bg-violet-700"
+                            ? "bg-[#08487A] hover:bg-[#06375c]"
                             : "bg-emerald-600 hover:bg-emerald-700"
                         }`}
                       >

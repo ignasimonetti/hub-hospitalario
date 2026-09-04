@@ -667,9 +667,28 @@ export async function observarPrestacionTesoreria(
  */
 export async function getDirectoresDisponibles(tenantId?: string): Promise<{ id: string; nombre: string; email: string; rol?: string }[]> {
   try {
-    // Buscar roles de director adjunto y coordinador
+    // 1. Intentar obtener a través de la API route interna (ejecutada con adminPB)
+    const queryParams = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : "";
+    const res = await fetch(`/api/prestadores/directores${queryParams}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.directores) && data.directores.length > 0) {
+        return data.directores;
+      }
+    }
+  } catch (apiErr) {
+    console.warn("No se pudo consultar /api/prestadores/directores, intentando fallback directo:", apiErr);
+  }
+
+  try {
+    // 2. Fallback directo a PocketBase por si la API route no responde
     const roles = await pocketbase.collection("hub_roles").getFullList({
-      filter: 'slug = "director_adjunto" || slug = "director_coordinador" || slug = "director" || name ~ "Director"',
+      filter: 'slug = "director_adjunto" || slug = "director_coordinador" || slug = "director" || name ~ "Director" || name ~ "director"',
       requestKey: null,
     });
 
@@ -680,7 +699,7 @@ export async function getDirectoresDisponibles(tenantId?: string): Promise<{ id:
     const roleIds = roles.map((r) => `role = "${r.id}"`).join(" || ");
     let filter = `(${roleIds})`;
     if (tenantId) {
-      filter += ` && (tenant = "${tenantId}" || tenant = "")`;
+      filter += ` && (tenant = "${tenantId}" || tenant = "" || tenant = null)`;
     }
 
     const userRoles = await pocketbase.collection("hub_user_roles").getFullList({
@@ -695,7 +714,15 @@ export async function getDirectoresDisponibles(tenantId?: string): Promise<{ id:
       const u = (ur as any).expand?.user;
       const r = (ur as any).expand?.role;
       if (u && !directoresMap.has(u.id)) {
-        const rolLabel = r?.slug === "director_coordinador" ? "Dir. Coordinador" : "Dir. Adjunto";
+        const rolSlug = (r?.slug || "").toLowerCase();
+        const rolName = (r?.name || "").toLowerCase();
+        const rolLabel =
+          rolSlug === "director_coordinador" || rolName.includes("coordinador")
+            ? "Dir. Coordinador"
+            : rolSlug === "director_adjunto" || rolName.includes("adjunto")
+            ? "Dir. Adjunto"
+            : r?.name || "Dirección";
+
         directoresMap.set(u.id, {
           id: u.id,
           nombre: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, pocketbase } from "@/lib/auth";
 import {
   PrestadorPerfil,
   PrestacionPresentacion,
@@ -80,8 +80,11 @@ export default function PrestadoresPage() {
 
   // Permisos y Roles
   const { roles: userRoles, loading: loadingRoles, hasRole } = useRoles(currentTenant?.id);
-  const isDirector = hasRole("director_coordinador") || hasRole("director_adjunto") || hasRole("director") || hasRole("superadmin");
-  const isSuperAdmin = user?.is_super_admin || hasRole("superadmin");
+  const isSuperAdmin = Boolean(user?.is_super_admin || hasRole("superadmin"));
+  const isDirectorCoordinador = isSuperAdmin || hasRole("director_coordinador") || hasRole("admin");
+  const isDirector = isDirectorCoordinador || hasRole("director_adjunto") || hasRole("director");
+  // Si es Director Adjunto estricto (no coordinador ni superadmin), solo ve lo asignado a él
+  const isDirectorAdjuntoRestringido = !isDirectorCoordinador && hasRole("director_adjunto");
   const hasAnyAssignedRole = isSuperAdmin || userRoles.length > 0;
 
   // Modo de Vista: "mis_prestaciones" (médico) o "auditoria_direccion" (bandeja de directores)
@@ -249,7 +252,11 @@ export default function PrestadoresPage() {
     }
   ) => {
     const estado = overrides?.estado ?? filtroDireccionEstado;
-    const directorId = overrides?.directorId ?? filtroDirectorId;
+    // Si es Director Adjunto restringido (no coordinador ni superadmin), forzar SIEMPRE su propio userId
+    const effectiveDirectorId = isDirectorAdjuntoRestringido
+      ? user?.id
+      : (overrides?.directorId ?? (filtroDirectorId !== "todos" ? filtroDirectorId : undefined));
+
     const servicio = overrides?.servicio ?? filtroServicio;
     const periodo = overrides?.periodo ?? filtroPeriodo;
     const search = overrides?.search ?? searchDireccion;
@@ -281,7 +288,7 @@ export default function PrestadoresPage() {
       servicio: servicio !== "todos" ? servicio : undefined,
       periodoMes: mes ? Number(mes) : undefined,
       periodoAnio: anio ? Number(anio) : undefined,
-      directorId: directorId !== "todos" ? directorId : undefined,
+      directorId: effectiveDirectorId,
     });
 
     setDirData(res);
@@ -291,6 +298,9 @@ export default function PrestadoresPage() {
   const loadInitialData = async () => {
     setLoading(true);
     try {
+      const currentUid = pocketbase.authStore.model?.id;
+      const kpisDirDirectorId = isDirectorAdjuntoRestringido ? currentUid : undefined;
+
       const [perfilData, kpis, activosPage, historialPage, dirsData, kpisDir] =
         await Promise.all([
           getPrestadorPerfil(),
@@ -298,7 +308,7 @@ export default function PrestadoresPage() {
           getMisPrestacionesPaginadas({ tenantId: currentTenant?.id, grupo: "activos", perPage: 50 }),
           getMisPrestacionesPaginadas({ tenantId: currentTenant?.id, grupo: "historial", page: histPage }),
           getDirectoresAdjuntosDisponibles(currentTenant?.id),
-          getDireccionKpisLivianos(currentTenant?.id),
+          getDireccionKpisLivianos(currentTenant?.id, kpisDirDirectorId),
         ]);
 
       setPerfil(perfilData);
@@ -357,9 +367,12 @@ export default function PrestadoresPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
+      const currentUid = pocketbase.authStore.model?.id;
+      const kpisDirDirectorId = isDirectorAdjuntoRestringido ? currentUid : undefined;
+
       const [kpis, kpisDir] = await Promise.all([
         getMisKpisLivianos(currentTenant?.id),
-        getDireccionKpisLivianos(currentTenant?.id),
+        getDireccionKpisLivianos(currentTenant?.id, kpisDirDirectorId),
         cargarListadoPrestador(),
       ]);
       setKpisLivianos(kpis);
@@ -967,8 +980,8 @@ export default function PrestadoresPage() {
                     </SelectContent>
                   </Select>
 
-                  {/* Filtro Director Adjunto Asignado */}
-                  {directoresList.length > 0 && (
+                  {/* Filtro Director Adjunto Asignado (Solo para Coordinador y Superadmin) */}
+                  {isDirectorCoordinador && directoresList.length > 0 && (
                     <Select value={filtroDirectorId} onValueChange={(v) => { setFiltroDirectorId(v); setSelectedIds(new Set()); }}>
                       <SelectTrigger className="h-7 text-[11px] w-auto min-w-[150px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-lg">
                         <SelectValue placeholder="Director Asignado" />
@@ -984,8 +997,16 @@ export default function PrestadoresPage() {
                     </Select>
                   )}
 
+                  {/* Badge informativo de alcance para Director Adjunto */}
+                  {isDirectorAdjuntoRestringido && (
+                    <div className="h-7 px-2.5 text-[11px] font-medium bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-lg flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
+                      <span>Mis Trámites Asignados</span>
+                    </div>
+                  )}
+
                   {/* Limpiar Filtros */}
-                  {(filtroServicio !== "todos" || filtroPeriodo !== "todos" || filtroDirectorId !== "todos") && (
+                  {(filtroServicio !== "todos" || filtroPeriodo !== "todos" || (isDirectorCoordinador && filtroDirectorId !== "todos")) && (
                     <button
                       type="button"
                       onClick={() => { setFiltroServicio("todos"); setFiltroPeriodo("todos"); setFiltroDirectorId("todos"); setSelectedIds(new Set()); }}
@@ -1754,7 +1775,8 @@ export default function PrestadoresPage() {
               ),
             }));
             getMisKpisLivianos(currentTenant?.id).then(setKpisLivianos);
-            getDireccionKpisLivianos(currentTenant?.id).then(setKpisDireccionData);
+            const currentUid = pocketbase.authStore.model?.id;
+            getDireccionKpisLivianos(currentTenant?.id, isDirectorAdjuntoRestringido ? currentUid : undefined).then(setKpisDireccionData);
             cargarBandejaDireccion(dirPage);
             setPrestacionParaAuditar(null);
           }}

@@ -34,6 +34,7 @@ import {
 } from "@/lib/services/prestadoresService";
 import { abrirPlanillaOficialEnNuevaPestana } from "@/lib/services/pdfPrestacionService";
 import { useRoles } from "@/hooks/usePermissions";
+import { pocketbase } from "@/lib/auth";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -96,15 +97,19 @@ export function ModalAuditoriaDirector({
   useEffect(() => {
     if (open && prestacion) {
       getDirectoresDisponibles(prestacion.tenant).then((dirs) => {
-        // Filtrar para mostrar solo Directores Adjuntos y que no sea el mismo usuario que está derivando
-        const soloAdjuntos = dirs.filter(
-          (d) => d.id !== prestacion.director_approved_by && d.nombre !== currentUserName && d.rol !== "Dir. Coordinador"
-        );
-        // Si no hay diferenciación estricta de rol en DB, al menos excluir al usuario actual
-        setDirectoresAdjuntosLista(soloAdjuntos.length > 0 ? soloAdjuntos : dirs.filter((d) => d.nombre !== currentUserName));
+        const currentUserId = pocketbase.authStore.model?.id;
+        // Filtrar para mostrar directores adjuntos disponibles para derivar
+        const adjuntosValidos = dirs.filter((d) => {
+          // Excluir al usuario actual que está derivando
+          if (currentUserId && d.id === currentUserId) return false;
+          // Excluir si ya está asignado a este mismo director
+          if (prestacion.director_adjunto_asignado && d.id === prestacion.director_adjunto_asignado) return false;
+          return true;
+        });
+        setDirectoresAdjuntosLista(adjuntosValidos.length > 0 ? adjuntosValidos : dirs.filter((d) => d.id !== currentUserId));
       });
     }
-  }, [open, prestacion, currentUserName]);
+  }, [open, prestacion]);
 
   // Parsear digital_form_data
   const digitalForm = useMemo<FormularioDigitalData | null>(() => {

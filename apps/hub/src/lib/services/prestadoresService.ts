@@ -685,6 +685,7 @@ export async function derivarPrestacionADirectorAdjunto(
       .update<PrestacionPresentacion>(
         id,
         {
+          director_adjunto_asignado: nuevoDirectorId,
           assigned_director_adjunto_id: nuevoDirectorId,
           status: "pendiente",
           director_observation: observacionDerivacion ? `[Derivado por Dir. Coordinador]: ${observacionDerivacion}` : "",
@@ -1048,11 +1049,13 @@ export async function getMisKpisLivianos(
   }
 }
 
-/** KPIs globales del tenant para Dirección (excluye borradores) */
+/** KPIs del tenant para Dirección (excluye borradores, permite filtrar por directorId si es Adjunto) */
 export async function getDireccionKpisLivianos(
-  tenantId?: string
+  tenantId?: string,
+  directorId?: string
 ): Promise<ProyeccionKpisPrestaciones> {
   let filter = 'status != "borrador"';
   if (tenantId) filter += ` && tenant = "${tenantId}"`;
+  if (directorId) filter += ` && director_adjunto_asignado = "${directorId}"`;
   return fetchKpisProyectadas(filter);
 }

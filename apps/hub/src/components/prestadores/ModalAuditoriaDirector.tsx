@@ -27,6 +27,7 @@ import { getPrestadoresConfig } from "@/lib/services/parametersService";
 import {
   aprobarPrestacionDirector,
   visarPrestacionAdjunto,
+  anularVisadoAdjunto,
   observarPrestacionDirector,
   getPrestacionFileUrl,
   derivarPrestacionADirectorAdjunto,
@@ -53,6 +54,7 @@ import {
   Loader2,
   ArrowRightLeft,
   UserCheck,
+  Undo2,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect } from "react";
@@ -77,8 +79,9 @@ export function ModalAuditoriaDirector({
   currentUserName,
   onActualizado,
 }: ModalAuditoriaDirectorProps) {
-  const [modoAccion, setModoAccion] = useState<"ver" | "aprobar" | "observar" | "derivar">("ver");
+  const [modoAccion, setModoAccion] = useState<"ver" | "aprobar" | "observar" | "derivar" | "anular_visado">("ver");
   const [motivoObservacion, setMotivoObservacion] = useState("");
+  const [motivoAnulacion, setMotivoAnulacion] = useState("");
   const [observacionAprobacion, setObservacionAprobacion] = useState("");
   const [directorParaDerivar, setDirectorParaDerivar] = useState("");
   const [motivoDerivacion, setMotivoDerivacion] = useState("");
@@ -282,6 +285,36 @@ export function ModalAuditoriaDirector({
       setMotivoObservacion("");
     } catch (error: any) {
       toast.error(error.message || "Error al observar la prestación");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Condiciones de visado y anulación
+  // Puede visar: cuando el trámite está pendiente o en revisión y todavía NO fue visado por el adjunto
+  const puedeVisar = accionEsSoloVisa && ["pendiente", "en_revision"].includes(prestacion.status) && !prestacion.adjunto_approved_at;
+  
+  // Puede anular visado: el director adjunto (o superadmin/coordinador) SOLO si el trámite está en 'visado_adjunto' y AÚN NO fue aprobado formalmente por Coordinación ni Tesorería
+  const puedeAnularVisado =
+    prestacion.status === "visado_adjunto" &&
+    !prestacion.director_approved_at &&
+    (isDirAdjunto || isDirCoordinador);
+
+  // Handler: Anular Visado
+  const handleAnularVisado = async () => {
+    setIsProcessing(true);
+    try {
+      const updated = await anularVisadoAdjunto(
+        prestacion.id,
+        motivoAnulacion.trim()
+      );
+      toast.success("Visado anulado. El trámite volvió a estado Pendiente para su revisión.");
+      onActualizado(updated);
+      onOpenChange(false);
+      setModoAccion("ver");
+      setMotivoAnulacion("");
+    } catch (error: any) {
+      toast.error(error.message || "Error al anular el visado");
     } finally {
       setIsProcessing(false);
     }
@@ -611,6 +644,30 @@ export function ModalAuditoriaDirector({
               </div>
             </div>
           )}
+
+          {/* Formulario de Anulación de Visado */}
+          {modoAccion === "anular_visado" && (
+            <div className="p-3.5 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl space-y-2.5 animate-in fade-in-50">
+              <div className="flex items-center gap-2 text-amber-900 dark:text-amber-100 font-bold text-xs">
+                <Undo2 className="w-4 h-4 text-amber-600" />
+                Anular Visado de Dirección Adjunta
+              </div>
+              <p className="text-[11px] text-amber-800/80 dark:text-amber-200/80 leading-relaxed">
+                Esta acción revocará la firma de visado estampada en la presentación y el trámite volverá a estado <strong>Pendiente</strong> para que pueda ser reevaluado, observado o visado nuevamente.
+              </p>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold text-amber-900 dark:text-amber-200">
+                  Motivo de la anulación (opcional):
+                </Label>
+                <Textarea
+                  placeholder="Ej: Se detectó una inconsistencia en los días declarados que requiere subsanación previa."
+                  value={motivoAnulacion}
+                  onChange={(e) => setMotivoAnulacion(e.target.value)}
+                  className="h-16 text-xs bg-white dark:bg-slate-900 border-amber-300"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Pie Fijo con Acciones */}
@@ -657,17 +714,45 @@ export function ModalAuditoriaDirector({
                       </Button>
                     )}
 
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => setModoAccion("aprobar")}
-                      className={`text-xs text-white font-medium flex items-center gap-1.5 shadow-sm ${
-                        accionEsSoloVisa ? "bg-[#08487A] hover:bg-[#06375c]" : "bg-emerald-600 hover:bg-emerald-700"
-                      }`}
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      {accionEsSoloVisa ? "Visar" : "Aprobar"}
-                    </Button>
+                    {/* Botón Visar (Solo cuando aún NO está visado por el Adjunto) */}
+                    {puedeVisar && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setModoAccion("aprobar")}
+                        className="text-xs text-white font-medium flex items-center gap-1.5 shadow-sm bg-[#08487A] hover:bg-[#06375c]"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Visar
+                      </Button>
+                    )}
+
+                    {/* Botón Aprobar (Para Director Coordinador / Superadmin) */}
+                    {!accionEsSoloVisa && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setModoAccion("aprobar")}
+                        className="text-xs text-white font-medium flex items-center gap-1.5 shadow-sm bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Aprobar
+                      </Button>
+                    )}
+
+                    {/* Botón Anular Visado (Solo si está en visado_adjunto y AÚN NO fue aprobado por Coordinación) */}
+                    {puedeAnularVisado && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setModoAccion("anular_visado")}
+                        className="text-xs border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 flex items-center gap-1.5"
+                      >
+                        <Undo2 className="w-3.5 h-3.5 text-amber-600" />
+                        Anular Visado
+                      </Button>
+                    )}
                   </>
                 )}
                 <Button
@@ -762,6 +847,38 @@ export function ModalAuditoriaDirector({
                 >
                   <AlertCircle className="w-3.5 h-3.5" />
                   {isProcessing ? "Enviando observación..." : "Notificar Observación"}
+                </Button>
+              </>
+            )}
+
+            {modoAccion === "anular_visado" && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isProcessing}
+                  onClick={() => setModoAccion("ver")}
+                  className="text-xs"
+                >
+                  Volver
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isProcessing}
+                  onClick={handleAnularVisado}
+                  className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium flex items-center gap-1.5 shadow-sm"
+                >
+                  {isProcessing ? (
+                    <span className="flex items-center gap-1.5">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Anulando...
+                    </span>
+                  ) : (
+                    <>
+                      <Undo2 className="w-3.5 h-3.5" /> Confirmar Anulación de Visado
+                    </>
+                  )}
                 </Button>
               </>
             )}

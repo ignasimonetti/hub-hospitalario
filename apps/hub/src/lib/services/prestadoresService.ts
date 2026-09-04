@@ -443,6 +443,54 @@ export async function visarPrestacionAdjunto(
 }
 
 /**
+ * Anula el visado realizado por un Director Adjunto y devuelve la prestación a estado 'pendiente'.
+ * Solo está permitido si la prestación se encuentra en 'visado_adjunto' y no fue aprobada aún por el Director Coordinador.
+ */
+export async function anularVisadoAdjunto(
+  id: string,
+  motivoAnulacion?: string
+): Promise<PrestacionPresentacion> {
+  const user = pocketbase.authStore.model;
+  if (!user) throw new Error("Usuario no autenticado");
+
+  try {
+    const current = await pocketbase
+      .collection("prestaciones_presentaciones")
+      .getOne<PrestacionPresentacion>(id, { requestKey: null });
+
+    if (current.status !== "visado_adjunto") {
+      throw new Error("Solo se puede anular el visado de trámites en estado 'Visado por Adjunto'");
+    }
+
+    if (current.director_approved_at) {
+      throw new Error("No se puede anular el visado porque el trámite ya cuenta con aprobación formal de Dirección");
+    }
+
+    const now = new Date().toISOString();
+    const updated = await pocketbase
+      .collection("prestaciones_presentaciones")
+      .update<PrestacionPresentacion>(id, {
+        status: "pendiente",
+        adjunto_approved_by: "",
+        adjunto_approved_at: "",
+        adjunto_signature_meta: "",
+        director_observation: motivoAnulacion
+          ? `[Visado Anulado]: ${motivoAnulacion}`
+          : current.director_observation || "",
+        reviewed_at: now,
+      }, {
+        expand: "tenant,user",
+        requestKey: null,
+      });
+
+    return updated;
+  } catch (error: any) {
+    console.error("Error anulando visado de prestación:", error);
+    throw new Error(error?.message || "Error al anular el visado");
+  }
+}
+
+/**
  * Aprueba y firma digitalmente una prestación por parte del Director Coordinador (firma final).
  * El Director Coordinador puede aprobar directamente (supliendo la firma del Adjunto)
  * o dar la aprobación final a una presentación ya visada por el Adjunto.

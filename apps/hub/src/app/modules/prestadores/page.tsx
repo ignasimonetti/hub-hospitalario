@@ -492,7 +492,11 @@ export default function PrestadoresPage() {
 
   const toggleSelectAll = () => {
     const selectableIds = prestacionesDireccionFiltradas
-      .filter((p) => ["pendiente", "en_revision", "visado_adjunto"].includes(p.status))
+      .filter((p) =>
+        accionEsSoloVisa
+          ? ["pendiente", "en_revision"].includes(p.status) && !p.adjunto_approved_at
+          : ["pendiente", "en_revision", "visado_adjunto"].includes(p.status)
+      )
       .map((p) => p.id);
 
     if (selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id))) {
@@ -1101,7 +1105,10 @@ export default function PrestadoresPage() {
                             ? `${p.expand.user.firstName || ""} ${p.expand.user.lastName || ""}`.trim() || p.expand.user.email
                             : "Prestador Asistencial";
                           const stCfg = ESTADOS_PRESTACION_CONFIG[p.status];
-                          const isSelectable = ["pendiente", "en_revision", "visado_adjunto"].includes(p.status);
+                          // Para Director Adjunto, solo es seleccionable masivamente si está pendiente o en revisión (no visado aún)
+                          const isSelectable = accionEsSoloVisa
+                            ? ["pendiente", "en_revision"].includes(p.status) && !p.adjunto_approved_at
+                            : ["pendiente", "en_revision", "visado_adjunto"].includes(p.status);
                           const isSelected = selectedIds.has(p.id);
 
                           return (

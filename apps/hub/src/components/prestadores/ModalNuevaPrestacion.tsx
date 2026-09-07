@@ -693,21 +693,40 @@ export function ModalNuevaPrestacion({
     let summaryDaysDetail = "";
 
     if (serviceType === "guardia") {
+      // Stampar valor calculado en cada renglón para garantizar consistencia downstream
+      const renglonesConValor = renglonesGuardia.map((g) => {
+        if (!g.fecha) return g;
+        const { isInhabil } = isFechaInhabil(g.fecha);
+        const horas = Math.max(1, Math.min(24, Number(g.duracion_horas) || 24));
+        let valor24hs = 0;
+        if (g.tipo === "critica") {
+          valor24hs = isInhabil ? config.valor_guardia_critica_inhabil : config.valor_guardia_critica_habil;
+        } else {
+          valor24hs = isInhabil ? config.valor_guardia_ordinaria_inhabil : config.valor_guardia_ordinaria_habil;
+        }
+        const valor = (valor24hs / 24) * horas;
+        return { ...g, valor };
+      });
       digitalFormData = {
         tipo_formulario: "guardia",
         reemplazo_de: reemplazoDe.trim() || undefined,
         observaciones: observaciones.trim() || undefined,
-        renglones: renglonesGuardia,
+        renglones: renglonesConValor,
       };
       summaryDaysDetail = renglonesGuardia
         .map((g) => `${g.fecha ? g.fecha.split("-").slice(1).reverse().join("/") : "s/f"} (${g.duracion_horas || 24}hs: ${g.hora_entrada}-${g.hora_salida} ${g.tipo === "critica" ? "Crítica" : "Ordinaria"})`)
         .join(", ");
     } else {
+      // Stampar valor calculado en cada renglón de extensión horaria
+      const renglonesEHConValor = renglonesEH.map((r) => {
+        const valor = (Number(r.horas_cumplidas) || 0) * config.valor_hora_extension;
+        return { ...r, valor };
+      });
       digitalFormData = {
         tipo_formulario: "extension_horaria",
         cargo_especialidad: cargoEspecialidad.trim() || undefined,
         observaciones: observaciones.trim() || undefined,
-        renglones: renglonesEH,
+        renglones: renglonesEHConValor,
       };
       summaryDaysDetail = renglonesEH
         .map((eh) => `${eh.fecha ? eh.fecha.split("-").slice(1).reverse().join("/") : "s/f"} (${eh.horas_cumplidas} hs - ${eh.horario_programado})`)
@@ -857,21 +876,40 @@ export function ModalNuevaPrestacion({
     let summaryDaysDetail = "";
 
     if (serviceType === "guardia") {
+      // Stampar valor calculado en cada renglón para garantizar consistencia downstream
+      const renglonesConValor = renglonesGuardia.map((g) => {
+        if (!g.fecha) return g;
+        const { isInhabil } = isFechaInhabil(g.fecha);
+        const horas = Math.max(1, Math.min(24, Number(g.duracion_horas) || 24));
+        let valor24hs = 0;
+        if (g.tipo === "critica") {
+          valor24hs = isInhabil ? config.valor_guardia_critica_inhabil : config.valor_guardia_critica_habil;
+        } else {
+          valor24hs = isInhabil ? config.valor_guardia_ordinaria_inhabil : config.valor_guardia_ordinaria_habil;
+        }
+        const valor = (valor24hs / 24) * horas;
+        return { ...g, valor };
+      });
       digitalFormData = {
         tipo_formulario: "guardia",
         reemplazo_de: reemplazoDe.trim() || undefined,
         observaciones: observaciones.trim() || undefined,
-        renglones: renglonesGuardia,
+        renglones: renglonesConValor,
       };
       summaryDaysDetail = renglonesGuardia
         .map((g) => `${g.fecha.split("-").slice(1).reverse().join("/")} (${g.duracion_horas || 24}hs: ${g.hora_entrada}-${g.hora_salida} ${g.tipo === "critica" ? "Crítica" : "Ordinaria"})`)
         .join(", ");
     } else {
+      // Stampar valor calculado en cada renglón de extensión horaria
+      const renglonesEHConValor = renglonesEH.map((r) => {
+        const valor = (Number(r.horas_cumplidas) || 0) * config.valor_hora_extension;
+        return { ...r, valor };
+      });
       digitalFormData = {
         tipo_formulario: "extension_horaria",
         cargo_especialidad: cargoEspecialidad.trim() || undefined,
         observaciones: observaciones.trim() || undefined,
-        renglones: renglonesEH,
+        renglones: renglonesEHConValor,
       };
       summaryDaysDetail = renglonesEH
         .map((eh) => `${eh.fecha.split("-").slice(1).reverse().join("/")} (${eh.horas_cumplidas} hs - ${eh.horario_programado})`)

@@ -66,10 +66,10 @@ export function ModalControlDocumental({
   onConformado,
   onObservar,
 }: ModalControlDocumentalProps) {
-  const [retencionIibb, setRetencionIibb] = useState<number>(0);
-  const [retencionGanancias, setRetencionGanancias] = useState<number>(0);
-  const [retencionSuss, setRetencionSuss] = useState<number>(0);
-  const [retencionOtras, setRetencionOtras] = useState<number>(0);
+  const [retencionIibb, setRetencionIibb] = useState<string>("");
+  const [retencionGanancias, setRetencionGanancias] = useState<string>("");
+  const [retencionSuss, setRetencionSuss] = useState<string>("");
+  const [retencionOtras, setRetencionOtras] = useState<string>("");
   const [retencionOtrasConcepto, setRetencionOtrasConcepto] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [configPrestadores, setConfigPrestadores] = useState<ConfiguracionModuloPrestadores>(DEFAULT_CONFIGURACION_PRESTADORES);
@@ -82,10 +82,14 @@ export function ModalControlDocumental({
       });
 
       // Cargar retenciones manuales previas si ya existen
-      setRetencionIibb(Number(prestacion.retencion_iibb) || 0);
-      setRetencionGanancias(Number(prestacion.retencion_ganancias) || 0);
-      setRetencionSuss(Number(prestacion.retencion_suss) || 0);
-      setRetencionOtras(Number(prestacion.retencion_otras) || 0);
+      const iibb = Number(prestacion.retencion_iibb) || 0;
+      const gan = Number(prestacion.retencion_ganancias) || 0;
+      const suss = Number(prestacion.retencion_suss) || 0;
+      const otras = Number(prestacion.retencion_otras) || 0;
+      setRetencionIibb(iibb > 0 ? String(iibb) : "");
+      setRetencionGanancias(gan > 0 ? String(gan) : "");
+      setRetencionSuss(suss > 0 ? String(suss) : "");
+      setRetencionOtras(otras > 0 ? String(otras) : "");
       setRetencionOtrasConcepto(prestacion.retencion_otras_concepto || "");
     }
   }, [isOpen, prestacion]);
@@ -240,11 +244,18 @@ export function ModalControlDocumental({
   const montoFacturado = Number(prestacion.invoice_amount) || 0;
   const montoBruto = montoFacturado;
   const hayInconsistencia = montoDevengado > 0 && Math.abs(montoDevengado - montoFacturado) > 0.01;
+  // Helper: parsear string con coma o punto decimal a número
+  const parseDecimalString = (val: string): number => {
+    if (!val) return 0;
+    const sanitized = val.replace(/\$/g, "").replace(/\s/g, "").replace(",", ".");
+    return parseFloat(sanitized) || 0;
+  };
+
   const totalRetenciones =
-    (Number(retencionIibb) || 0) +
-    (Number(retencionGanancias) || 0) +
-    (Number(retencionSuss) || 0) +
-    (Number(retencionOtras) || 0);
+    parseDecimalString(retencionIibb) +
+    parseDecimalString(retencionGanancias) +
+    parseDecimalString(retencionSuss) +
+    parseDecimalString(retencionOtras);
   const montoNeto = Math.max(0, montoBruto - totalRetenciones);
 
   const isYaConformado = prestacion.treasury_check_status === "conformado";
@@ -268,10 +279,10 @@ export function ModalControlDocumental({
     try {
       setIsSubmitting(true);
       await conformarPrestacionTesoreria(prestacion.id, {
-        retencionIibb: Number(retencionIibb) || 0,
-        retencionGanancias: Number(retencionGanancias) || 0,
-        retencionSuss: Number(retencionSuss) || 0,
-        retencionOtras: Number(retencionOtras) || 0,
+        retencionIibb: parseDecimalString(retencionIibb),
+        retencionGanancias: parseDecimalString(retencionGanancias),
+        retencionSuss: parseDecimalString(retencionSuss),
+        retencionOtras: parseDecimalString(retencionOtras),
         retencionOtrasConcepto: retencionOtrasConcepto.trim(),
         retencionMonto: totalRetenciones,
         montoNeto,
@@ -511,12 +522,14 @@ export function ModalControlDocumental({
                   <span className="absolute left-2 top-2 text-xs text-gray-400 font-mono">$</span>
                   <Input
                     id="retIIBB"
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0.00"
-                    value={retencionIibb || ""}
-                    onChange={(e) => setRetencionIibb(parseFloat(e.target.value) || 0)}
+                    value={retencionIibb}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "" || /^[\d]*([.,][\d]*)?$/.test(v)) setRetencionIibb(v);
+                    }}
                     className="h-8 pl-6 text-xs font-mono bg-white dark:bg-slate-900"
                   />
                 </div>
@@ -531,12 +544,14 @@ export function ModalControlDocumental({
                   <span className="absolute left-2 top-2 text-xs text-gray-400 font-mono">$</span>
                   <Input
                     id="retGan"
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0.00"
-                    value={retencionGanancias || ""}
-                    onChange={(e) => setRetencionGanancias(parseFloat(e.target.value) || 0)}
+                    value={retencionGanancias}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "" || /^[\d]*([.,][\d]*)?$/.test(v)) setRetencionGanancias(v);
+                    }}
                     className="h-8 pl-6 text-xs font-mono bg-white dark:bg-slate-900"
                   />
                 </div>
@@ -551,12 +566,14 @@ export function ModalControlDocumental({
                   <span className="absolute left-2 top-2 text-xs text-gray-400 font-mono">$</span>
                   <Input
                     id="retSuss"
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0.00"
-                    value={retencionSuss || ""}
-                    onChange={(e) => setRetencionSuss(parseFloat(e.target.value) || 0)}
+                    value={retencionSuss}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "" || /^[\d]*([.,][\d]*)?$/.test(v)) setRetencionSuss(v);
+                    }}
                     className="h-8 pl-6 text-xs font-mono bg-white dark:bg-slate-900"
                   />
                 </div>
@@ -573,12 +590,14 @@ export function ModalControlDocumental({
                   <span className="absolute left-2 top-2 text-xs text-gray-400 font-mono">$</span>
                   <Input
                     id="retOtras"
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0.00"
-                    value={retencionOtras || ""}
-                    onChange={(e) => setRetencionOtras(parseFloat(e.target.value) || 0)}
+                    value={retencionOtras}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "" || /^[\d]*([.,][\d]*)?$/.test(v)) setRetencionOtras(v);
+                    }}
                     className="h-8 pl-6 text-xs font-mono bg-white dark:bg-slate-900"
                   />
                 </div>

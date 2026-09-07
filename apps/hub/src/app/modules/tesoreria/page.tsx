@@ -1547,9 +1547,6 @@ export default function TesoreriaPage() {
                                     <div className="font-mono font-semibold text-gray-900 dark:text-slate-100">
                                       {item.invoice_number || "S/N"}
                                     </div>
-                                    <div className="text-[10px] text-gray-400">
-                                      {formatDate(item.invoice_date)}
-                                    </div>
                                   </td>
 
                                   {/* Lote Asignado */}

@@ -132,8 +132,8 @@ export default function TesoreriaPage() {
   const [tabActiva, setTabActiva] = useState<
     "control_documental" | "lotes_gde" | "pagados" | "observados" | "todos"
   >("control_documental");
-  const [filtroMes, setFiltroMes] = useState<string>(String(new Date().getMonth() + 1));
-  const [filtroAnio, setFiltroAnio] = useState<string>(String(new Date().getFullYear()));
+  const [filtroMes, setFiltroMes] = useState<string>("todos");
+  const [filtroAnio, setFiltroAnio] = useState<string>("todos");
   const [filtroServicio, setFiltroServicio] = useState<string>("todos");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filtroEstadoLotes, setFiltroEstadoLotes] = useState<"activos" | "pagados" | "todos">("activos");
@@ -1036,29 +1036,29 @@ export default function TesoreriaPage() {
               {/* Barra de Filtros & Buscador */}
               <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="w-36">
+                  <div className="w-44">
                     <Select value={filtroMes} onValueChange={setFiltroMes}>
                       <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Mes" />
+                        <SelectValue placeholder="Mes devengado" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="todos" className="text-xs">Todos los meses</SelectItem>
+                        <SelectItem value="todos" className="text-xs font-semibold">Todos los períodos</SelectItem>
                         {MESES.map((m) => (
                           <SelectItem key={m.id} value={String(m.id)} className="text-xs">
-                            {m.label}
+                            {m.label} (devengado)
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="w-28">
+                  <div className="w-32">
                     <Select value={filtroAnio} onValueChange={setFiltroAnio}>
                       <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Año" />
+                        <SelectValue placeholder="Año devengado" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="todos" className="text-xs">Todos</SelectItem>
+                        <SelectItem value="todos" className="text-xs font-semibold">Todos los años</SelectItem>
                         <SelectItem value="2026" className="text-xs">2026</SelectItem>
                         <SelectItem value="2025" className="text-xs">2025</SelectItem>
                       </SelectContent>
@@ -1448,7 +1448,7 @@ export default function TesoreriaPage() {
                                   />
                                 </th>
                               )}
-                              <th className="py-3 px-3">Trámite & Período</th>
+                              <th className="py-3 px-3">Trámite & Devengado</th>
                               <th className="py-3 px-3">Beneficiario & CUIT</th>
                               <th className="py-3 px-3 hidden sm:table-cell">Factura</th>
                               <th className="py-3 px-3 hidden lg:table-cell">Lote Asignado</th>
@@ -1515,8 +1515,8 @@ export default function TesoreriaPage() {
                                         {item.service_type === "guardia" ? "G" : "EH"}
                                       </Badge>
                                     </div>
-                                    <div className="text-[11px] text-gray-500">
-                                      {String(item.period_month).padStart(2, "0")}/{item.period_year}
+                                    <div className="text-[11px] text-gray-500 font-medium">
+                                      Período: {String(item.period_month).padStart(2, "0")}/{item.period_year}
                                     </div>
                                   </td>
 

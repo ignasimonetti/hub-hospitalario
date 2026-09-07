@@ -171,6 +171,10 @@ export function ModalDetalleLoteGDE({
   const totalPrestacionesCount = prestacionesDelLote.length;
   const todosPagados = totalPrestacionesCount > 0 && prestacionesPagadasCount === totalPrestacionesCount;
 
+  const montoBrutoReal = prestacionesDelLote.length > 0
+    ? prestacionesDelLote.reduce((acc, p) => acc + (Number(p.invoice_amount) || 0), 0)
+    : (lote.prestaciones_ids?.length === 0 ? 0 : lote.monto_bruto_total);
+
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
@@ -544,7 +548,7 @@ export function ModalDetalleLoteGDE({
               <div className="text-right">
                 <div className="text-xs text-slate-500 dark:text-slate-400">Total Bruto a Comprometer</div>
                 <div className="text-xl font-extrabold text-slate-900 dark:text-slate-100 font-mono">
-                  {formatMoney(lote.monto_bruto_total)}
+                  {formatMoney(montoBrutoReal)}
                 </div>
               </div>
 

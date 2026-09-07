@@ -1266,6 +1266,19 @@ export default function TesoreriaPage() {
                             textDark: "text-slate-700",
                           };
 
+                          // Obtener prestaciones activas actualmente vinculadas a este lote
+                          const prestacionesActivasDelLote = prestaciones.filter(
+                            (p) => p.lote_id === lote.id || (lote.prestaciones_ids && lote.prestaciones_ids.includes(p.id))
+                          );
+                          const cantidadReal = prestacionesActivasDelLote.length;
+                          const montoNetoReal = cantidadReal > 0
+                            ? prestacionesActivasDelLote.reduce((acc, p) => {
+                                const bruto = Number(p.invoice_amount) || 0;
+                                const ret = Number(p.retencion_monto) || 0;
+                                return acc + Math.max(0, bruto - ret);
+                              }, 0)
+                            : (lote.prestaciones_ids?.length === 0 ? 0 : lote.monto_neto_total);
+
                           return (
                             <Card
                               key={lote.id}
@@ -1304,7 +1317,7 @@ export default function TesoreriaPage() {
                                   <div>
                                     <span className="text-gray-400 text-[10px] block">Trámites</span>
                                     <span className="font-bold text-gray-800 dark:text-slate-200">
-                                      {lote.cantidad_prestaciones} profesionales
+                                      {cantidadReal} profesionales
                                     </span>
                                     <span className="text-gray-400 text-[10px] block mt-1">
                                       Período: {String(lote.periodo_mes).padStart(2, "0")}/{lote.periodo_anio}
@@ -1314,7 +1327,7 @@ export default function TesoreriaPage() {
                                   <div className="text-right shrink-0">
                                     <span className="text-gray-400 text-[10px] block">Neto a Pagar</span>
                                     <span className="text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
-                                      {formatMoney(lote.monto_neto_total)}
+                                      {formatMoney(montoNetoReal)}
                                     </span>
                                   </div>
                                 </div>

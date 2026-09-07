@@ -524,13 +524,26 @@ export async function quitarPrestacionDeLote(
   const targetLote = lotes.find((l) => l.id === loteId);
   if (!targetLote) throw new Error("Lote no encontrado");
 
-  if (!ESTADOS_LOTE_ABIERTO.includes(targetLote.estado)) {
+  // Validación de inmutabilidad: no se pueden quitar prestaciones si ya tiene OP o pago BSE
+  if (targetLote.numero_orden_pago || targetLote.op_config) {
     throw new Error(
-      `El lote "${targetLote.numero_lote}" está cerrado o liquidado. No se pueden quitar prestaciones sin reabrirlo previamente.`
+      `El lote "${targetLote.numero_lote}" ya cuenta con una Orden de Pago emitida (OP N° ${targetLote.numero_orden_pago}) y su nómina es inmutable.`
     );
   }
 
-  // 1. Desvincular en PocketBase
+  if (targetLote.estado === "pagado_bse" || targetLote.comprobante_pago_bse) {
+    throw new Error(
+      `El lote "${targetLote.numero_lote}" ya fue liquidado y pagado. No se pueden quitar prestaciones.`
+    );
+  }
+
+  if (!ESTADOS_LOTE_ABIERTO.includes(targetLote.estado)) {
+    throw new Error(
+      `El lote "${targetLote.numero_lote}" está cerrado para modificaciones. No se pueden quitar prestaciones sin reabrirlo previamente.`
+    );
+  }
+
+  // 1. Desvincular la prestación en PocketBase
   try {
     await pocketbase.collection("prestaciones_presentaciones").update(
       prestacionId,
@@ -542,14 +555,66 @@ export async function quitarPrestacionDeLote(
       { requestKey: null }
     );
   } catch (err) {
-    console.error("Error desvinculando prestacion de lote:", err);
+    console.error("Error desvinculando prestacion de lote en PB:", err);
   }
 
-  // 2. Actualizar el Lote en memoria/storage
-  targetLote.prestaciones_ids = targetLote.prestaciones_ids.filter((id) => id !== prestacionId);
-  targetLote.cantidad_prestaciones = targetLote.prestaciones_ids.length;
+  // 2. Actualizar la nómina de IDs del lote
+  const nuevasPrestacionesIds = targetLote.prestaciones_ids.filter((id) => id !== prestacionId);
+  targetLote.prestaciones_ids = nuevasPrestacionesIds;
+  targetLote.cantidad_prestaciones = nuevasPrestacionesIds.length;
+
+  // 3. RECALCULAR MONTOS EN TIEMPO REAL
+  if (nuevasPrestacionesIds.length === 0) {
+    // Si quedó vacío, los montos pasan a 0
+    targetLote.monto_bruto_total = 0;
+    targetLote.monto_retenciones_total = 0;
+    targetLote.monto_neto_total = 0;
+  } else {
+    // Consultar las prestaciones restantes para obtener sus montos exactos
+    try {
+      const restantes = await Promise.all(
+        nuevasPrestacionesIds.map((id) =>
+          pocketbase
+            .collection("prestaciones_presentaciones")
+            .getOne<PrestacionPresentacion>(id, { requestKey: null })
+            .catch(() => null)
+        )
+      );
+
+      const validas = restantes.filter((p): p is PrestacionPresentacion => p !== null);
+      const nuevoBruto = validas.reduce((sum, p) => sum + (Number(p.invoice_amount) || 0), 0);
+      const nuevasRetenciones = validas.reduce((sum, p) => sum + (Number(p.retencion_monto) || 0), 0);
+      const nuevoNeto = Math.max(0, nuevoBruto - nuevasRetenciones);
+
+      targetLote.monto_bruto_total = nuevoBruto;
+      targetLote.monto_retenciones_total = nuevasRetenciones;
+      targetLote.monto_neto_total = nuevoNeto;
+    } catch (calcErr) {
+      console.warn("No se pudieron recalcular montos detallados desde PB, manteniendo estimación previa:", calcErr);
+    }
+  }
+
   targetLote.updated = new Date().toISOString();
+
+  // 4. Guardar en localStorage
   saveLocalLotes(lotes);
+
+  // 5. Sincronizar en PocketBase si la colección tesoreria_lotes existe
+  try {
+    await pocketbase.collection("tesoreria_lotes").update(
+      targetLote.id,
+      {
+        prestaciones_ids: targetLote.prestaciones_ids,
+        cantidad_prestaciones: targetLote.cantidad_prestaciones,
+        monto_bruto_total: targetLote.monto_bruto_total,
+        monto_retenciones_total: targetLote.monto_retenciones_total,
+        monto_neto_total: targetLote.monto_neto_total,
+      },
+      { requestKey: null }
+    );
+  } catch {
+    // Ignorar si la colección no existe o es manejada localmente
+  }
 }
 
 /**
@@ -961,7 +1026,23 @@ export async function eliminarLoteTesoreria(
 ): Promise<void> {
   const lotes = await getLotesTesoreria(tenantId);
   const targetLote = lotes.find((l) => l.id === loteId);
-  if (targetLote) {
+  if (!targetLote) return;
+
+  // Validación de inmutabilidad: no se puede desarmar un lote con Orden de Pago o liquidado
+  if (targetLote.numero_orden_pago || targetLote.op_config) {
+    throw new Error(
+      `El lote "${targetLote.numero_lote}" ya cuenta con una Orden de Pago emitida (OP N° ${targetLote.numero_orden_pago}) y no puede ser desarmado por razones de integridad contable y legal.`
+    );
+  }
+
+  if (targetLote.estado === "pagado_bse" || targetLote.comprobante_pago_bse) {
+    throw new Error(
+      `El lote "${targetLote.numero_lote}" ya fue liquidado y pagado en el BSE. No se puede desarmar.`
+    );
+  }
+
+  // 1. Desvincular todas las prestaciones vinculadas para que retornen al buzón de conformadas
+  if (targetLote.prestaciones_ids && targetLote.prestaciones_ids.length > 0) {
     for (const id of targetLote.prestaciones_ids) {
       try {
         await pocketbase.collection("prestaciones_presentaciones").update(
@@ -974,13 +1055,21 @@ export async function eliminarLoteTesoreria(
           { requestKey: null }
         );
       } catch (e) {
-        // Ignorar
+        console.warn(`No se pudo desvincular prestación ${id} al desarmar lote:`, e);
       }
     }
   }
 
+  // 2. Eliminar de localStorage
   const updated = lotes.filter((l) => l.id !== loteId);
   saveLocalLotes(updated);
+
+  // 3. Eliminar de PocketBase si la colección existe
+  try {
+    await pocketbase.collection("tesoreria_lotes").delete(loteId, { requestKey: null });
+  } catch {
+    // Ignorar si la colección no existe o no tiene ese ID registrado en PB
+  }
 }
 
 /**

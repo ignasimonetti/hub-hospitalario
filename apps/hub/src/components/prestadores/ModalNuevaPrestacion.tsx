@@ -665,13 +665,23 @@ export function ModalNuevaPrestacion({
 
   const maxTopeAutorizado = config.tope_maximo_factura || 800000;
   const topeAlcanzado = montoSugerido >= maxTopeAutorizado;
-  const numInvoiceAmount = parseFloat(invoiceAmount) || 0;
+
+  /** Sanitiza entradas numéricas tolerando comas, puntos y símbolos de moneda */
+  const parseDecimalString = (val: string): number => {
+    if (!val) return 0;
+    const clean = val.trim().replace(/\$/g, "").replace(/\s/g, "").replace(",", ".");
+    const num = parseFloat(clean);
+    return isNaN(num) ? 0 : num;
+  };
+
+  const numInvoiceAmount = parseDecimalString(invoiceAmount);
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
-      maximumFractionDigits: 0,
+      minimumFractionDigits: amount % 1 !== 0 ? 2 : 0,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -1494,11 +1504,16 @@ export function ModalNuevaPrestacion({
                       Monto ($) <span className="text-rose-500">*</span>
                     </Label>
                     <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="Ej. 450000"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Ej. 450000 o 450000,50"
                       value={invoiceAmount}
-                      onChange={(e) => setInvoiceAmount(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (/^[\d]*([.,][\d]*)?$/.test(val) || val === "") {
+                          setInvoiceAmount(val);
+                        }
+                      }}
                       className="h-9 text-xs font-semibold bg-slate-50 dark:bg-slate-950"
                       required
                     />

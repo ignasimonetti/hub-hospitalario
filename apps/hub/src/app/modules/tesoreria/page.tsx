@@ -844,15 +844,6 @@ export default function TesoreriaPage() {
                       <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
                         <Receipt className="w-6 h-6" />
                       </div>
-                      {metricasSimples.pendientesControlCount > 0 ? (
-                        <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 text-[10px] font-semibold">
-                          {metricasSimples.pendientesControlCount} por auditar
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40">
-                          Al día
-                        </Badge>
-                      )}
                     </div>
 
                     <div className="space-y-1.5">
@@ -881,9 +872,6 @@ export default function TesoreriaPage() {
                       <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
                         <BarChart3 className="w-6 h-6" />
                       </div>
-                      <Badge variant="outline" className="text-[10px] text-slate-500">
-                        Analítica
-                      </Badge>
                     </div>
 
                     <div className="space-y-1.5">

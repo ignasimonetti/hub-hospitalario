@@ -44,7 +44,9 @@ export function ModalRegistrarPago({
   prestacion,
   onConfirm,
 }: ModalRegistrarPagoProps) {
+  const [paymentMethod, setPaymentMethod] = useState<"transferencia" | "cheque" | "otro">("transferencia");
   const [receiptNumber, setReceiptNumber] = useState("");
+  const [chequeNumber, setChequeNumber] = useState("");
   const [paymentDate, setPaymentDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -81,16 +83,23 @@ export function ModalRegistrarPago({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!receiptNumber.trim()) {
-      toast.error("Por favor ingrese el número de comprobante o referencia de pago.");
+    const identificador = paymentMethod === "cheque" ? chequeNumber.trim() : receiptNumber.trim();
+    if (!identificador) {
+      toast.error(
+        paymentMethod === "cheque"
+          ? "Por favor ingrese el número de cheque."
+          : "Por favor ingrese el número de transferencia o referencia bancaria."
+      );
       return;
     }
 
     try {
       setIsSubmitting(true);
       await onConfirm(prestacion.id, {
-        receiptNumber: receiptNumber.trim(),
+        receiptNumber: identificador,
         paymentDate,
+        paymentMethod,
+        chequeNumber: paymentMethod === "cheque" ? chequeNumber.trim() : undefined,
         notes: notes.trim(),
         fileProof,
       });
@@ -98,6 +107,7 @@ export function ModalRegistrarPago({
       onClose();
       // Reset form
       setReceiptNumber("");
+      setChequeNumber("");
       setNotes("");
       setFileProof(null);
     } catch (err: any) {
@@ -116,46 +126,34 @@ export function ModalRegistrarPago({
               <Receipt className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-base font-semibold text-[#000000] dark:text-white tracking-tight">
-                Registrar Liquidación / Pago de Honorarios
+              <DialogTitle className="text-base font-semibold text-[#000000] dark:text-white">
+                Registrar Pago Individual de Factura
               </DialogTitle>
-              <DialogDescription className="text-[#615d59] dark:text-[#a39e98] text-xs mt-0.5">
-                Trámite Nº {prestacion.form_number || prestacion.id} • {srvLabel}
+              <DialogDescription className="text-xs text-[#615d59] dark:text-[#a39e98] mt-0.5">
+                Asocie el comprobante de transferencia bancaria o número de cheque a este profesional
               </DialogDescription>
             </div>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Ficha Resumen del Beneficiario y Factura */}
-          <div className="p-3.5 rounded-lg border border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/60 dark:bg-[#1f1f1f]/50 space-y-2.5">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-xs text-[#615d59] dark:text-[#a39e98]">Beneficiario / Prestador</div>
-                <div className="text-sm font-semibold text-[#000000] dark:text-white flex items-center gap-1.5">
-                  <User className="h-3.5 w-3.5 text-[#615d59] dark:text-[#a39e98]" />
-                  {nombrePrestador}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs text-[#615d59] dark:text-[#a39e98]">Monto Liquidable</div>
-                <div className="text-base font-bold text-[#1aae39] dark:text-emerald-400">
-                  {formatMoney(Number(prestacion.invoice_amount) || 0)}
-                </div>
-              </div>
+          {/* Ficha Resumen de la Prestación */}
+          <div className="bg-[#f6f5f4]/50 dark:bg-[#1f1f1f]/40 border border-[#e6e6e6] dark:border-[#2e2e2e] rounded-xl p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5 text-blue-600" />
+                {nombrePrestador}
+              </span>
+              <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                Neto: {formatMoney(Number(prestacion.monto_neto_liquidable || prestacion.invoice_amount) || 0)}
+              </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-200/80 dark:border-slate-800 text-xs">
+            <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-200/60 dark:border-slate-800">
               <div>
                 <span className="text-gray-500 dark:text-slate-400">CUIT:</span>{" "}
                 <span className="font-semibold text-gray-800 dark:text-slate-200">
                   {perfil?.cuit || "No informado"}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-500 dark:text-slate-400">Factura ARCA:</span>{" "}
-                <span className="font-semibold text-gray-800 dark:text-slate-200">
-                  {prestacion.invoice_number || "S/N"}
                 </span>
               </div>
               <div>
@@ -164,43 +162,108 @@ export function ModalRegistrarPago({
                   {String(prestacion.period_month).padStart(2, "0")}/{prestacion.period_year}
                 </span>
               </div>
+              <div>
+                <span className="text-gray-500 dark:text-slate-400">CBU / Alias:</span>{" "}
+                <span className="font-mono text-[11px] font-semibold text-gray-800 dark:text-slate-200">
+                  {perfil?.cbu_alias || "Sin CBU"}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Formulario de Pago */}
           <div className="space-y-3">
+            {/* Selector de Medio de Pago */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Fecha Efectiva de Transferencia BSE <span className="text-rose-500">*</span>
+                Medio de Pago Utilizado <span className="text-rose-500">*</span>
               </label>
-              <Input
-                type="date"
-                value={paymentDate}
-                onChange={(e) => setPaymentDate(e.target.value)}
-                required
-                className="text-xs h-9"
-              />
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("transferencia")}
+                  className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all text-center ${
+                    paymentMethod === "transferencia"
+                      ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-500"
+                      : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900"
+                  }`}
+                >
+                  Transferencia BSE
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("cheque")}
+                  className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all text-center ${
+                    paymentMethod === "cheque"
+                      ? "border-emerald-600 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-500"
+                      : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900"
+                  }`}
+                >
+                  Cheque Librado
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("otro")}
+                  className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all text-center ${
+                    paymentMethod === "otro"
+                      ? "border-purple-600 bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-500"
+                      : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900"
+                  }`}
+                >
+                  Otro Medio
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+                  Fecha Efectiva de Pago <span className="text-rose-500">*</span>
+                </label>
+                <Input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                  required
+                  className="text-xs h-9"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+                  {paymentMethod === "cheque"
+                    ? "Nº de Cheque"
+                    : paymentMethod === "transferencia"
+                    ? "Nº de Transferencia / Transacción BSE"
+                    : "Nº de Comprobante / Referencia"}{" "}
+                  <span className="text-rose-500">*</span>
+                </label>
+                {paymentMethod === "cheque" ? (
+                  <Input
+                    placeholder="Ej: CHQ-0482910"
+                    value={chequeNumber}
+                    onChange={(e) => setChequeNumber(e.target.value)}
+                    required
+                    className="text-xs h-9 font-mono"
+                  />
+                ) : (
+                  <Input
+                    placeholder="Ej: BSE-TX-99882211"
+                    value={receiptNumber}
+                    onChange={(e) => setReceiptNumber(e.target.value)}
+                    required
+                    className="text-xs h-9 font-mono"
+                  />
+                )}
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Nº de Transferencia / Comprobante Bancario <span className="text-rose-500">*</span>
-              </label>
-              <Input
-                placeholder="Ej: BSE-TX-99882211"
-                value={receiptNumber}
-                onChange={(e) => setReceiptNumber(e.target.value)}
-                required
-                className="text-xs h-9 font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Observaciones / Nota de Liquidación (Opcional)
+                Observaciones / Imputación (Opcional)
               </label>
               <Textarea
-                placeholder="Detalles sobre retenciones aplicadas o número de cuenta de acreditación..."
+                placeholder="Detalles sobre cuenta bancaria de débito, retenciones o notas contables..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="text-xs resize-none"
@@ -211,7 +274,7 @@ export function ModalRegistrarPago({
             {/* Adjuntar Comprobante */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Adjuntar Comprobante de Transferencia (PDF / Imagen)
+                Adjuntar Comprobante Individual (PDF / Imagen)
               </label>
               <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg p-3 text-center hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
                 <input
@@ -227,7 +290,9 @@ export function ModalRegistrarPago({
                 >
                   <UploadCloud className="h-5 w-5 text-slate-400" />
                   <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                    {fileProof ? fileProof.name : "Seleccionar comprobante de transferencia"}
+                    {fileProof
+                      ? fileProof.name
+                      : "Seleccionar ticket bancario o copia de cheque (PDF/JPG)"}
                   </span>
                   <span className="text-[10px] text-gray-400">
                     PDF, JPG o PNG hasta 10MB
@@ -250,12 +315,12 @@ export function ModalRegistrarPago({
             <Button
               type="submit"
               size="sm"
-              className="bg-[#000000] hover:bg-[#2e2e2e] dark:bg-white dark:hover:bg-slate-200 dark:text-[#000000] text-white font-medium rounded-md"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-1.5"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   Registrando...
                 </>
               ) : (

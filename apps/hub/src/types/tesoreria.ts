@@ -139,9 +139,13 @@ export interface KpisTesoreriaData {
   }[];
 }
 
+export type MedioPagoTesoreria = 'transferencia' | 'cheque' | 'otro';
+
 export interface RegistrarPagoPayload {
-  receiptNumber: string;
+  receiptNumber: string; // Nº de transferencia o Nº de cheque
   paymentDate: string; // YYYY-MM-DD
+  paymentMethod?: MedioPagoTesoreria;
+  chequeNumber?: string;
   notes?: string;
   fileProof?: File | null;
 }

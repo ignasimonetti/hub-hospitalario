@@ -1,28 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import { LoteTesoreria, PrestacionTesoreriaItem, ESTADOS_LOTE_CONFIG } from "@/types/tesoreria";
+import { useState, useRef } from "react";
+import { LoteTesoreria, PrestacionTesoreriaItem, ESTADOS_LOTE_CONFIG, RegistrarPagoPayload } from "@/types/tesoreria";
 import {
   generarPlanillaResumenLoteHTML,
   generarOrdenDePagoHTML,
   liquidarLotePrestaciones,
   marcarPrestacionesPagadas,
+  registrarPagoLiquidacion,
+  reemplazarComprobantePagoIndividual,
+  eliminarComprobantePagoIndividual,
+  checkAndSyncLoteCompletion,
   revertirPagoIndividual,
   quitarPrestacionDeLote,
   eliminarLoteTesoreria,
   toggleCierreLoteTesoreria,
-  subirComprobantesBancariosLote,
-  eliminarComprobanteBancarioLote,
   subirComprobantesRetencionesLote,
   eliminarComprobanteRetencionLote,
   ESTADOS_LOTE_ABIERTO,
 } from "@/lib/services/tesoreriaService";
+import { getPresentacionFileUrl } from "@/lib/services/prestadoresService";
 import {
   descargarDocumentacionRespaldatoriaLotePDF,
   descargarDocumentacionRespaldatoriaLoteZIP,
   ProgresoDescargaDocumentacion,
 } from "@/lib/services/documentacionLoteService";
 import { ModalExportarDetalleLote } from "@/components/tesoreria/ModalExportarDetalleLote";
+import { ModalRegistrarPago } from "@/components/tesoreria/ModalRegistrarPago";
 import { ModalConfigurarOrdenDePago } from "@/components/tesoreria/ModalConfigurarOrdenDePago";
 import {
   Dialog,
@@ -93,10 +97,12 @@ export function ModalDetalleLoteGDE({
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [isMarkingPaid, setIsMarkingPaid] = useState<string | null>(null); // 'bulk' o ID específico
+  const [isMarkingPaid, setIsMarkingPaid] = useState<string | null>(null);
   const [isRevertingId, setIsRevertingId] = useState<string | null>(null);
-  const [isUploadingComprobantes, setIsUploadingComprobantes] = useState(false);
-  const [deletingComprobanteId, setDeletingComprobanteId] = useState<string | null>(null);
+  const [itemParaPagarIndividual, setItemParaPagarIndividual] = useState<PrestacionTesoreriaItem | null>(null);
+  const [itemParaReemplazarId, setItemParaReemplazarId] = useState<string | null>(null);
+  const [isUpdatingProofId, setIsUpdatingProofId] = useState<string | null>(null);
+  const replaceFileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingRetenciones, setIsUploadingRetenciones] = useState(false);
   const [deletingRetencionId, setDeletingRetencionId] = useState<string | null>(null);
   const [isDownloadingDocs, setIsDownloadingDocs] = useState<"pdf" | "zip" | null>(null);
@@ -341,53 +347,51 @@ export function ModalDetalleLoteGDE({
     setIsExportOpen(true);
   };
 
-  const handleSubirComprobantes = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const fileList = Array.from(files);
-    const validFiles = fileList.filter((f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"));
-
-    if (validFiles.length === 0) {
-      toast.error("Solo se admiten archivos en formato PDF.");
-      return;
-    }
-
-    try {
-      setIsUploadingComprobantes(true);
-      await subirComprobantesBancariosLote(lote.id, validFiles);
-      toast.success(
-        validFiles.length === 1
-          ? "Comprobante bancario adjuntado exitosamente."
-          : `${validFiles.length} comprobantes bancarios adjuntados exitosamente.`
-      );
-      await onRefresh();
-    } catch (err: any) {
-      toast.error(err.message || "No se pudo subir el comprobante bancario");
-    } finally {
-      setIsUploadingComprobantes(false);
-      // Reset input
-      e.target.value = "";
+  const handleAbrirSelectorReemplazo = (prestacionId: string) => {
+    setItemParaReemplazarId(prestacionId);
+    if (replaceFileInputRef.current) {
+      replaceFileInputRef.current.value = "";
+      replaceFileInputRef.current.click();
     }
   };
 
-  const handleEliminarComprobante = (comprobanteId: string, nombreArchivo?: string) => {
+  const handleArchivoReemplazoSeleccionado = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !itemParaReemplazarId) return;
+
+    try {
+      setIsUpdatingProofId(itemParaReemplazarId);
+      await reemplazarComprobantePagoIndividual(itemParaReemplazarId, file);
+      toast.success("Comprobante de pago actualizado correctamente.");
+      await onRefresh();
+    } catch (err: any) {
+      toast.error(err?.message || "No se pudo actualizar el comprobante de pago");
+    } finally {
+      setIsUpdatingProofId(null);
+      setItemParaReemplazarId(null);
+      if (replaceFileInputRef.current) {
+        replaceFileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleEliminarComprobanteIndividual = (prestacionId: string, nombreMedico: string) => {
     setConfirmDialog({
       isOpen: true,
-      title: "¿Eliminar comprobante bancario?",
-      description: `¿Está seguro de que desea quitar "${nombreArchivo || "este comprobante"}" de este lote? Esta acción no se puede deshacer.`,
-      confirmText: "Eliminar Comprobante",
+      title: "¿Eliminar comprobante de pago?",
+      description: `¿Está seguro de que desea eliminar el archivo adjunto del comprobante de pago de ${nombreMedico}? La prestación seguirá registrada como pagada, pero quedará sin archivo adjunto para que pueda subir el correcto.`,
+      confirmText: "Eliminar Archivo",
       variant: "destructive",
       onConfirm: async () => {
         try {
-          setDeletingComprobanteId(comprobanteId);
-          await eliminarComprobanteBancarioLote(lote.id, comprobanteId);
-          toast.success("Comprobante bancario eliminado correctamente.");
+          setIsUpdatingProofId(prestacionId);
+          await eliminarComprobantePagoIndividual(prestacionId);
+          toast.success(`Comprobante de pago de ${nombreMedico} eliminado.`);
           await onRefresh();
         } catch (err: any) {
-          toast.error(err.message || "No se pudo eliminar el comprobante bancario");
+          toast.error(err?.message || "No se pudo eliminar el comprobante");
         } finally {
-          setDeletingComprobanteId(null);
+          setIsUpdatingProofId(null);
         }
       },
     });
@@ -801,6 +805,7 @@ export function ModalDetalleLoteGDE({
                     <th className="p-2 text-right">Retención</th>
                     <th className="p-2 text-right">Neto</th>
                     <th className="p-2 text-center">Estado de Pago</th>
+                    <th className="p-2 text-center">Comprobante</th>
                     {estaAbierto && !estaPagado && <th className="p-2 text-center w-10">Quitar</th>}
                   </tr>
                 </thead>
@@ -809,7 +814,8 @@ export function ModalDetalleLoteGDE({
                     const user = p.expand?.user;
                     const nombre = user
                       ? `${user.lastName || ""} ${user.firstName || ""}`.trim()
-                      : "Prestador";
+                      : "Profesional";
+                    const cuit = p.perfilPrestador?.cuit || "-";
                     const bruto = Number(p.invoice_amount) || 0;
                     const ret = Number(p.retencion_monto) || 0;
                     const neto = p.monto_neto_liquidable !== undefined ? Number(p.monto_neto_liquidable) : bruto - ret;
@@ -819,12 +825,8 @@ export function ModalDetalleLoteGDE({
                     return (
                       <tr
                         key={p.id}
-                        className={`transition-colors ${
-                          isPagadoRow
-                            ? "bg-emerald-50/30 dark:bg-emerald-950/10"
-                            : isSelected
-                            ? "bg-blue-50/50 dark:bg-blue-950/20"
-                            : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
+                        className={`hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors ${
+                          isSelected ? "bg-emerald-50/40 dark:bg-emerald-950/20" : ""
                         }`}
                       >
                         {!estaPagado && (
@@ -840,8 +842,12 @@ export function ModalDetalleLoteGDE({
                           </td>
                         )}
                         <td className="p-2">
-                          <div className="font-semibold text-gray-900 dark:text-slate-100">{nombre}</div>
-                          <div className="text-[10px] text-gray-400 font-mono">CUIT: {p.perfilPrestador?.cuit || "-"}</div>
+                          <div className="font-medium text-slate-800 dark:text-slate-200">
+                            {nombre}
+                          </div>
+                          <div className="text-[10px] text-gray-500 font-mono">
+                            CUIT: {cuit}
+                          </div>
                         </td>
                         <td className="p-2 font-mono">{p.invoice_number || "S/N"}</td>
                         <td className="p-2 text-right font-mono font-medium">{formatMoney(bruto)}</td>
@@ -853,27 +859,34 @@ export function ModalDetalleLoteGDE({
                         </td>
                         <td className="p-2 text-center">
                           {isPagadoRow ? (
-                            <div className="flex items-center justify-center gap-1">
-                              <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 text-[10px] font-semibold flex items-center gap-1">
-                                <Check className="h-3 w-3" />
-                                Pagado
-                              </Badge>
-                              {!estaPagado && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRevertirPago(p.id, nombre)}
-                                  disabled={isRevertingId === p.id}
-                                  className="h-6 w-6 p-0 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded"
-                                  title="Revertir pago (deshacer error involuntario)"
-                                >
-                                  {isRevertingId === p.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    <RotateCcw className="h-3 w-3" />
-                                  )}
-                                </Button>
+                            <div className="flex flex-col items-center justify-center gap-1">
+                              <div className="flex items-center justify-center gap-1">
+                                <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 text-[10px] font-semibold flex items-center gap-1">
+                                  <Check className="h-3 w-3" />
+                                  Pagado
+                                </Badge>
+                                {!estaPagado && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRevertirPago(p.id, nombre)}
+                                    disabled={isRevertingId === p.id}
+                                    className="h-6 w-6 p-0 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded"
+                                    title="Revertir pago (deshacer error involuntario)"
+                                  >
+                                    {isRevertingId === p.id ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <RotateCcw className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                )}
+                              </div>
+                              {p.treasury_receipt_number && (
+                                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate max-w-[120px]" title={p.treasury_receipt_number}>
+                                  {p.treasury_receipt_number}
+                                </span>
                               )}
                             </div>
                           ) : !estaPagado ? (
@@ -881,19 +894,83 @@ export function ModalDetalleLoteGDE({
                               type="button"
                               size="sm"
                               variant="outline"
-                              onClick={() => handleMarcarPagadoIndividual(p.id, nombre)}
+                              onClick={() => setItemParaPagarIndividual(p)}
                               disabled={Boolean(isMarkingPaid)}
                               className="h-6 px-2 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-300 dark:border-emerald-700"
-                              title="Marcar como pagada tras realizar la transferencia en Home Banking"
+                              title="Registrar pago (transferencia/cheque) y adjuntar comprobante"
                             >
-                              {isMarkingPaid === p.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                "Marcar Pagado"
-                              )}
+                              Registrar Pago
                             </Button>
                           ) : (
                             <span className="text-[11px] text-slate-400">Pendiente</span>
+                          )}
+                        </td>
+                        <td className="p-2 text-center">
+                          {isPagadoRow ? (
+                            <div className="flex items-center justify-center gap-1">
+                              {p.file_service_proof ? (
+                                <>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => window.open(getPresentacionFileUrl(p, p.file_service_proof), "_blank")}
+                                    className="h-6 px-1.5 text-[10px] text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-800 hover:bg-sky-50 dark:hover:bg-sky-950/30 flex items-center gap-1"
+                                    title="Ver comprobante en nueva pestaña / descargar"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    Ver PDF
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleAbrirSelectorReemplazo(p.id)}
+                                    disabled={isUpdatingProofId === p.id}
+                                    className="h-6 w-6 p-0 text-slate-400 hover:text-amber-600 rounded"
+                                    title="Reemplazar archivo de comprobante"
+                                  >
+                                    {isUpdatingProofId === p.id ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Pencil className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEliminarComprobanteIndividual(p.id, nombre)}
+                                    disabled={isUpdatingProofId === p.id}
+                                    className="h-6 w-6 p-0 text-slate-400 hover:text-rose-600 rounded"
+                                    title="Eliminar comprobante adjunto"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleAbrirSelectorReemplazo(p.id)}
+                                  disabled={isUpdatingProofId === p.id}
+                                  className="h-6 px-1.5 text-[10px] text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-1 border border-dashed border-slate-300 dark:border-slate-700 rounded"
+                                  title="Subir comprobante de pago para este registro"
+                                >
+                                  {isUpdatingProofId === p.id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <Paperclip className="h-3 w-3" />
+                                      Adjuntar
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-slate-400">-</span>
                           )}
                         </td>
                         {estaAbierto && !estaPagado && (
@@ -978,114 +1055,7 @@ export function ModalDetalleLoteGDE({
             </div>
           )}
 
-          {/* Sección de Comprobantes Bancarios de Acreditación / Transferencia */}
-          <div className="p-4 rounded-xl border border-[#e6e6e6] dark:border-[#2e2e2e] bg-[#f6f5f4]/60 dark:bg-[#1f1f1f]/50 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="space-y-0.5">
-                <div className="text-xs font-semibold text-[#000000] dark:text-white flex items-center gap-1.5">
-                  <Paperclip className="h-4 w-4 text-[#615d59] dark:text-[#a39e98]" />
-                  Comprobantes Bancarios de Acreditación / Transferencia (Home Banking PDF)
-                </div>
-                <p className="text-[11px] text-[#615d59] dark:text-[#a39e98]">
-                  Adjunte los comprobantes oficiales descargados del banco (individuales o unificados en PDF) como respaldo documental del lote.
-                </p>
-              </div>
 
-              {/* Botón de Subida Múltiple */}
-              <div className="relative">
-                <input
-                  type="file"
-                  id={`upload-comprobantes-${lote.id}`}
-                  multiple
-                  accept="application/pdf"
-                  onChange={handleSubirComprobantes}
-                  disabled={isUploadingComprobantes}
-                  className="hidden"
-                />
-                <label htmlFor={`upload-comprobantes-${lote.id}`}>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled={isUploadingComprobantes}
-                    className="h-8 text-xs font-semibold bg-white dark:bg-slate-900 border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 cursor-pointer flex items-center gap-1.5 pointer-events-none"
-                  >
-                    {isUploadingComprobantes ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <UploadCloud className="h-3.5 w-3.5" />
-                    )}
-                    Adjuntar Comprobantes (PDF)
-                  </Button>
-                </label>
-              </div>
-            </div>
-
-            {/* Listado de Comprobantes Adjuntos */}
-            {Array.isArray(lote.comprobantes_bancarios) && lote.comprobantes_bancarios.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                {lote.comprobantes_bancarios.map((comp: any, idx: number) => {
-                  const compId = typeof comp === "string" ? comp : comp.id || String(idx);
-                  const compName = typeof comp === "string" ? comp : comp.name || `Comprobante_${idx + 1}.pdf`;
-                  const compUrl = typeof comp === "string" ? "#" : comp.url || "#";
-                  const compSize = typeof comp === "object" && comp.size ? `${(comp.size / (1024 * 1024)).toFixed(2)} MB` : null;
-
-                  return (
-                    <div
-                      key={compId}
-                      className="flex items-center justify-between gap-2 p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs text-xs"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <FileText className="h-4 w-4 text-red-500 shrink-0" />
-                        <div className="truncate">
-                          <p className="font-semibold text-slate-800 dark:text-slate-200 truncate" title={compName}>
-                            {compName}
-                          </p>
-                          {compSize && (
-                            <span className="text-[10px] text-slate-400 font-mono">{compSize}</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0">
-                        {compUrl && compUrl !== "#" && (
-                          <a
-                            href={compUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-md transition-colors"
-                            title="Ver / Descargar PDF"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => handleEliminarComprobante(compId, compName)}
-                          disabled={deletingComprobanteId === compId}
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-md transition-colors"
-                          title="Quitar archivo"
-                        >
-                          {deletingComprobanteId === compId ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-3 border border-dashed border-blue-200 dark:border-blue-900/60 rounded-lg bg-white/50 dark:bg-slate-900/50">
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  No hay comprobantes bancarios adjuntos a este lote aún.
-                </p>
-              </div>
-            )}
-          </div>
 
           {/* Sección de Comprobantes de Retenciones Fiscales */}
           <div className="p-4 rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-950/20 space-y-3">
@@ -1195,6 +1165,15 @@ export function ModalDetalleLoteGDE({
               </div>
             )}
           </div>
+
+          {/* Hidden input para reemplazo o subida de comprobante individual */}
+          <input
+            type="file"
+            ref={replaceFileInputRef}
+            accept="application/pdf,image/*"
+            onChange={handleArchivoReemplazoSeleccionado}
+            className="hidden"
+          />
         </div>
 
         <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
@@ -1203,6 +1182,21 @@ export function ModalDetalleLoteGDE({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Modal para Registrar Pago Individual con Método y Comprobante */}
+      <ModalRegistrarPago
+        isOpen={!!itemParaPagarIndividual}
+        onClose={() => setItemParaPagarIndividual(null)}
+        prestacion={itemParaPagarIndividual}
+        onConfirm={async (id: string, payload: RegistrarPagoPayload) => {
+          await registrarPagoLiquidacion(id, payload);
+          if (lote) {
+            await checkAndSyncLoteCompletion(lote.id);
+          }
+          await onRefresh();
+          setItemParaPagarIndividual(null);
+        }}
+      />
 
       {/* Modal Formulario Configurar Orden de Pago */}
       <ModalConfigurarOrdenDePago

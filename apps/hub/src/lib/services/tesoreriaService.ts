@@ -1140,24 +1140,36 @@ export async function registrarPagoLiquidacion(
       }
     }
 
+    const etiquetaMedio =
+      payload.paymentMethod === "cheque"
+        ? `Cheque Nº ${payload.chequeNumber || payload.receiptNumber}`
+        : payload.paymentMethod === "transferencia"
+        ? `Transferencia Nº ${payload.receiptNumber}`
+        : `Comprobante Nº ${payload.receiptNumber}`;
+
     historial.push({
       id: `ev-pay-${Date.now()}`,
       autor_id: user.id,
       autor_nombre: nombreTesorero,
       rol_emisor: "tesoreria",
       tipo: "observacion",
-      motivo: `Pago / Liquidación registrada. Comprobante Nº ${payload.receiptNumber}${
+      motivo: `Pago / Liquidación registrada. ${etiquetaMedio}${
         payload.notes ? ` - Detalle: ${payload.notes}` : ""
       }`,
       created_at: now,
     });
+
+    const numeroComprobanteFinal =
+      payload.paymentMethod === "cheque"
+        ? (payload.chequeNumber ? `CHQ-${payload.chequeNumber}` : payload.receiptNumber)
+        : payload.receiptNumber;
 
     if (payload.fileProof) {
       const formData = new FormData();
       formData.append("status", "pagado");
       formData.append("paid_at", payload.paymentDate || now.split("T")[0]);
       formData.append("treasury_paid_at", now);
-      formData.append("treasury_receipt_number", payload.receiptNumber);
+      formData.append("treasury_receipt_number", numeroComprobanteFinal);
       if (payload.notes) {
         formData.append("treasury_observation", payload.notes);
       }
@@ -1181,7 +1193,7 @@ export async function registrarPagoLiquidacion(
             status: "pagado",
             paid_at: payload.paymentDate || now.split("T")[0],
             treasury_paid_at: now,
-            treasury_receipt_number: payload.receiptNumber || "",
+            treasury_receipt_number: numeroComprobanteFinal || "",
             treasury_observation: payload.notes || current.treasury_observation || "",
             historial_observaciones: JSON.stringify(historial),
           },
@@ -1197,6 +1209,104 @@ export async function registrarPagoLiquidacion(
     console.error("Error registrando pago en tesorería:", error);
     throw new Error(error?.message || "Error al registrar la liquidación de pago");
   }
+}
+
+/**
+ * Reemplaza o sube un comprobante de pago individual para una prestación ya pagada.
+ */
+export async function reemplazarComprobantePagoIndividual(
+  prestacionId: string,
+  nuevoArchivo: File
+): Promise<PrestacionPresentacion> {
+  const user = pocketbase.authStore.model;
+  if (!user) throw new Error("Usuario no autenticado");
+
+  const formData = new FormData();
+  formData.append("file_service_proof", nuevoArchivo);
+
+  const updated = await pocketbase
+    .collection("prestaciones_presentaciones")
+    .update<PrestacionPresentacion>(prestacionId, formData, {
+      expand: "tenant,user",
+      requestKey: null,
+    });
+
+  return updated;
+}
+
+/**
+ * Elimina el archivo comprobante de pago individual de una prestación sin alterar su estado contable.
+ */
+export async function eliminarComprobantePagoIndividual(
+  prestacionId: string
+): Promise<PrestacionPresentacion> {
+  const user = pocketbase.authStore.model;
+  if (!user) throw new Error("Usuario no autenticado");
+
+  const updated = await pocketbase
+    .collection("prestaciones_presentaciones")
+    .update<PrestacionPresentacion>(
+      prestacionId,
+      {
+        file_service_proof: null,
+      },
+      {
+        expand: "tenant,user",
+        requestKey: null,
+      }
+    );
+
+  return updated;
+}
+
+/**
+ * Verifica si todas las prestaciones de un lote están pagadas y en tal caso actualiza el estado del lote a 'pagado_bse'.
+ */
+export async function checkAndSyncLoteCompletion(
+  loteId: string,
+  tenantId?: string
+): Promise<boolean> {
+  const fechaHoy = new Date().toISOString().split("T")[0];
+  try {
+    const lotes = await getLotesTesoreria(tenantId);
+    const target = lotes.find((l) => l.id === loteId);
+    if (target && target.prestaciones_ids && target.prestaciones_ids.length > 0) {
+      const prestacionesLote = await pocketbase
+        .collection("prestaciones_presentaciones")
+        .getFullList<PrestacionPresentacion>({
+          filter: target.prestaciones_ids.map((pid) => `id = "${pid}"`).join(" || "),
+          requestKey: null,
+        });
+
+      const todasPagadas =
+        prestacionesLote.length > 0 &&
+        prestacionesLote.every((p) => p.status === "pagado");
+
+      if (todasPagadas) {
+        target.estado = "pagado_bse";
+        target.fecha_pago_bse = fechaHoy;
+        target.updated = new Date().toISOString();
+        saveLocalLotes(lotes);
+
+        try {
+          await pocketbase.collection("tesoreria_lotes").update(
+            target.id,
+            {
+              estado: "pagado_bse",
+              fecha_pago_bse: fechaHoy,
+            },
+            { requestKey: null }
+          );
+        } catch {
+          // Ignorar si PB no tiene la colección
+        }
+        return true;
+      }
+    }
+  } catch (err) {
+    console.warn("Error al verificar estado completo del lote:", err);
+  }
+  return false;
 }
 
 /**
@@ -1228,49 +1338,8 @@ export async function marcarPrestacionesPagadas(
   }
 
   let loteCompleto = false;
-
-  // Si se proveyó el lote, verificar si ya están todas pagadas
   if (loteId) {
-    try {
-      const lotes = await getLotesTesoreria(tenantId);
-      const target = lotes.find((l) => l.id === loteId);
-      if (target) {
-        // Consultar prestaciones del lote en PB
-        const prestacionesLote = await pocketbase
-          .collection("prestaciones_presentaciones")
-          .getFullList<PrestacionPresentacion>({
-            filter: target.prestaciones_ids.map((pid) => `id = "${pid}"`).join(" || "),
-            requestKey: null,
-          });
-
-        const todasPagadas =
-          prestacionesLote.length > 0 &&
-          prestacionesLote.every((p) => p.status === "pagado");
-
-        if (todasPagadas) {
-          loteCompleto = true;
-          target.estado = "pagado_bse";
-          target.fecha_pago_bse = fechaHoy;
-          target.updated = new Date().toISOString();
-          saveLocalLotes(lotes);
-
-          try {
-            await pocketbase.collection("tesoreria_lotes").update(
-              target.id,
-              {
-                estado: "pagado_bse",
-                fecha_pago_bse: fechaHoy,
-              },
-              { requestKey: null }
-            );
-          } catch {
-            // Ignorar si PB no tiene la colección
-          }
-        }
-      }
-    } catch (err) {
-      console.warn("Error al verificar estado completo del lote:", err);
-    }
+    loteCompleto = await checkAndSyncLoteCompletion(loteId, tenantId);
   }
 
   return { exitosas, fallidas, loteCompleto };

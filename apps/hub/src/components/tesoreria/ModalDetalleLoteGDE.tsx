@@ -57,7 +57,7 @@ import {
   Loader2,
   Check,
   Trash2,
-  FolderMinus,
+  X,
   Lock,
   Unlock,
   Receipt,
@@ -986,7 +986,7 @@ export function ModalDetalleLoteGDE({
                               {removingId === p.id ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
                               ) : (
-                                <FolderMinus className="h-3.5 w-3.5" />
+                                <X className="h-3.5 w-3.5" />
                               )}
                             </Button>
                           </td>

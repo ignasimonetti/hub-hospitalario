@@ -299,34 +299,52 @@ export function ModalDetalleLiquidacion({
 
               {/* Registro de Pago si ya está pagado */}
               {prestacion.status === "pagado" && (
-                <div className="p-3.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-2">
-                  <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    Liquidación Efectuada
+                <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      Pago Registrado / Liquidación Efectuada
+                    </div>
+                    <Badge className="text-[10px] bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border-emerald-300 font-semibold">
+                      {prestacion.treasury_receipt_number?.startsWith("CHQ-") ? "Cheque" : "Transferencia"}
+                    </Badge>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <span className="text-gray-500 dark:text-slate-400">Comprobante de Pago:</span>
-                      <div className="font-mono font-bold text-emerald-800 dark:text-emerald-300">
-                        {prestacion.treasury_receipt_number || "Registrado"}
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+                        {prestacion.treasury_receipt_number?.startsWith("CHQ-") ? "N° de Cheque:" : "N° de Comprobante / Transf.:"}
+                      </span>
+                      <div className="font-mono font-bold text-emerald-900 dark:text-emerald-200 text-sm">
+                        {prestacion.treasury_receipt_number || "S/N"}
                       </div>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-slate-400">Fecha de Pago:</span>
-                      <div className="font-semibold text-emerald-800 dark:text-emerald-300">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">Fecha de Pago:</span>
+                      <div className="font-semibold text-emerald-900 dark:text-emerald-200">
                         {formatDate(prestacion.paid_at || prestacion.treasury_paid_at)}
                       </div>
                     </div>
                   </div>
+
+                  {/* Observación si fue cargada */}
+                  {prestacion.treasury_observation && (
+                    <div className="text-[11px] bg-white/70 dark:bg-slate-900/50 p-2.5 rounded-lg border border-emerald-200/60 dark:border-emerald-900/40 text-slate-700 dark:text-slate-300">
+                      <span className="font-semibold text-slate-900 dark:text-slate-200">Observaciones:</span> {prestacion.treasury_observation}
+                    </div>
+                  )}
+
+                  {/* Comprobante Adjunto */}
                   {comprobantePagoUrl && (
-                    <div className="pt-1">
+                    <div className="pt-1 flex items-center gap-2">
                       <a
                         href={comprobantePagoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 font-semibold hover:underline"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-2xs"
                       >
-                        <Download className="h-3 w-3" /> Ver Comprobante Bancario Adjunto
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Ver Comprobante de Pago (PDF)
                       </a>
                     </div>
                   )}

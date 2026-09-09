@@ -682,23 +682,47 @@ export default function TesoreriaPage() {
               </Sheet>
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 bg-[#1aae39]/15 dark:bg-[#1aae39]/20 rounded-md text-[#1aae39]">
-                <Receipt className="h-4 w-4" />
+            {vistaActiva === "galeria" ? (
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 bg-[#1aae39]/15 dark:bg-[#1aae39]/20 rounded-md text-[#1aae39]">
+                  <Receipt className="h-4 w-4" />
+                </div>
+                <div>
+                  <h1 className="text-sm font-semibold text-[#000000] dark:text-white tracking-[-0.02em]">
+                    Tesorería
+                  </h1>
+                  <p className="text-[11px] text-[#615d59] dark:text-[#a39e98] hidden sm:block">
+                    Módulos y Gestión de Fondos
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-sm font-semibold text-[#000000] dark:text-white tracking-[-0.02em]">
-                  Tesorería
-                </h1>
-                <p className="text-[11px] text-[#615d59] dark:text-[#a39e98] hidden sm:block">
-                  {vistaActiva === "operaciones"
-                    ? "Bandeja de Control Documental & Lotes GDE"
-                    : vistaActiva === "metricas"
-                    ? "Panel de Métricas & Estadísticas"
-                    : "Módulos de Tesorería"}
-                </p>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setVistaActiva("galeria")}
+                  className="h-8 px-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800 gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 shadow-2xs"
+                  title="Volver al Menú Principal de Tesorería"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                  <span>Volver al Menú</span>
+                </Button>
+                <div className="h-4 w-px bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block" />
+                <div className="hidden sm:block">
+                  <h2 className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                    {vistaActiva === "operaciones"
+                      ? "Prestadores & Lotes GDE"
+                      : "Panel de Métricas"}
+                  </h2>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                    {vistaActiva === "operaciones"
+                      ? "Bandeja de Control Documental y Liquidaciones"
+                      : "Estadísticas y Proyecciones Financieras"}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -922,14 +946,14 @@ export default function TesoreriaPage() {
             /* VISTA 2: SUBMÓDULO DE MÉTRICAS ANALÍTICAS */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setVistaActiva("galeria")}
-                  className="text-xs text-gray-600 hover:text-gray-900 gap-1.5"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" /> Volver al Menú de Tesorería
-                </Button>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Métricas de Tesorería ({periodoLabel})
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Proyección de compromisos, conformaciones y pagos del período
+                  </p>
+                </div>
 
                 {/* Selector de Período para Métricas */}
                 <div className="flex items-center gap-2">
@@ -965,17 +989,6 @@ export default function TesoreriaPage() {
           ) : (
             /* VISTA 3: BANDEJA OPERATIVA ULTRA SIMPLIFICADA (PRESTADORES & LOTES) */
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setVistaActiva("galeria")}
-                  className="text-xs text-gray-600 hover:text-gray-900 gap-1.5"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" /> Volver al Menú de Tesorería
-                </Button>
-              </div>
-
               {/* 3 Tarjetas de Métricas Esenciales para el Administrativo */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* 1. Pendientes de Control */}
@@ -1184,59 +1197,68 @@ export default function TesoreriaPage() {
                 {/* VISTA 1: TABLA DE LOTES GDE */}
                 {tabActiva === "lotes_gde" ? (
                   <div className="space-y-4">
-                    {/* Barra de Filtro de Estado de Lotes (Activos / Pagados / Todos) */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-slate-100/80 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/80">
-                      <div className="flex items-center gap-1.5">
+                    {/* Segmented Control Compacto para Estado de Lotes (Activos / Pagados / Todos) */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 py-1">
+                      <div className="inline-flex items-center p-1 bg-slate-200/60 dark:bg-slate-800/80 rounded-lg border border-slate-200/80 dark:border-slate-700/60 text-xs">
                         <button
                           type="button"
                           onClick={() => setFiltroEstadoLotes("activos")}
-                          className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                          className={`px-3 py-1 rounded-md font-semibold flex items-center gap-1.5 transition-all ${
                             filtroEstadoLotes === "activos"
-                              ? "bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200 dark:border-slate-700"
-                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                              ? "bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-xs"
+                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                           }`}
                         >
-                          <FolderOpen className="w-3.5 h-3.5" />
-                          Lotes Activos / En Trámite
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300">
+                          <FolderOpen className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                          <span>Activos / En Trámite</span>
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                            filtroEstadoLotes === "activos"
+                              ? "bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300"
+                              : "bg-slate-300/60 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                          }`}>
                             {lotes.filter((l) => l.estado !== "pagado_bse" && !l.comprobante_pago_bse).length}
-                          </Badge>
+                          </span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => setFiltroEstadoLotes("pagados")}
-                          className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                          className={`px-3 py-1 rounded-md font-semibold flex items-center gap-1.5 transition-all ${
                             filtroEstadoLotes === "pagados"
-                              ? "bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-xs border border-slate-200 dark:border-slate-700"
-                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                              ? "bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-xs"
+                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                           }`}
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          Lotes Pagados / Concluidos
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Pagados / Concluidos</span>
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                            filtroEstadoLotes === "pagados"
+                              ? "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300"
+                              : "bg-slate-300/60 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                          }`}>
                             {lotes.filter((l) => l.estado === "pagado_bse" || Boolean(l.comprobante_pago_bse)).length}
-                          </Badge>
+                          </span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => setFiltroEstadoLotes("todos")}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${
+                          className={`px-2.5 py-1 rounded-md font-medium flex items-center gap-1 transition-all ${
                             filtroEstadoLotes === "todos"
-                              ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs border border-slate-200 dark:border-slate-700"
-                              : "text-slate-500 dark:text-slate-400 hover:text-slate-900"
+                              ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs"
+                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                           }`}
                         >
-                          Todos ({lotes.length})
+                          <span>Todos</span>
+                          <span className="text-[10px] font-mono text-slate-400">({lotes.length})</span>
                         </button>
                       </div>
 
                       <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">
                         {filtroEstadoLotes === "activos"
-                          ? "Mostrando expedientes abiertos y en proceso de pago"
+                          ? "Expedientes abiertos y en proceso de liquidación"
                           : filtroEstadoLotes === "pagados"
-                          ? "Mostrando expedientes con pagos y transferencias finalizadas"
+                          ? "Expedientes con pagos finalizados"
                           : "Historial completo de lotes"}
                       </span>
                     </div>

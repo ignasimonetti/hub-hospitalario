@@ -57,7 +57,7 @@ import {
   Loader2,
   Check,
   Trash2,
-  UserMinus,
+  FolderMinus,
   Lock,
   Unlock,
   Receipt,
@@ -979,14 +979,14 @@ export function ModalDetalleLoteGDE({
                               variant="ghost"
                               size="sm"
                               disabled={removingId === p.id}
-                              className="h-6 w-6 p-0 text-gray-400 hover:text-rose-600"
-                              title="Quitar del lote y devolver a bandeja general"
+                              className="h-6 w-6 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded transition-colors"
+                              title="Desvincular del lote y devolver a bandeja general"
                               onClick={() => handleQuitarPrestacion(p.id, nombre)}
                             >
                               {removingId === p.id ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
                               ) : (
-                                <UserMinus className="h-3.5 w-3.5" />
+                                <FolderMinus className="h-3.5 w-3.5" />
                               )}
                             </Button>
                           </td>

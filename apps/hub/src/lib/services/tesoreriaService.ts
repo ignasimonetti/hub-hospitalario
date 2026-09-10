@@ -907,7 +907,9 @@ export async function agregarPrestacionesALote(
 }
 
 /**
- * Elimina un Lote y desvincula todas sus prestaciones
+ * Elimina un Lote de Tesorería.
+ * REGLA DE INTEGRIDAD: Solo se permite eliminar si previamente el lote ha sido vaciado
+ * (sus prestaciones fueron desvinculadas individualmente).
  */
 export async function eliminarLoteTesoreria(
   loteId: string,
@@ -917,45 +919,36 @@ export async function eliminarLoteTesoreria(
   const lotes = await getLotesTesoreria(tenantId);
   const targetLote = lotes.find((l) => l.id === loteId);
 
-  // Validación de inmutabilidad: no se puede desarmar un lote con Orden de Pago o liquidado (salvo eliminación forzada de superadmin)
+  // Validación de seguridad: el lote debe estar previamente vaciado
+  if (targetLote) {
+    const cantidad = targetLote.prestaciones_ids?.length || targetLote.cantidad_prestaciones || 0;
+    if (cantidad > 0) {
+      throw new Error(
+        `El lote "${targetLote.numero_lote}" contiene ${cantidad} trámite(s) vinculado(s). Por seguridad e integridad contable, debe vaciar el lote quitando sus prestaciones antes de poder eliminarlo.`
+      );
+    }
+  }
+
+  // Validación de inmutabilidad: no se puede eliminar un lote con Orden de Pago o liquidado (salvo forzado de superadmin)
   if (targetLote && !force) {
     if (targetLote.numero_orden_pago || targetLote.op_config) {
       throw new Error(
-        `El lote "${targetLote.numero_lote}" ya cuenta con una Orden de Pago emitida (OP N° ${targetLote.numero_orden_pago}) y no puede ser desarmado por razones de integridad contable y legal.`
+        `El lote "${targetLote.numero_lote}" ya cuenta con una Orden de Pago emitida (OP N° ${targetLote.numero_orden_pago}) y no puede ser eliminado.`
       );
     }
 
     if (targetLote.estado === "pagado_bse" || targetLote.comprobante_pago_bse) {
       throw new Error(
-        `El lote "${targetLote.numero_lote}" ya fue liquidado y pagado en el BSE. No se puede desarmar.`
+        `El lote "${targetLote.numero_lote}" ya fue liquidado y pagado en el BSE. No se puede eliminar.`
       );
     }
   }
 
-  // 1. Desvincular todas las prestaciones vinculadas para que retornen al buzón de conformadas
-  if (targetLote?.prestaciones_ids && targetLote.prestaciones_ids.length > 0) {
-    for (const id of targetLote.prestaciones_ids) {
-      try {
-        await pocketbase.collection("prestaciones_presentaciones").update(
-          id,
-          {
-            lote_id: "",
-            lote_numero: "",
-            numero_expediente_gde: "",
-          },
-          { requestKey: null }
-        );
-      } catch (e) {
-        console.warn(`No se pudo desvincular prestación ${id} al desarmar lote:`, e);
-      }
-    }
-  }
-
-  // 2. Eliminar de localStorage
+  // 1. Eliminar de localStorage
   const updated = lotes.filter((l) => l.id !== loteId);
   saveLocalLotes(updated);
 
-  // 3. Eliminar de PocketBase si la colección existe
+  // 2. Eliminar de PocketBase si la colección existe
   try {
     await pocketbase.collection("tesoreria_lotes").delete(loteId, { requestKey: null });
   } catch {

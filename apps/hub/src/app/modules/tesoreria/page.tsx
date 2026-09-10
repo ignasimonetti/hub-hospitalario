@@ -1417,25 +1417,39 @@ export default function TesoreriaPage() {
                                 {/* Superadmin: Botón de Borrado Individual de Lote */}
                                 {isSuperAdmin && (
                                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex justify-end">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDeleteModalConfig({
-                                          isOpen: true,
-                                          collection: "tesoreria_lotes",
-                                          recordId: lote.id,
-                                          title: "Eliminar Lote de Tesorería",
-                                          description: "Esta acción eliminará el lote seleccionado y desvinculará todas sus prestaciones asociadas para que vuelvan a estar disponibles.",
-                                          recordLabel: `Lote: ${lote.numero_lote} (${lote.cantidad_prestaciones} profesionales, ${formatMoney(lote.monto_neto_total)})`,
-                                        });
-                                      }}
-                                      className="h-6 px-2 text-[10px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 gap-1 font-semibold"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                      Eliminar Lote
-                                    </Button>
+                                    {(lote.cantidad_prestaciones > 0 || (lote.prestaciones_ids && lote.prestaciones_ids.length > 0)) ? (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled
+                                        title="El lote contiene trámites vinculados. Debe vaciarlo quitando las prestaciones antes de poder eliminarlo."
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="h-6 px-2 text-[10px] text-slate-400 dark:text-slate-600 gap-1 font-semibold cursor-not-allowed opacity-60"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                        Eliminar Lote (Requiere vaciar)
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setDeleteModalConfig({
+                                            isOpen: true,
+                                            collection: "tesoreria_lotes",
+                                            recordId: lote.id,
+                                            title: "Eliminar Lote de Tesorería Vacío",
+                                            description: "Esta acción eliminará permanentemente el lote vacío seleccionado.",
+                                            recordLabel: `Lote: ${lote.numero_lote} (0 prestaciones vinculadas)`,
+                                          });
+                                        }}
+                                        className="h-6 px-2 text-[10px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 gap-1 font-semibold"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                        Eliminar Lote
+                                      </Button>
+                                    )}
                                   </div>
                                 )}
                               </CardContent>

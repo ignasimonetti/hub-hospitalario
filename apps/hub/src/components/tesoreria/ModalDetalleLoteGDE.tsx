@@ -416,20 +416,24 @@ export function ModalDetalleLoteGDE({
   };
 
   const handleEliminarLote = () => {
+    if (prestacionesDelLote.length > 0) {
+      toast.warning("El lote contiene trámites vinculados. Debe vaciarlo quitando las prestaciones antes de poder eliminarlo.");
+      return;
+    }
     setConfirmDialog({
       isOpen: true,
-      title: "¿Desarmar lote de expedientes?",
-      description: `¿Está seguro de desarmar el lote "${lote.numero_lote}"? Todas las prestaciones volverán al buzón de conformadas sin perder sus retenciones calculadas.`,
-      confirmText: "Desarmar Lote",
+      title: "¿Eliminar lote de expedientes vacío?",
+      description: `¿Está seguro de eliminar el lote vacío "${lote.numero_lote}"? Esta acción removerá el contenedor del lote del sistema.`,
+      confirmText: "Eliminar Lote",
       variant: "destructive",
       onConfirm: async () => {
         try {
           await eliminarLoteTesoreria(lote.id);
-          toast.success(`Lote "${lote.numero_lote}" desarmado exitosamente.`);
+          toast.success(`Lote "${lote.numero_lote}" eliminado exitosamente.`);
           await onRefresh();
           onClose();
         } catch (err: any) {
-          toast.error(err?.message || "No se pudo desarmar el lote");
+          toast.error(err?.message || "No se pudo eliminar el lote");
         }
       },
     });
@@ -643,11 +647,21 @@ export function ModalDetalleLoteGDE({
                 type="button"
                 size="sm"
                 variant="ghost"
+                disabled={prestacionesDelLote.length > 0}
                 onClick={handleEliminarLote}
-                className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                title={
+                  prestacionesDelLote.length > 0
+                    ? "El lote contiene trámites vinculados. Debe vaciarlo quitando los trámites antes de poder eliminarlo."
+                    : "Eliminar lote vacío"
+                }
+                className={`text-xs gap-1 ${
+                  prestacionesDelLote.length > 0
+                    ? "text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60"
+                    : "text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-semibold"
+                }`}
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1" />
-                Desarmar Lote
+                {prestacionesDelLote.length > 0 ? "Eliminar Lote (Requiere vaciar)" : "Eliminar Lote Vacío"}
               </Button>
             )}
           </div>
@@ -939,6 +953,13 @@ export function ModalDetalleLoteGDE({
                       </tr>
                     );
                   })}
+                  {prestacionesDelLote.length === 0 && (
+                    <tr>
+                      <td colSpan={estaAbierto && !estaPagado ? 7 : 6} className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
+                        Este lote está vacío (no contiene trámites vinculados). Puede incorporar nuevas prestaciones o eliminar el lote.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

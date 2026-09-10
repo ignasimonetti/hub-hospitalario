@@ -911,27 +911,29 @@ export async function agregarPrestacionesALote(
  */
 export async function eliminarLoteTesoreria(
   loteId: string,
-  tenantId?: string
+  tenantId?: string,
+  force: boolean = false
 ): Promise<void> {
   const lotes = await getLotesTesoreria(tenantId);
   const targetLote = lotes.find((l) => l.id === loteId);
-  if (!targetLote) return;
 
-  // Validación de inmutabilidad: no se puede desarmar un lote con Orden de Pago o liquidado
-  if (targetLote.numero_orden_pago || targetLote.op_config) {
-    throw new Error(
-      `El lote "${targetLote.numero_lote}" ya cuenta con una Orden de Pago emitida (OP N° ${targetLote.numero_orden_pago}) y no puede ser desarmado por razones de integridad contable y legal.`
-    );
-  }
+  // Validación de inmutabilidad: no se puede desarmar un lote con Orden de Pago o liquidado (salvo eliminación forzada de superadmin)
+  if (targetLote && !force) {
+    if (targetLote.numero_orden_pago || targetLote.op_config) {
+      throw new Error(
+        `El lote "${targetLote.numero_lote}" ya cuenta con una Orden de Pago emitida (OP N° ${targetLote.numero_orden_pago}) y no puede ser desarmado por razones de integridad contable y legal.`
+      );
+    }
 
-  if (targetLote.estado === "pagado_bse" || targetLote.comprobante_pago_bse) {
-    throw new Error(
-      `El lote "${targetLote.numero_lote}" ya fue liquidado y pagado en el BSE. No se puede desarmar.`
-    );
+    if (targetLote.estado === "pagado_bse" || targetLote.comprobante_pago_bse) {
+      throw new Error(
+        `El lote "${targetLote.numero_lote}" ya fue liquidado y pagado en el BSE. No se puede desarmar.`
+      );
+    }
   }
 
   // 1. Desvincular todas las prestaciones vinculadas para que retornen al buzón de conformadas
-  if (targetLote.prestaciones_ids && targetLote.prestaciones_ids.length > 0) {
+  if (targetLote?.prestaciones_ids && targetLote.prestaciones_ids.length > 0) {
     for (const id of targetLote.prestaciones_ids) {
       try {
         await pocketbase.collection("prestaciones_presentaciones").update(

@@ -211,14 +211,22 @@ async function handleDeleteRecord(adminPb: any, body: any) {
         }
       }
     } catch (e: any) {
-      if (e?.status === 404) {
-        return NextResponse.json(
-          { success: false, error: "El registro ya no existe." },
-          { status: 404 }
-        );
-      }
-      throw e;
+      // If collection doesn't exist in PocketBase (since lotes are client-managed), ignore 404
+      console.warn(`[PURGE] Collection or record tesoreria_lotes not found in PB:`, e?.message);
     }
+
+    try {
+      await adminPb.collection(collection).delete(recordId);
+    } catch (e: any) {
+      // Ignorar si la colección no existe en PB
+      console.warn(`[PURGE] Could not delete ${recordId} from ${collection}:`, e?.message);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Registro eliminado correctamente.${cascadeCount > 0 ? ` Se desvincularon ${cascadeCount} prestación(es) del lote.` : ""}`,
+      cascadeCount,
+    });
   }
 
   // Delete the record

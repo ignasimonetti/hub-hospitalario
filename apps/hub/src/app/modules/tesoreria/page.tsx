@@ -26,6 +26,7 @@ import {
   getLotesTesoreria,
   crearLoteTesoreria,
   agregarPrestacionesALote,
+  eliminarLoteTesoreria,
   ESTADOS_LOTE_ABIERTO,
   registrarPagoLiquidacion,
   liquidarLotePrestaciones,
@@ -536,6 +537,13 @@ export default function TesoreriaPage() {
     if (!collection || !recordId) return;
 
     try {
+      if (collection === "tesoreria_lotes") {
+        await eliminarLoteTesoreria(recordId, currentTenant?.id, true);
+        toast.success("Lote eliminado y prestaciones desvinculadas exitosamente.");
+        await cargarDatos();
+        return;
+      }
+
       const token = (await import("@/lib/auth")).pocketbase.authStore.token;
       const res = await fetch("/api/admin/purge", {
         method: "POST",

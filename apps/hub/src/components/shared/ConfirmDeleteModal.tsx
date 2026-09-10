@@ -73,25 +73,27 @@ export function ConfirmDeleteModal({
             <AlertTriangle className="h-5 w-5" />
             {title}
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-sm text-gray-600 dark:text-gray-400 space-y-3">
-            <p>{description}</p>
-            {recordLabel && (
-              <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded text-xs font-mono text-slate-700 dark:text-slate-300">
-                {recordLabel}
+          <AlertDialogDescription asChild>
+            <div className="text-sm text-gray-600 dark:text-gray-400 space-y-3">
+              <p>{description}</p>
+              {recordLabel && (
+                <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded text-xs font-mono text-slate-700 dark:text-slate-300">
+                  {recordLabel}
+                </div>
+              )}
+              <div className="pt-2">
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Escriba <span className="text-red-600 font-bold">{confirmWord}</span> para confirmar:
+                </p>
+                <Input
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder={confirmWord}
+                  className="text-sm font-mono"
+                  autoFocus
+                  disabled={isDeleting}
+                />
               </div>
-            )}
-            <div className="pt-2">
-              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Escriba <span className="text-red-600 font-bold">{confirmWord}</span> para confirmar:
-              </p>
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder={confirmWord}
-                className="text-sm font-mono"
-                autoFocus
-                disabled={isDeleting}
-              />
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>

@@ -9,9 +9,9 @@ Este documento es la fuente de verdad única para toda la configuración, arquit
 El Hub Hospitalario utiliza PocketBase como su backend principal (BaaS), aprovechando su base de datos SQLite en tiempo real, sistema de autenticación y API integrada.
 
 ### 1.1. Credenciales y URL de Acceso
--   **URL de la Interfaz de Admin:** `https://pocketbase.manta.com.ar/_/`
--   **Usuario Admin:** `ignaciosimonetti1984@gmail.com`
--   **Contraseña Admin:** `Millonarios10$`
+-   **URL de la Interfaz de Admin:** `https://pocketbase.ejemplo.gob.ar/_/`
+-   **Usuario Admin:** Configurado mediante variable `POCKETBASE_ADMIN_EMAIL` en `.env.local`
+-   **Contraseña Admin:** Configurada mediante variable `POCKETBASE_ADMIN_PASSWORD` en `.env.local`
 
 ### 1.2. Nomenclatura de Colecciones
 Se utiliza un prefijo `hub_` para todas las colecciones relacionadas con la funcionalidad principal del hospital para evitar colisiones y mantener la claridad.

@@ -17,12 +17,16 @@ export const pb = new PocketBase(POCKETBASE_URL);
  * Autenticación con credenciales de administrador
  */
 export async function authenticateAdmin(): Promise<any> {
+  const adminEmail = process.env.POCKETBASE_ADMIN_EMAIL;
+  const adminPassword = process.env.POCKETBASE_ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    throw new Error('POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD must be configured in environment variables');
+  }
+
   try {
-    const authData = await pb.admins.authWithPassword(
-      'ignaciosimonetti1984@gmail.com',
-      'Millonarios10$'
-    );
-    console.log('Autenticación de administrador exitosa:', authData);
+    const authData = await pb.admins.authWithPassword(adminEmail, adminPassword);
+    console.log('Autenticación de administrador exitosa');
     return authData;
   } catch (error) {
     console.error('Error al autenticar como administrador:', error);

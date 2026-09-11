@@ -3,21 +3,13 @@
 
 import { Resend } from 'resend'
 
-const resendApiKey = process.env.RESEND_API_KEY || 're_123456789';
+const resendApiKey = process.env.RESEND_API_KEY || '';
 
-const resend = new Resend(resendApiKey)
+const resend = new Resend(resendApiKey || 're_not_configured');
 
 export async function sendEmailConfirmation(email: string, confirmationUrl: string, firstName: string = '', lastName: string = '') {
   const fullName = firstName && lastName ? `${firstName} ${lastName}` : '';
   const greetingName = fullName || 'Usuario';
-
-  // Debug logs for Resend troubleshooting
-  const isDefaultKey = resendApiKey === 're_123456789';
-  console.log(`[Resend] Attempting to send confirmation email to: ${email}`);
-  console.log(`[Resend] Using default build key? ${isDefaultKey}`);
-  if (!isDefaultKey && resendApiKey) {
-    console.log(`[Resend] Configured Key Prefix: ${resendApiKey.substring(0, 3)}...`);
-  }
 
   // Fix: Since (auth) is a route group, the correct URL is /confirm not /auth/confirm
   const correctedUrl = confirmationUrl.replace('/auth/confirm', '/confirm');

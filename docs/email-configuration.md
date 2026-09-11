@@ -71,7 +71,7 @@ from: 'onboarding@resend.dev'
 ### Variables de Entorno
 ```bash
 # .env.local
-RESEND_API_KEY=re_7Tv6eaT5_K1DLgfX7KUDk3urr6qFtFJjh
+RESEND_API_KEY=re_su_api_key_aqui
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 

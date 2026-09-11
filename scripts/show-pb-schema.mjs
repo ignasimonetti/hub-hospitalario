@@ -1,14 +1,19 @@
 import PocketBase from 'pocketbase';
 
-const POCKETBASE_URL = 'https://pocketbase.manta.com.ar';
+const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'https://pocketbase.manta.com.ar';
 const pb = new PocketBase(POCKETBASE_URL);
 
 async function showSchema() {
     try {
-        await pb.admins.authWithPassword(
-            'ignaciosimonetti1984@gmail.com',
-            'Millonarios10$'
-        );
+        const adminEmail = process.env.POCKETBASE_ADMIN_EMAIL;
+        const adminPassword = process.env.POCKETBASE_ADMIN_PASSWORD;
+
+        if (!adminEmail || !adminPassword) {
+            console.error('❌ Error: POCKETBASE_ADMIN_EMAIL y POCKETBASE_ADMIN_PASSWORD requeridos.');
+            process.exit(1);
+        }
+
+        await pb.admins.authWithPassword(adminEmail, adminPassword);
 
         // Fetch all collections
         const collections = await pb.collections.getFullList(200, 0);

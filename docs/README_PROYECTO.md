@@ -126,12 +126,12 @@ cd ../../packages/core && npm install
 
 ### 2. Configuración de Variables de Entorno
 ```bash
-# apps/hub/.env.local
-NEXT_PUBLIC_POCKETBASE_URL=https://pocketbase.manta.com.ar
+# apps/hub/.env.local (copiar desde .env.example)
+NEXT_PUBLIC_POCKETBASE_URL=https://pocketbase.ejemplo.gob.ar
 
-# Credenciales de administrador (para desarrollo)
-POCKETBASE_ADMIN_EMAIL=ignaciosimonetti1984@gmail.com
-POCKETBASE_ADMIN_PASSWORD=Millonarios10$
+# Credenciales de administrador (configurar en .env.local privado)
+POCKETBASE_ADMIN_EMAIL=admin@hospital.gob.ar
+POCKETBASE_ADMIN_PASSWORD=contraseña_segura_aqui
 ```
 
 ### 3. Colecciones de Base de Datos

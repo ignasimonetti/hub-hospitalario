@@ -3,13 +3,20 @@ import PocketBase from 'pocketbase';
 async function checkPocketBaseFields() {
   console.log('🔍 Verificando campos en auth_users de PocketBase...\n');
 
-  const pb = new PocketBase('https://pocketbase.manta.com.ar');
-  const ADMIN_PASSWORD = 'Millonarios10$';
+  const pbUrl = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'https://pocketbase.manta.com.ar';
+  const pb = new PocketBase(pbUrl);
+  const ADMIN_EMAIL = process.env.POCKETBASE_ADMIN_EMAIL;
+  const ADMIN_PASSWORD = process.env.POCKETBASE_ADMIN_PASSWORD;
+
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    console.error('❌ Error: POCKETBASE_ADMIN_EMAIL y POCKETBASE_ADMIN_PASSWORD deben estar definidos.');
+    process.exit(1);
+  }
 
   try {
     // Autenticar como admin
     console.log('🔑 Autenticando como administrador...');
-    await pb.admins.authWithPassword('ignaciosimonetti1984@gmail.com', ADMIN_PASSWORD);
+    await pb.admins.authWithPassword(ADMIN_EMAIL, ADMIN_PASSWORD);
     console.log('✅ Autenticación exitosa!\n');
 
     // Obtener esquema de la colección auth_users

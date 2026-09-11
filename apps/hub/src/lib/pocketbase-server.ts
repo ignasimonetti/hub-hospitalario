@@ -1,7 +1,9 @@
 import PocketBase from 'pocketbase';
 import { cookies, headers } from 'next/headers';
+import { validateServerEnv } from './env';
 
 export async function getServerPocketBase() {
+  validateServerEnv();
   const pb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL || 'https://pocketbase.manta.com.ar');
 
   // 1. Intentar cargar desde la cookie pb_auth

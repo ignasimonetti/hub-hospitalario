@@ -1,6 +1,15 @@
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'hub-hospitalario-secret-key-2024'
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('JWT_SECRET environment variable is missing in production');
+    }
+    return 'insecure-dev-only-jwt-secret-do-not-use-in-production';
+  }
+  return secret;
+}
 
 export interface EmailConfirmationPayload {
   userId: string
@@ -18,12 +27,12 @@ export function generateEmailConfirmationToken(userId: string, email: string): s
   }
 
   // Token expires in 1 hour
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' })
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '1h' })
 }
 
 export function verifyEmailConfirmationToken(token: string): EmailConfirmationPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, getJwtSecret()) as any
     
     // Ensure it's the correct type of token and is an object
     if (!decoded || typeof decoded !== 'object' || decoded.type !== 'email_confirmation') {
